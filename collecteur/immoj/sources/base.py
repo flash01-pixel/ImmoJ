@@ -68,9 +68,11 @@ class Source(ABC):
     fiches_max: int = 8
     #: False pour les sources dont la fiche n'apporte rien (ou est interdite)
     lire_fiches: bool = True
-    #: budget de temps global (secondes de temps monotone) partagé par toutes les
-    #: sources d'une exécution, fixé par main.py ; None = pas de limite
-    echeance_fiches: float | None = None
+    #: budget de temps global consacré aux fiches sur une exécution (secondes
+    #: effectivement passées à les lire, toutes sources confondues) ; None = sans limite
+    budget_fiches_s: float | None = None
+    #: temps déjà consommé (compteur partagé, remis à zéro par main.py)
+    temps_fiches_s: float = 0.0
 
     def enrichir(self, a: Annonce) -> None:
         """Complète une annonce avec sa fiche : toutes les photos et le maximum
@@ -87,8 +89,8 @@ class Source(ABC):
         lues = 0
         for a in annonces:
             if lues >= self.fiches_max or (
-                    Source.echeance_fiches is not None
-                    and time.monotonic() > Source.echeance_fiches):
+                    Source.budget_fiches_s is not None
+                    and Source.temps_fiches_s >= Source.budget_fiches_s):
                 log.info("[%s] %d fiche(s) lue(s), les suivantes attendront le prochain passage",
                          self.nom, lues)
                 break
@@ -101,6 +103,7 @@ class Source(ABC):
                     a.details.setdefault(cle, valeur)
                 continue
             lues += 1
+            debut = time.monotonic()
             try:
                 self.enrichir(a)
             except Blocage as e:
@@ -110,6 +113,8 @@ class Source(ABC):
                 return
             except Exception as e:  # noqa: BLE001 - une fiche illisible n'est pas grave
                 log.warning("[%s] fiche illisible %s : %s", self.nom, a.url, e)
+            finally:
+                Source.temps_fiches_s += time.monotonic() - debut
 
     def executer(self, transactions: tuple[str, ...] | None = None) -> ResultatCollecte:
         """Collecte toutes les transactions demandées sans jamais lever d'exception."""

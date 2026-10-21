@@ -6,7 +6,9 @@
 #
 # Quota (dépôt privé) : ~17 exécutions/jour × 30 jours ≈ 510 par mois. Une
 # exécution dure 2 à 3 minutes (le temps passé sur les fiches est plafonné par
-# BUDGET_FICHES_S) ; le timeout de 7 minutes n'est qu'une sécurité.
+# BUDGET_FICHES_S) ; seule une première collecte après l'ajout de nombreuses
+# sources dépasse 10 minutes (chaque nouveauté coûte quelques requêtes
+# Supabase). Le timeout de 15 minutes n'est qu'une sécurité.
 #
 # Deux stockages, cumulables :
 #  * fichier JSON sur la branche « donnees » du dépôt (toujours) : lu par l'appli
@@ -39,7 +41,7 @@ concurrency:
 jobs:
   collecter:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: collecteur
