@@ -8,3 +8,9 @@ https://www.bg-immo.be/sitemap/sitemap-0.xml | agences/bgimmo_sitemap_0.xml
 https://www.home-side.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/homeside_scroll_vendre.html
 # --- Ard'Immo : pages de biens ---
 https://ardimmoc.be/wp-json/wp/v2/pages?per_page=50&_fields=id,link,title | agences/ardimmoc_pages.json
+# --- Ard'Immo : listes (WordPress Estatik, pages serveur ?) ---
+https://ardimmoc.be/a-vendre/ | agences/ardimmoc_vendre.html
+https://ardimmoc.be/location/ | agences/ardimmoc_louer.html
+# --- W Immobilière (Arlon, Omnicasa) et Tadam (Wix) ---
+https://www.wimmobiliere.com/rechercher/biens | agences/wimmobiliere_biens.html
+https://www.tadam.immo/biens | agences/tadam_biens.html
