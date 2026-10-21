@@ -149,6 +149,10 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
             pass
 
     titre = prop.get("title") or f"{type_bien.capitalize()} à {localite}".strip()
+    # salesPitch est parfois un objet {"text": "...", ...} plutôt qu'une chaîne.
+    argumentaire = prop.get("salesPitch")
+    if isinstance(argumentaire, dict):
+        argumentaire = argumentaire.get("text") or ""
     peb = trans.get("certificate")
     return Annonce(
         source=Immoweb.nom,
@@ -170,6 +174,6 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
         peb=peb if isinstance(peb, str) else None,
         date_publication=date_publication,
         photos=photos,
-        description=prop.get("salesPitch") or "",
+        description=str(argumentaire or ""),
         agence=r.get("customerName") or None,
     )

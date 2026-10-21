@@ -166,7 +166,7 @@ agences:
       liste_achat: https://www.immopeter.be/fr/a-vendre
       carte: "div.property"
       lien: "a[href*='view=detail']"
-      titre: "div.desc"
+      titre: "div.image img"      # attribut title : « Maison à 6661 TAILLES (Belgique) - Prix … »
       prix: ".prop-price"
       lieu: ".prop-city"
       type: ".prop-type"
