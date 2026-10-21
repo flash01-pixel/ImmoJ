@@ -62,20 +62,28 @@ class Admin:
     def organisation(self) -> dict:
         """Première organisation du compte ; créée si le compte n'en a pas encore."""
         orgs = self._get("/organizations")
-        if orgs:
-            return orgs[0]
-        print("Aucune organisation Supabase : création de « ImmoJ » (offre gratuite)…")
-        return self._post("/organizations", {"name": "ImmoJ"})
+        if not orgs:
+            print("Aucune organisation Supabase : création de « ImmoJ » (offre gratuite)…")
+            self._post("/organizations", {"name": "ImmoJ"})
+            # On relit la liste : l'identifiant attendu par /projects est celui de la liste.
+            orgs = self._get("/organizations")
+        if not orgs:
+            raise SystemExit("impossible de créer ou de lire une organisation Supabase")
+        return orgs[0]
 
     def creer_projet(self) -> dict:
         org = self.organisation()
         mdp = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
-        print(f"Création du projet « {NOM_PROJET} » dans l'organisation « {org.get('name')} »…")
+        print(f"Création du projet « {NOM_PROJET} » dans l'organisation "
+              f"« {org.get('name')} » (id {org.get('id')})…")
         # Le mot de passe de la base n'est jamais réutilisé : tout passe par l'API.
-        return self._post("/projects", {
-            "name": NOM_PROJET, "organization_id": org["id"],
-            "db_pass": mdp, "region": REGION, "plan": "free",
-        })
+        corps = {"name": NOM_PROJET, "organization_id": org["id"],
+                 "db_pass": mdp, "region": REGION}
+        r = self.session.post(f"{API}/projects", json=corps, timeout=120)
+        if r.status_code >= 400:
+            raise SystemExit(f"Supabase API POST /projects : HTTP {r.status_code} {r.text[:300]}\n"
+                             f"Organisation reçue : {org}")
+        return r.json()
 
     def attendre_pret(self, ref: str, max_s: int = 600) -> None:
         debut = time.monotonic()
