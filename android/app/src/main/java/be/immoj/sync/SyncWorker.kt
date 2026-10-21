@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters
 import be.immoj.ImmoJApp
 import be.immoj.data.Annonce
 import be.immoj.data.RechercheSauvegardee
+import be.immoj.data.correspond
 import java.util.concurrent.TimeUnit
 
 /**
