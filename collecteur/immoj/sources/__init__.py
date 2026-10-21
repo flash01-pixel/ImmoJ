@@ -11,12 +11,14 @@ from .base import ResultatCollecte, Source
 from .deuxiememain import DeuxiemeMain
 from .immovlan import Immovlan
 from .immoweb import Immoweb
+from .notaire import Notaire
 
 REGISTRE: dict[str, type[Source]] = {
     Immovlan.nom: Immovlan,
     Immoweb.nom: Immoweb,
     DeuxiemeMain.nom: DeuxiemeMain,
     AlertesMail.nom: AlertesMail,
+    Notaire.nom: Notaire,
 }
 
 # Sources « agences » (une par logiciel ayant des agences actives dans agences.yaml).
