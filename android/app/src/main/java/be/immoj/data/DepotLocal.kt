@@ -81,14 +81,16 @@ class DepotLocal(private val contexte: Context) : Depot {
     private fun lireExport(texte: String) {
         val racine = json.parseToJsonElement(texte).jsonObject
         genereLe = racine["genere_le"]?.jsonPrimitive?.content
-        communesCache = racine["communes"]?.let { json.decodeFromJsonElement(it) } ?: emptyList()
-        sources = racine["sources"]?.let { json.decodeFromJsonElement(it) } ?: emptyList()
+        communesCache = racine["communes"]?.let { json.decodeFromJsonElement<List<Commune>>(it) }
+            ?: emptyList()
+        sources = racine["sources"]?.let { json.decodeFromJsonElement<List<EtatSource>>(it) }
+            ?: emptyList()
         val liste = racine["annonces"]?.jsonArray ?: return
         val hist = HashMap<String, List<PrixHistorique>>()
         annonces = liste.map { el ->
             val obj = el as JsonObject
             val a: Annonce = json.decodeFromJsonElement(obj)
-            obj["historique_prix"]?.let { hist[a.id] = json.decodeFromJsonElement(it) }
+            obj["historique_prix"]?.let { hist[a.id] = json.decodeFromJsonElement<List<PrixHistorique>>(it) }
             a
         }
         historiques = hist
@@ -103,14 +105,15 @@ class DepotLocal(private val contexte: Context) : Depot {
      * (ou toujours si `forcer`). Renvoie les nouveautés depuis la dernière
      * synchronisation ; lève une exception seulement s'il n'y a aucun cache.
      */
-    suspend fun synchroniser(forcer: Boolean = false, maxAge: Duration = Duration.ofMinutes(15)): Nouveautes =
-        verrou.withLock {
+    suspend fun synchroniser(forcer: Boolean = false, maxAge: Duration = Duration.ofMinutes(15)): Nouveautes {
+        val rien = Nouveautes(emptyList(), emptyList())
+        return verrou.withLock {
             charger()
             val derniere = perso.derniereSynchro?.let { runCatching { Instant.parse(it) }.getOrNull() }
             val recent = derniere != null && Duration.between(derniere, Instant.now()) < maxAge
-            if (recent && !forcer && annonces.isNotEmpty()) return Nouveautes(emptyList(), emptyList())
+            if (recent && !forcer && annonces.isNotEmpty()) return@withLock rien
 
-            val texte = try {
+            val texte: String = try {
                 withContext(Dispatchers.IO) {
                     val reponse = client.newCall(Request.Builder().url(url).build()).execute()
                     if (!reponse.isSuccessful) throw IllegalStateException(
@@ -119,7 +122,7 @@ class DepotLocal(private val contexte: Context) : Depot {
                     reponse.body?.string() ?: ""
                 }
             } catch (e: Exception) {
-                if (annonces.isNotEmpty()) return Nouveautes(emptyList(), emptyList()) // on garde le cache
+                if (annonces.isNotEmpty()) return@withLock rien   // réseau absent : on garde le cache
                 throw e
             }
             val anciensIds = annonces.map { it.id }.toSet()
@@ -143,6 +146,7 @@ class DepotLocal(private val contexte: Context) : Depot {
             withContext(Dispatchers.IO) { sauvegarderPerso() }
             Nouveautes(nouvelles, baisses)
         }
+    }
 
     // --- interface Depot -------------------------------------------------
 

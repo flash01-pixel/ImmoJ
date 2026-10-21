@@ -111,7 +111,7 @@ fun Filtres.correspond(a: Annonce): Boolean {
     }
     val zone = communes.isNotEmpty() || rayonDefini
     if (zone) {
-        val dansCommunes = communes.isNotEmpty() && a.commune in communes
+        val dansCommunes = communes.isNotEmpty() && a.commune != null && a.commune in communes
         val dansRayon = rayonDefini && a.latitude != null && a.longitude != null &&
             distanceKm(centreLat!!, centreLon!!, a.latitude, a.longitude) <= rayonKm!!
         if (!dansCommunes && !dansRayon) return false
