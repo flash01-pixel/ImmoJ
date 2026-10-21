@@ -6,3 +6,7 @@ https://www.era.be/fr/jsonapi/index/property_index?filter[sale_or_rent]=sale&fil
 https://www.trevi.be/fr/louer-bien-immobilier?agences=luxembourg | agences/trevi_louer_lux.html
 https://www.lagence-immo.be/page-data/fr/a-louer/page-data.json | agences/lagence_pagedata_louer_fr.json
 https://www.lagence-immo.be/page-data/index/page-data.json | agences/lagence_pagedata_index.json
+# --- Omnicasa (Gatsby) : composant de page pour trouver le format des liens de détail ---
+https://www.immobastogne.be/component---customers-bastogne-template-page-tmpl-tsx-5dada48026b729449dcc.js | agences/immobastogne_component.js
+https://www.immobastogne.be/page-data/fr/a-louer/bastogne/appartement/rue-des-hetres-2-c2-bastogne/16346/page-data.json | agences/immobastogne_detail_test.json
+https://www.lagence-immo.be/page-data/nl/page-data.json | agences/lagence_pagedata_nl.json
