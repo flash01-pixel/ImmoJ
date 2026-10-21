@@ -8,18 +8,16 @@ Android (Kotlin + Jetpack Compose) affiche le tout.
 
 Le plan complet est dans [PLAN.md](PLAN.md).
 
-## Mise en service (dans l'ordre)
+## Mise en service
 
-1. [Créer les comptes](docs/01-creer-les-comptes.md) — GitHub, Supabase, ntfy
-2. [Configurer Supabase](docs/02-configurer-supabase.md) — exécuter `supabase/schema.sql` puis `policies.sql`
-3. [Ajouter les secrets GitHub](docs/03-secrets-github.md) — et lancer une première collecte
-4. [Installer l'APK](docs/04-installer-apk.md) — sur le téléphone, puis entrer l'URL et la clé anon
-5. [Alertes e-mail](docs/07-alertes-email.md) — optionnel : Gmail dédié pour Immoweb, Zimmo et Logic-immo
+**Voie rapide (recommandée)** : [Démarrage rapide](docs/00-demarrage-rapide.md).
+Un compte Supabase, un jeton collé dans GitHub, trois clics : la base est créée
+et installée automatiquement, et l'appli est compilée déjà configurée.
 
-Les workflows GitHub (collecte horaire, compilation de l'APK) n'apparaissent
-dans l'onglet *Actions* qu'une fois le code sur la branche `main` : il faut
-donc fusionner la branche de développement dans `main` (une *pull request*
-suffit).
+Voie manuelle détaillée (si tu préfères tout faire toi-même) :
+guides [01](docs/01-creer-les-comptes.md), [02](docs/02-configurer-supabase.md),
+[03](docs/03-secrets-github.md), [04](docs/04-installer-apk.md).
+Optionnel : [alertes e-mail](docs/07-alertes-email.md) pour Immoweb, Zimmo et Logic-immo.
 
 ## Organisation du dépôt
 

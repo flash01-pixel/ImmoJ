@@ -41,7 +41,24 @@ jobs:
         with:
           gradle-version: "8.11.1"   # version compatible avec le plugin Android 8.7
 
+      # Si le secret SUPABASE_ACCESS_TOKEN existe, l'APK est compilé avec l'URL,
+      # la clé anon et le topic ntfy intégrés : l'appli fonctionne dès l'ouverture.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Résoudre la configuration à intégrer
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        working-directory: collecteur
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: pip install requests && python outils/supabase_admin.py env
+
       - name: Compiler
+        env:
+          ORG_GRADLE_PROJECT_supabaseUrl: ${{ env.SUPABASE_URL }}
+          ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ env.SUPABASE_ANON_KEY }}
+          ORG_GRADLE_PROJECT_ntfyTopic: ${{ env.NTFY_TOPIC }}
         run: gradle assembleDebug --no-daemon --console=plain
 
       - name: Renommer l'APK

@@ -1,6 +1,7 @@
 package be.immoj.data
 
 import android.content.Context
+import be.immoj.BuildConfig
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences as DsPreferences
 import androidx.datastore.preferences.core.edit
@@ -21,9 +22,14 @@ data class Reglages(
     val transaction: String = "location",   // "location" ou "achat"
     val tri: String = "recent",             // "recent" ou "prix"
     val filtres: Filtres = Filtres(),
+    val ntfyTopic: String = "",
 ) {
     /** Vrai quand l'appli peut se connecter à Supabase. */
     val configure: Boolean get() = supabaseUrl.startsWith("http") && supabaseCle.length > 20
+
+    /** Vrai si la connexion vient de la configuration intégrée à l'APK (rien à saisir). */
+    val integree: Boolean
+        get() = supabaseUrl == BuildConfig.SUPABASE_URL && BuildConfig.SUPABASE_URL.isNotBlank()
 }
 
 class Preferences(private val context: Context) {
@@ -39,8 +45,10 @@ class Preferences(private val context: Context) {
 
     val flux: Flow<Reglages> = context.dataStore.data.map { p ->
         Reglages(
-            supabaseUrl = p[Cles.URL] ?: "",
-            supabaseCle = p[Cles.CLE] ?: "",
+            // Les réglages saisis à la main priment ; sinon ceux intégrés à l'APK.
+            supabaseUrl = p[Cles.URL]?.ifBlank { null } ?: BuildConfig.SUPABASE_URL,
+            supabaseCle = p[Cles.CLE]?.ifBlank { null } ?: BuildConfig.SUPABASE_ANON_KEY,
+            ntfyTopic = BuildConfig.NTFY_TOPIC,
             transaction = p[Cles.TRANSACTION] ?: "location",
             tri = p[Cles.TRI] ?: "recent",
             filtres = p[Cles.FILTRES]?.let { runCatching { json.decodeFromString<Filtres>(it) }.getOrNull() }

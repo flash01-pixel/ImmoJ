@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Configuration intégrée à l'APK (fournie par le workflow de compilation via les
+// propriétés Gradle supabaseUrl / supabaseAnonKey / ntfyTopic). Vide = l'appli
+// demande les réglages au premier lancement.
+fun propriete(nom: String): String = (project.findProperty(nom) as String?)?.trim() ?: ""
+
 android {
     namespace = "be.immoj"
     compileSdk = 35
@@ -14,8 +19,12 @@ android {
         applicationId = "be.immoj"
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "1.0.0"
+
+        buildConfigField("String", "SUPABASE_URL", "\"${propriete("supabaseUrl")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${propriete("supabaseAnonKey")}\"")
+        buildConfigField("String", "NTFY_TOPIC", "\"${propriete("ntfyTopic")}\"")
     }
 
     buildTypes {
@@ -33,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

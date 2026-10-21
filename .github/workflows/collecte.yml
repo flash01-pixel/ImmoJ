@@ -43,11 +43,20 @@ jobs:
           cache-dependency-path: collecteur/requirements.txt
       - run: pip install -r requirements.txt
 
+      # Zéro configuration : avec le seul secret SUPABASE_ACCESS_TOKEN, l'URL, la
+      # clé service et le topic ntfy sont retrouvés automatiquement.
+      - name: Résoudre les accès Supabase
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python outils/supabase_admin.py env
+
       - name: Lancer le collecteur
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+          NTFY_TOPIC: ${{ env.NTFY_TOPIC || secrets.NTFY_TOPIC }}
           GMAIL_UTILISATEUR: ${{ secrets.GMAIL_UTILISATEUR }}
           GMAIL_MOT_DE_PASSE: ${{ secrets.GMAIL_MOT_DE_PASSE }}
           SOURCE: ${{ inputs.source }}
@@ -56,7 +65,7 @@ jobs:
           # Tant que les secrets ne sont pas configurés, on s'arrête sans erreur
           # (sinon GitHub enverrait un e-mail d'échec à chaque heure).
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "Secrets SUPABASE_URL / SUPABASE_SERVICE_KEY absents : rien à faire (voir docs/03-secrets-github.md)."
+            echo "Supabase non configuré : rien à faire (voir docs/00-demarrage-rapide.md)."
             exit 0
           fi
           ARGS=""
