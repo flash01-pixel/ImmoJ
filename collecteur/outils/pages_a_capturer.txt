@@ -1,14 +1,4 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html | {"En-tête": "valeur"} (optionnel)
-# --- Phase 4 : Biddit avec en-têtes de navigateur (pare-feu applicatif) ---
-https://www.biddit.be/api/eco/search-service/lot/_search?postalCodes=6700&page=1&pageSize=20 | biddit/api_search_cp2.json | {"Accept": "application/json, text/plain, */*", "Referer": "https://www.biddit.be/fr/search?postalCodes=6700", "Accept-Language": "fr", "Origin": "https://www.biddit.be"}
-https://www.biddit.be/api/eco/search-service/lot/_landing | biddit/api_landing.json | {"Accept": "application/json, text/plain, */*", "Referer": "https://www.biddit.be/fr", "Accept-Language": "fr"}
-https://www.biddit.be/api/eco/biddit-bff/lot/296706 | biddit/api_lot.json | {"Accept": "application/json, text/plain, */*", "Referer": "https://www.biddit.be/fr/catalog/detail/296706", "Accept-Language": "fr"}
-https://www.biddit.be/fr/catalog/detail/296706 | biddit/detail_296706.html
-https://immo.notaire.be/fr/vente-publique | notaire/vente_publique_fr.html
-https://immo.notaris.be/immoplatform-public-service_v1/api/property/search?province=LUXEMBOURG | notaire/api_property_search.json | {"Accept": "application/json"}
-# --- immo.notaire.be : page de la province (rendu côté serveur) ---
-https://immo.notaire.be/fr/biens-a-vendre-dans-la-province/luxembourg?province=WLX | notaire/province_luxembourg.html
-https://immo.notaire.be/fr/biens-a-vendre-dans-la-province/luxembourg?province=WLX&page=2 | notaire/province_luxembourg_p2.html
-https://immo.notaire.be/fr/biens-a-vendre-dans-la-province/luxembourg?province=WLX&saleType=PUBLIC_SALE | notaire/province_luxembourg_publique.html
-https://immo.notaire.be/robots.txt | notaire/immo_robots.txt
+# --- Spécification OpenAPI de l'API de gestion Supabase (pour supabase_admin.py) ---
+https://api.supabase.com/api/v1-json | supabase/openapi.json
