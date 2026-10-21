@@ -59,12 +59,16 @@ class Admin:
                 return p
         return None
 
-    def creer_projet(self) -> dict:
+    def organisation(self) -> dict:
+        """Première organisation du compte ; créée si le compte n'en a pas encore."""
         orgs = self._get("/organizations")
-        if not orgs:
-            raise SystemExit("Aucune organisation Supabase : "
-                             "connecte-toi une fois sur supabase.com")
-        org = orgs[0]
+        if orgs:
+            return orgs[0]
+        print("Aucune organisation Supabase : création de « ImmoJ » (offre gratuite)…")
+        return self._post("/organizations", {"name": "ImmoJ"})
+
+    def creer_projet(self) -> dict:
+        org = self.organisation()
         mdp = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
         print(f"Création du projet « {NOM_PROJET} » dans l'organisation « {org.get('name')} »…")
         # Le mot de passe de la base n'est jamais réutilisé : tout passe par l'API.

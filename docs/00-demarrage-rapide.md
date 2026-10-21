@@ -13,9 +13,12 @@ Compte 10 minutes.
    s'en charge.
 2. Va sur https://supabase.com/dashboard/account/tokens
    (ou : avatar en bas à gauche → **Account** → **Access Tokens**).
-3. **Generate new token** → nom `ImmoJ` → **Generate token**.
-4. Copie le jeton affiché (il commence par `sbp_`). Il ne sera plus jamais
-   affiché : si tu le perds, génère-en un autre.
+3. **Generate new token**. Si l'écran demande de choisir une organisation
+   (« Project / Organization »), appuie plutôt sur le lien **Create legacy
+   token** : ce jeton couvre tout le compte, sans organisation à choisir.
+4. Nom `ImmoJ` → **Generate token**. Copie le jeton affiché (il commence par
+   `sbp_`). Il ne sera plus jamais affiché : si tu le perds, génère-en un autre.
+   Pas besoin de créer d'organisation ni de projet : le workflow s'en charge.
 
 ## 2. Coller le jeton dans GitHub (1 min)
 
