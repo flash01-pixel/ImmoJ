@@ -39,6 +39,18 @@ class Source(ABC):
     transactions: tuple[str, ...] = ("location", "achat")
     #: certaines sources (API JSON officielles) n'ont pas de robots.txt pertinent
     respecter_robots: bool = True
+    #: 1 = à chaque exécution horaire, 3 = une exécution sur trois (sites sensibles)
+    frequence_heures: int = 1
+
+    @classmethod
+    def est_configuree(cls) -> bool:
+        """False si la source a besoin de secrets absents (elle est alors ignorée)."""
+        return True
+
+    @classmethod
+    def doit_tourner(cls, heure: int) -> bool:
+        """Décide si la source tourne à cette heure (cadence réduite pour certaines)."""
+        return heure % cls.frequence_heures == 0
 
     def __init__(self, pages_max: int | None = None) -> None:
         self.client = ClientHttp(self.nom, respecter_robots=self.respecter_robots)

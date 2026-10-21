@@ -14,8 +14,8 @@ android {
         applicationId = "be.immoj"
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -54,4 +54,5 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
+    implementation(libs.osmdroid)
 }

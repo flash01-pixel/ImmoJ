@@ -93,3 +93,75 @@ enum class StatutPerso(val code: String, val libelle: String) {
         fun depuisCode(code: String?): StatutPerso = entries.firstOrNull { it.code == code } ?: NOUVEAU
     }
 }
+
+/** Une commune de la province (table `communes`). */
+@Serializable
+data class Commune(
+    val nom: String,
+    val codes: List<String> = emptyList(),
+    val latitude: Double,
+    val longitude: Double,
+)
+
+/** Ligne de la table `recherches_sauvegardees` (créée par l'appli, lue par le collecteur). */
+@Serializable
+data class RechercheSauvegardee(
+    val id: String? = null,
+    val nom: String,
+    val transaction: String? = null,
+    val communes: List<String>? = null,
+    @SerialName("centre_lat") val centreLat: Double? = null,
+    @SerialName("centre_lon") val centreLon: Double? = null,
+    @SerialName("rayon_km") val rayonKm: Double? = null,
+    @SerialName("prix_min") val prixMin: Int? = null,
+    @SerialName("prix_max") val prixMax: Int? = null,
+    val types: List<String>? = null,
+    @SerialName("chambres_min") val chambresMin: Int? = null,
+    @SerialName("surface_min") val surfaceMin: Int? = null,
+    val jardin: Boolean? = null,
+    val animaux: Boolean? = null,
+    val meuble: Boolean? = null,
+    @SerialName("peb_max") val pebMax: String? = null,
+    val sources: List<String>? = null,
+    val notifier: Boolean = true,
+    val actif: Boolean = true,
+) {
+    /** Convertit en filtres pour la liste / la carte. */
+    fun versFiltres() = Filtres(
+        prixMin = prixMin, prixMax = prixMax, types = types?.toSet() ?: emptySet(),
+        chambresMin = chambresMin, surfaceMin = surfaceMin,
+        jardin = jardin == true, animaux = animaux == true, meuble = meuble == true,
+        pebMax = pebMax, sources = sources?.toSet() ?: emptySet(),
+        communes = communes?.toSet() ?: emptySet(),
+        centreLat = centreLat, centreLon = centreLon, rayonKm = rayonKm,
+    )
+
+    /** Résumé lisible des critères. */
+    val resume: String
+        get() = listOfNotNull(
+            transaction?.let { if (it == "location") "Location" else "Achat" },
+            if (!communes.isNullOrEmpty()) communes.joinToString(", ") else null,
+            if (rayonKm != null && centreLat != null) "rayon ${rayonKm.toInt()} km" else null,
+            prixMax?.let { "≤ $it €" },
+            chambresMin?.let { "≥ $it ch." },
+            if (!types.isNullOrEmpty()) types.joinToString("/") else null,
+        ).joinToString(" · ").ifBlank { "Tous critères" }
+
+    companion object {
+        fun depuis(nom: String, transaction: String, f: Filtres) = RechercheSauvegardee(
+            nom = nom, transaction = transaction,
+            communes = f.communes.toList().ifEmpty { null },
+            centreLat = if (f.rayonDefini) f.centreLat else null,
+            centreLon = if (f.rayonDefini) f.centreLon else null,
+            rayonKm = if (f.rayonDefini) f.rayonKm else null,
+            prixMin = f.prixMin, prixMax = f.prixMax,
+            types = f.types.toList().ifEmpty { null },
+            chambresMin = f.chambresMin, surfaceMin = f.surfaceMin,
+            jardin = if (f.jardin) true else null,
+            animaux = if (f.animaux) true else null,
+            meuble = if (f.meuble) true else null,
+            pebMax = f.pebMax,
+            sources = f.sources.toList().ifEmpty { null },
+        )
+    }
+}

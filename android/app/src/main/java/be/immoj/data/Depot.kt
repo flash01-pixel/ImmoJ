@@ -60,22 +60,63 @@ class Depot(private val preferences: Preferences) {
             .create(SupabaseApi::class.java)
     }
 
-    /** Liste des annonces actives d'une transaction, triées. */
-    suspend fun listerAnnonces(transaction: String, tri: String): List<Annonce> {
+    /**
+     * Liste des annonces actives d'une transaction, filtrées et triées.
+     * Zone : communes ET/OU rayon. Si les deux sont définis, on fait deux
+     * requêtes et on fusionne (l'un ou l'autre suffit).
+     */
+    suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
         val ordre = when (tri) {
             "prix" -> "prix.asc.nullslast"
             "prix_desc" -> "prix.desc.nullslast"
             else -> "premiere_detection.desc"
         }
-        return api().annonces(
-            mapOf(
-                "select" to "*",
-                "transaction" to "eq.$transaction",
-                "actif" to "eq.true",
-                "order" to ordre,
-                "limit" to "300",
-            )
+        val base = mutableMapOf(
+            "select" to "*",
+            "transaction" to "eq.$transaction",
+            "actif" to "eq.true",
+            "order" to ordre,
+            "limit" to "300",
         )
+        base.putAll(filtres.versRequete())
+        val a = api()
+        val resultats = LinkedHashMap<String, Annonce>()
+        val zoneCommunes = filtres.communes.isNotEmpty()
+        if (zoneCommunes) {
+            val q = base + ("commune" to "in.(${filtres.communes.joinToString(",") { "\"$it\"" }})")
+            a.annonces(q).forEach { resultats[it.id] = it }
+        }
+        if (filtres.rayonDefini) {
+            val args = mapOf("lat" to filtres.centreLat!!, "lon" to filtres.centreLon!!,
+                "km" to filtres.rayonKm!!)
+            a.annoncesDansRayon(args, base).forEach { resultats[it.id] = it }
+        }
+        if (!zoneCommunes && !filtres.rayonDefini) {
+            a.annonces(base).forEach { resultats[it.id] = it }
+        }
+        // Après fusion de deux requêtes, on retrie localement.
+        return when (tri) {
+            "prix" -> resultats.values.sortedWith(compareBy(nullsLast()) { it.prix })
+            "prix_desc" -> resultats.values.sortedWith(compareByDescending(nullsFirst()) { it.prix })
+            else -> resultats.values.sortedByDescending { it.premiereDetection ?: "" }
+        }
+    }
+
+    suspend fun communes(): List<Commune> = api().communes()
+
+    suspend fun recherches(): List<RechercheSauvegardee> = api().recherches()
+
+    suspend fun creerRecherche(r: RechercheSauvegardee): RechercheSauvegardee =
+        api().creerRecherche(r).first()
+
+    suspend fun modifierRecherche(id: String, champs: Map<String, Boolean>) {
+        val r = api().modifierRecherche("eq.$id", champs)
+        if (!r.isSuccessful) throw IllegalStateException("Modification refusée (HTTP ${r.code()})")
+    }
+
+    suspend fun supprimerRecherche(id: String) {
+        val r = api().supprimerRecherche("eq.$id")
+        if (!r.isSuccessful) throw IllegalStateException("Suppression refusée (HTTP ${r.code()})")
     }
 
     suspend fun annonce(id: String): Annonce? =
