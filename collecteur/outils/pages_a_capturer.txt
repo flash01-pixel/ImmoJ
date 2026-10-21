@@ -14,3 +14,4 @@ https://ardimmoc.be/location/ | agences/ardimmoc_louer.html
 # --- W Immobilière (Arlon, Omnicasa) et Tadam (Wix) ---
 https://www.wimmobiliere.com/rechercher/biens | agences/wimmobiliere_biens.html
 https://www.tadam.immo/biens | agences/tadam_biens.html
+https://maisons-chalets-ardennes.be/assets/js/biens.js | agences/mca_biens.js
