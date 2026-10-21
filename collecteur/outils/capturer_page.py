@@ -34,7 +34,16 @@ def capturer(ligne: str) -> None:
     if "|" not in ligne:
         print(f"Ligne ignorée (format attendu « URL | source/fichier ») : {ligne}")
         return
-    url, chemin = (p.strip() for p in ligne.split("|", 1))
+    champs = [p.strip() for p in ligne.split("|")]
+    url, chemin = champs[0], champs[1]
+    entetes = dict(ENTETES)
+    if len(champs) > 2 and champs[2]:
+        # 3e champ optionnel : en-têtes supplémentaires en JSON, ex. {"Accept": "application/json"}
+        import json
+        try:
+            entetes.update(json.loads(champs[2]))
+        except json.JSONDecodeError:
+            print(f"   en-têtes illisibles, ignorés : {champs[2]}")
     if not url or not chemin:
         print(f"Ligne ignorée : {ligne}")
         return
@@ -43,7 +52,7 @@ def capturer(ligne: str) -> None:
 
     print(f"→ {url}")
     try:
-        reponse = requests.get(url, headers=ENTETES, timeout=30)
+        reponse = requests.get(url, headers=entetes, timeout=30)
     except requests.RequestException as erreur:
         print(f"   ERREUR réseau : {erreur}")
         return

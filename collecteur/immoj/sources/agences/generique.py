@@ -19,8 +19,9 @@ Exemple dans agences.yaml :
       photo: "img"
       pages: 1                   # pages à lire (ajoute ?page=N ou /page/N, voir pagination)
       pagination: "?page={n}"    # gabarit ajouté à l'URL de liste pour n ≥ 2
-      exclure: "vendu|loué"      # regex (insensible à la casse) : cartes à ignorer
-                                 # (défaut : vendu, loué, sous option, sous compromis)
+      exclure: "vendu|loué"      # optionnel : regex (insensible à la casse) sur le texte
+                                 # de la carte pour ignorer des cartes. Par défaut, seule
+                                 # une carte dont le PRIX affiche « vendu/loué » est ignorée.
 
 Un attribut `data-filter` JSON sur la carte (ex. DG-Immo) est lu automatiquement :
 postal_code, price, bedrooms, liveable_area, garden, terrace, furnished.
@@ -119,10 +120,14 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
     soup = BeautifulSoup(html, "lxml")
     annonces: list[Annonce] = []
     vus: set[str] = set()
-    motif_exclusion = options.get("exclure", r"\bvendu\b|\blou[ée]e?\b|sous option|sous compromis")
-    exclure = re.compile(motif_exclusion, re.I)
+    exclure = re.compile(options["exclure"], re.I) if options.get("exclure") else None
+    vendu = re.compile(r"\bvendu\b|\blou[ée]e?\b|sous option|sous compromis", re.I)
     for carte in soup.select(options.get("carte", "article")):
-        if exclure.search(carte.get_text(" ", strip=True)[:400]):
+        if exclure and exclure.search(carte.get_text(" ", strip=True)[:400]):
+            continue
+        # Bien déjà vendu/loué : le prix est remplacé par une mention.
+        if options.get("prix") and any(vendu.search(el.get_text(" ", strip=True))
+                                        for el in carte.select(options["prix"])):
             continue
         sel_lien = options.get("lien", "a[href]")
         lien = carte if sel_lien == "." else carte.select_one(sel_lien)
