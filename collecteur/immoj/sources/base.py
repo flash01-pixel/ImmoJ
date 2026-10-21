@@ -43,6 +43,11 @@ class Source(ABC):
     frequence_heures: int = 1
 
     @classmethod
+    def est_configuree(cls) -> bool:
+        """False si la source a besoin de secrets absents (elle est alors ignorée)."""
+        return True
+
+    @classmethod
     def doit_tourner(cls, heure: int) -> bool:
         """Décide si la source tourne à cette heure (cadence réduite pour certaines)."""
         return heure % cls.frequence_heures == 0

@@ -14,6 +14,7 @@ Le plan complet est dans [PLAN.md](PLAN.md).
 2. [Configurer Supabase](docs/02-configurer-supabase.md) — exécuter `supabase/schema.sql` puis `policies.sql`
 3. [Ajouter les secrets GitHub](docs/03-secrets-github.md) — et lancer une première collecte
 4. [Installer l'APK](docs/04-installer-apk.md) — sur le téléphone, puis entrer l'URL et la clé anon
+5. [Alertes e-mail](docs/07-alertes-email.md) — optionnel : Gmail dédié pour Immoweb, Zimmo et Logic-immo
 
 Les workflows GitHub (collecte horaire, compilation de l'APK) n'apparaissent
 dans l'onglet *Actions* qu'une fois le code sur la branche `main` : il faut
@@ -43,8 +44,7 @@ python -m immoj.main --simulation --forcer   # collecte sans rien écrire
 ## État d'avancement
 
 - [x] Étape 1 (MVP) : Immovlan → Supabase → ntfy → appli (liste, détail, statuts, état des sources)
-- [ ] Étape 2 : autres portails (Zimmo, Logic-immo, Realo, 2ememain)
+- [x] Étape 2 : Immoweb (JSON direct, cadence réduite), 2ememain (API), lecteur d'alertes e-mail (Immoweb, Zimmo, Logic-immo)
 - [ ] Étape 3 : carte, filtres, communes/rayon, recherches sauvegardées dans l'appli
-- [ ] Étape 4 : Immoweb (direct + alertes e-mail)
 - [ ] Étape 5 : agences (`agences.yaml`)
 - [ ] Étape 6 : Biddit et ventes notariales (achat)

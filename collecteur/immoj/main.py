@@ -162,6 +162,9 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             log.error("source inconnue : %s (disponibles : %s)", nom, ", ".join(REGISTRE))
             code_sortie = 2
             continue
+        if not REGISTRE[nom].est_configuree():
+            log.info("[%s] non configurée (secrets absents) : ignorée", nom)
+            continue
         heure = datetime.now(ZoneInfo(config.FUSEAU)).hour
         if not forcer and not noms_sources and not REGISTRE[nom].doit_tourner(heure):
             log.info("[%s] pas cette heure-ci (une exécution sur %d)", nom,
