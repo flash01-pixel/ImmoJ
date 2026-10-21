@@ -9,8 +9,11 @@ name: Compiler l'APK
 
 on:
   push:
-    paths: ["android/**", ".github/workflows/build-apk.yml"]
+    # « branches » est obligatoire dès qu'on filtre sur « tags », sinon les
+    # pushs de branches ne déclenchent plus rien.
+    branches: ["**"]
     tags: ["v*"]
+    paths: ["android/**", ".github/workflows/build-apk.yml"]
   workflow_dispatch:
 
 permissions:

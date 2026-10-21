@@ -125,7 +125,7 @@ def _analyser_carte(carte, url: str, transaction: str, ld: dict) -> Annonce | No
     prix = nombre(_texte(carte, ".v3-search-card-price"))
     if prix is None and isinstance(ld.get("offers"), dict):
         prix = ld["offers"].get("price")
-        prix = int(prix) if isinstance(prix, (int, float)) else None
+        prix = int(prix) if isinstance(prix, int | float) else None
 
     code_postal = _texte(carte, "[itemprop=postalCode]") or None
     localite = _texte(carte, "[itemprop=addressLocality]") or None
