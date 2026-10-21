@@ -5,18 +5,18 @@ rien à installer sur ton PC.
 
 ## Récupérer l'APK
 
-1. Onglet **Actions** du dépôt → colonne de gauche **Compiler l'APK**.
-2. Clique sur la dernière exécution réussie (coche verte).
-3. En bas de la page, section **Artifacts** : clique **ImmoJ-apk**. Un fichier
-   `ImmoJ-apk.zip` se télécharge.
-4. Décompresse-le : il contient `ImmoJ.apk`.
-5. Envoie `ImmoJ.apk` sur ton téléphone (par câble USB, par e-mail à toi-même,
-   Google Drive, ou directement en ouvrant GitHub depuis le navigateur du
-   téléphone, connecté à ton compte).
+Le plus simple, **directement depuis le téléphone** :
 
-Astuce : plus tard, pour une version « officielle », il suffira de créer un
-tag `v1.0` dans GitHub (Releases → Draft a new release) : l'APK sera attaché
-à la release, téléchargeable sans décompression.
+1. Dans le navigateur du téléphone, connecté à ton compte GitHub, ouvre
+   https://github.com/flash01-pixel/ImmoJ/blob/apk/ImmoJ.apk
+   (c'est la branche `apk`, mise à jour à chaque compilation).
+2. Appuie sur le bouton de téléchargement (icône flèche vers le bas, ou
+   « Download raw file » / « Raw »). Le fichier `ImmoJ.apk` se télécharge.
+
+Autre méthode, depuis un PC : onglet **Actions** → **Compiler l'APK** →
+dernière exécution réussie → section **Artifacts** → `ImmoJ-apk` (archive zip
+à décompresser), puis envoyer `ImmoJ.apk` sur le téléphone (câble, e-mail,
+Drive).
 
 ## Installer
 
