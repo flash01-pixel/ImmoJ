@@ -24,6 +24,9 @@ HEURE_FIN = 23  # inclus : la collecte de 23h a lieu
 FUSEAU = "Europe/Brussels"
 
 # Délai (secondes) entre deux requêtes vers un même site : poli et discret.
+#: temps total consacré aux fiches (photos, détails) par exécution ; au-delà, les
+#: annonces restantes seront complétées lors des passages suivants
+BUDGET_FICHES_S = 90
 DELAI_MIN_S = 2.0
 DELAI_MAX_S = 5.0
 TIMEOUT_S = 30

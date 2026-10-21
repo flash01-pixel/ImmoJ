@@ -64,10 +64,13 @@ class Source(ABC):
         """Visite le site et renvoie les annonces d'une transaction donnée."""
 
     # --- lecture des fiches (toutes les photos, détails) ---------------------
-    #: fiches lues au maximum par exécution (les autres attendront la suivante)
-    fiches_max: int = 20
+    #: fiches lues au maximum par source et par exécution (les autres attendront)
+    fiches_max: int = 8
     #: False pour les sources dont la fiche n'apporte rien (ou est interdite)
     lire_fiches: bool = True
+    #: budget de temps global (secondes de temps monotone) partagé par toutes les
+    #: sources d'une exécution, fixé par main.py ; None = pas de limite
+    echeance_fiches: float | None = None
 
     def enrichir(self, a: Annonce) -> None:
         """Complète une annonce avec sa fiche : toutes les photos et le maximum
@@ -83,8 +86,10 @@ class Source(ABC):
             return
         lues = 0
         for a in annonces:
-            if lues >= self.fiches_max:
-                log.info("[%s] %d fiches lues, les suivantes attendront le prochain passage",
+            if lues >= self.fiches_max or (
+                    Source.echeance_fiches is not None
+                    and time.monotonic() > Source.echeance_fiches):
+                log.info("[%s] %d fiche(s) lue(s), les suivantes attendront le prochain passage",
                          self.nom, lues)
                 break
             connue = self.connues.get(a.id_externe)

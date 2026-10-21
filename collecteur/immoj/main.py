@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -192,6 +193,9 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
 
     noms = noms_sources or list(REGISTRE)
     code_sortie = 0
+    # Les fiches (toutes les photos, détails) se partagent un budget de temps global.
+    from .sources.base import Source
+    Source.echeance_fiches = time.monotonic() + config.BUDGET_FICHES_S
     for nom in noms:
         if nom not in REGISTRE:
             log.error("source inconnue : %s (disponibles : %s)", nom, ", ".join(REGISTRE))
