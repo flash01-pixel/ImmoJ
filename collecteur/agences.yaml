@@ -1,0 +1,215 @@
+# Agences immobilières de la province de Luxembourg.
+#
+# Chaque entrée :
+#   nom        : nom de l'agence (affiché dans l'appli)
+#   commune    : commune principale
+#   url        : site officiel (vide si inconnu)
+#   logiciel   : module de collecte (dossier immoj/sources/agences/) :
+#                whise        site « modèle Whise » (/fr/7/chercher-bien/a-louer)
+#                omnicasa     site Omnicasa (/fr/a-louer)
+#                generique    site maison : sélecteurs CSS dans « options »
+#                inconnu      pas encore analysé / pas géré
+#   actif      : false = ignorée (pas de site, publie seulement sur les portails,
+#                logiciel pas encore géré). Les portails couvrent alors l'agence.
+#   note       : pourquoi inactive, ou remarque utile
+#   options    : paramètres propres au module (urls des listes, sélecteurs...)
+#   telephone  : optionnel, affiché dans l'appli si l'annonce ne le donne pas
+#
+# Pour ajouter une agence : copier un bloc, adapter, pousser. Rien d'autre.
+# Pour vérifier un site : pousser ce fichier sur une branche de travail déclenche
+# le workflow « Analyser les agences » (rapport dans le journal).
+#
+# État au 21/10/2026 : analyse automatique faite (outils/analyser_agences.py).
+agences:
+  # --- Réseaux ---
+  - {nom: Honesty, commune: Arlon, url: https://www.honesty.be, logiciel: inconnu, actif: false,
+     note: "Réseau (Arlon, Virton, Libramont, Bertrix, Marche). WordPress + extension Whise/RealAdvice ; liste : /biens-a-louer/ et /biens-a-vendre/"}
+  - {nom: ERA B-Lux, commune: Marche-en-Famenne, url: https://www.era.be, logiciel: inconnu, actif: false,
+     note: "Bastogne, Marche, Libramont. Site national era.be (/fr/a-louer) : filtrer sur l'agence"}
+  - {nom: Vos Agences, commune: Marche-en-Famenne, url: https://vosagences.be, logiciel: inconnu, actif: false,
+     note: "Condrogest (Marche) et Ardenne (Libramont). WordPress + SweepBright ; liste : /fr/a-louer/"}
+  - {nom: Home Sweet Gaume, commune: Virton, url: https://homesweetgaume.be, logiciel: inconnu, actif: false,
+     note: "Virton et Florenville. WordPress ; liste : /bien-immobilier-gaume/"}
+  - {nom: Century 21 Cofilux, commune: Arlon, url: https://www.century21.be, logiciel: inconnu, actif: false,
+     note: "Site national century21.be (/fr/a-louer) : filtrer sur l'agence"}
+  - {nom: Trevi Luxembourg, commune: Arlon, url: https://www.trevi.be, logiciel: inconnu, actif: false,
+     note: "Site national trevi.be (/fr/louer-bien-immobilier) : filtrer sur l'agence"}
+  # --- Arlon ---
+  - {nom: Double V Immobilière, commune: Arlon, url: "", logiciel: inconnu, actif: false,
+     note: "Probablement « W Immobilière » (Avenue de Longwy 340). Site non trouvé (wimmo.be = autre agence, Bruxelles)"}
+  - {nom: Tadam Immobilière, commune: Arlon, url: "", logiciel: inconnu, actif: false,
+     note: "Site non trouvé (tadam.be = autre société)"}
+  - {nom: Immo 23, commune: Arlon, url: https://immo23.be, logiciel: inconnu, actif: false,
+     note: "Apimo ; liste : /fr/louer et /fr/a-vendre"}
+  # --- Sud (Aubange, Athus, Messancy) ---
+  - nom: Groupe Arcade Immobilier
+    commune: Aubange
+    url: https://www.groupearcade.be
+    logiciel: whise
+    actif: true
+    options: {mode: scroll}
+    note: "Modèle Whise (InfiniteScroll). Publie aussi à Dinant : le géocodeur garde la province"
+  - {nom: Immo CM, commune: Aubange, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Alison Immo, commune: Messancy, url: https://www.alisonimmo.be, logiciel: inconnu, actif: false,
+     note: "WordPress ; page des biens à identifier"}
+  - {nom: Brion Immo, commune: Aubange, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Berns Immobilier, commune: Aubange, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  # --- Gaume ---
+  - {nom: Access Immo, commune: Virton, url: "", logiciel: inconnu, actif: false,
+     note: "Site non trouvé (accessimmo.be redirige vers Advance Immo, Mons)"}
+  - {nom: Ultimmo, commune: Virton, url: "", logiciel: inconnu, actif: false,
+     note: "ultimmo.be = autre agence (Coxyde). Site de Virton/Ethe non trouvé"}
+  - {nom: Juliet Immo, commune: Saint-Léger, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Immo Dek, commune: Étalle, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - nom: Pepit-immo
+    commune: Habay
+    url: https://pepit-immo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://pepit-immo.be/a-louer/
+      liste_achat: https://pepit-immo.be/a-vendre/
+      carte: "article"
+      lien: "a[href*='/bien/']"
+      titre: "h1"
+      prix: "p.prix"
+      lieu: "p.location"
+      type: "p.categorie"
+      chambres: "li.lit"
+      surface: "li.metre"
+      photo: "div.image img"
+  - {nom: Iti Groupe, commune: Florenville, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Sud Immo, commune: Florenville, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Centrale Immobilière, commune: Florenville, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  # --- Centre Ardenne ---
+  - {nom: Dynasty, commune: Libramont-Chevigny, url: https://dynasty.be, logiciel: inconnu, actif: false,
+     note: "dynasty.be répond (sans signature) ; à vérifier qu'il s'agit bien de l'agence"}
+  - {nom: Lio Immo, commune: Libramont-Chevigny, url: https://www.lio-immo.be, logiciel: inconnu, actif: false,
+     note: "WordPress ; page des biens à identifier"}
+  - {nom: Immo Centre Ardennes, commune: Libramont-Chevigny, url: https://www.immocentreardennes.be, logiciel: inconnu, actif: false,
+     note: "Site maison ; page des biens à identifier"}
+  - nom: Neufcoeur
+    commune: Neufchâteau
+    url: https://www.neufcoeur.be
+    logiciel: whise
+    actif: true
+    options: {mode: html}
+    note: "Modèle Whise rendu côté serveur (cartes T11)"
+  - {nom: "Ard'Immo & Conseils", commune: Bertrix, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Euro Ardennes Immo, commune: Bouillon, url: https://www.euroardennesimmo.be, logiciel: inconnu, actif: false,
+     note: "Site maison sans signature ; page des biens à identifier"}
+  - nom: Mobilimmo
+    commune: Saint-Hubert
+    url: https://mobilimmo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://mobilimmo.be/statut/a-louer/
+      liste_achat: https://mobilimmo.be/statut/a-vendre/
+      carte: "div.item-listing-wrap"
+      lien: "h2.item-title a"
+      titre: "h2.item-title"
+      prix: ".item-price .price"
+      lieu: "address.item-address span"
+      chambres: "li.h-beds"
+      surface: "li.h-area"
+      photo: "img.wp-post-image"
+  # --- Nord ---
+  - nom: BD Immo
+    commune: Bastogne
+    url: https://www.bd-immo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://www.bd-immo.be/fr/a-louer
+      liste_achat: https://www.bd-immo.be/fr/a-vendre
+      carte: "a.group[href*='/fr/a-']"
+      lien: "."
+      titre: "h3"
+      photo: "img"
+    note: "Omnicasa (site Next.js rendu côté serveur)"
+  - nom: Immo Plainchamp
+    commune: Bastogne
+    url: https://www.immoplainchamp.be
+    logiciel: whise
+    actif: true
+    options: {mode: scroll}
+  - {nom: Immo Bastogne, commune: Bastogne, url: https://www.immobastogne.be, logiciel: omnicasa, actif: false,
+     note: "Omnicasa : /fr/a-louer/, /fr/a-vendre/"}
+  - {nom: L'Agence par Pauline Moreaux, commune: Houffalize, url: https://www.lagence-immo.be, logiciel: omnicasa, actif: false,
+     note: "Omnicasa : /nl/te-huur/ (vérifier /fr/a-louer/)"}
+  - nom: DG-Immo
+    commune: Vielsalm
+    url: https://dg-immo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://dg-immo.be/biens/a-louer
+      liste_achat: https://dg-immo.be/biens/a-vendre
+      carte: "li.js-filter-item"
+      lien: "a"
+      titre: "div.descriptif > p"
+      prix: ".offer strong"
+      lieu: ".bien-city strong"
+      type: ".bien-city span"
+      photo: "figure img"
+    note: "Site maison ; la page liste TOUS les biens (filtre côté client) : le data-filter JSON indique sale/rent"
+  - {nom: Immobilière des Ardennes, commune: Vielsalm, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Guibert Grandjean, commune: Vielsalm, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - nom: Immo Peter
+    commune: Vielsalm
+    url: https://www.immopeter.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://www.immopeter.be/fr/a-louer
+      liste_achat: https://www.immopeter.be/fr/a-vendre
+      carte: "div.property"
+      lien: "a[href*='view=detail']"
+      titre: "div.desc"
+      prix: ".prop-price"
+      lieu: ".prop-city"
+      type: ".prop-type"
+      chambres: "i.property-icon-bed"
+      surface: "i.property-icon-surface"
+      photo: "div.image img"
+    note: "Omnicasa (Joomla com_properties)"
+  - {nom: Homeside Real Estate, commune: Vielsalm, url: "", logiciel: inconnu, actif: false,
+     note: "homeside.be = autre agence (Schaerbeek). Site non trouvé"}
+  # --- Famenne et Ourthe ---
+  - {nom: Easyhome, commune: Marche-en-Famenne, url: https://www.easyhome-immo.be, logiciel: inconnu, actif: false,
+     note: "WordPress + extension Whise (upimmo) ; page des biens à identifier"}
+  - {nom: Delzandre Immo, commune: Marche-en-Famenne, url: https://www.delzandreimmo.be, logiciel: inconnu, actif: false,
+     note: "WordPress + extension Whise ; page des biens à identifier"}
+  - {nom: MCA Immobilier, commune: Durbuy, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Isimmo, commune: Durbuy, url: https://www.isimmo.be, logiciel: inconnu, actif: false,
+     note: "HTTP 403 depuis GitHub (anti-bot)"}
+  - {nom: BIA Immo, commune: La Roche-en-Ardenne, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Ardenne Immo, commune: La Roche-en-Ardenne, url: https://www.ardenneimmo.be, logiciel: inconnu, actif: false,
+     note: "Whise (modèle « e ») ; liste à identifier"}
+  - nom: Picard Immo
+    commune: Hotton
+    url: https://www.picardimmo.be
+    logiciel: whise
+    actif: true
+    options: {mode: scroll}
+  - {nom: Benjamin Gaspard Immobilier, commune: Rendeux, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - nom: Wellimmo
+    commune: Wellin
+    url: https://wellimmo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://wellimmo.be/louer/
+      carte: "article.bien"
+      lien: "header a"
+      titre: "h3"
+      prix: ".price"
+      lieu: "p.adresse"
+      chambres: "span.chambre"
+      photo: "img.photo-bien"
+    note: "WordPress + Omnicasa. La page /vendre/ n'affiche pas de liste (achat non couvert)"
+  # --- Logement social (location) ---
+  - {nom: AIS Nord Luxembourg, commune: Marche-en-Famenne, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
+  - {nom: Logesud, commune: Arlon, url: https://www.logesud.be, logiciel: inconnu, actif: false,
+     note: "Site Wix, pas de liste d'annonces exploitable"}

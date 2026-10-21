@@ -29,6 +29,12 @@ on:
 permissions:
   contents: write
 
+# Une capture à la fois : deux captures simultanées poussant sur la même branche
+# finissent en conflit.
+concurrency:
+  group: capture-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   capturer:
     runs-on: ubuntu-latest

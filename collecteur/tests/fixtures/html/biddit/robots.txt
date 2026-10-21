@@ -1,0 +1,16 @@
+User-Agent: *
+Disallow: /*/notary/*
+Disallow: /notary/*
+Disallow: /*/accounts/*
+Disallow: /accounts/*
+Disallow: /assets/*
+Disallow: /*,*
+Disallow: /*/+*+*+*$
+Disallow: /*+*+*+*$
+Disallow: /*/+*+*+*+*$
+Disallow: /*+*+*+*+*$
+Disallow: /*/+*+*+*+*+*$
+Disallow: /*+*+*+*+*+*$
+Allow: /
+
+Sitemap: https://www.biddit.be/stg/eco/sitemap_index.xml

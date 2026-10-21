@@ -45,6 +45,6 @@ python -m immoj.main --simulation --forcer   # collecte sans rien écrire
 
 - [x] Étape 1 (MVP) : Immovlan → Supabase → ntfy → appli (liste, détail, statuts, état des sources)
 - [x] Étape 2 : Immoweb (JSON direct, cadence réduite), 2ememain (API), lecteur d'alertes e-mail (Immoweb, Zimmo, Logic-immo)
-- [ ] Étape 3 : carte, filtres, communes/rayon, recherches sauvegardées dans l'appli
-- [ ] Étape 5 : agences (`agences.yaml`)
-- [ ] Étape 6 : Biddit et ventes notariales (achat)
+- [x] Étape 3 : carte, filtres, communes/rayon, recherches sauvegardées dans l'appli (0.2.0)
+- [x] Étape 5 : agences — 10 sites collectés (Whise, Omnicasa, WordPress) ; les autres sont couvertes par les portails (voir `docs/05`)
+- [x] Étape 6 : ventes notariales via immo.notaire.be, ventes Biddit incluses (achat)

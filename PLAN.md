@@ -272,3 +272,34 @@ tourne). Fichiers dans `collecteur/tests/fixtures/html/`.
 
 Ordre proposé pour la phase 2 : Immoweb (JSON) → 2ememain (JSON) → athome.lu
 → lecteur d'alertes e-mail générique (Immoweb, Zimmo, Logic-immo).
+
+---
+
+## 9. Phases 3 et 4 : résultats (21 octobre 2026)
+
+**Agences.** Les 57 agences de la liste ont été testées automatiquement
+(`collecteur/outils/analyser_agences.py`, rapport dans le workflow « Analyser
+les agences »). Résultat :
+
+| Situation | Agences | Décision |
+|---|---|---|
+| Site sur le modèle Whise, annonces chargées par `InfiniteScroll` | Groupe Arcade, Picard Immo, Immo Plainchamp | module `whise` (mode scroll), **actives** |
+| Site Whise rendu côté serveur | Neufcoeur | module `whise` (mode html), **active** |
+| Site avec page de liste lisible (Omnicasa, WordPress, maison) | BD Immo, Immo Peter, Pepit-immo, Mobilimmo, Wellimmo, DG-Immo | module `generique` + sélecteurs CSS, **actives** |
+| Site dont la liste est chargée par JavaScript ou protégée | Honesty, Vos Agences, Trevi, ERA, Century 21, Immo 23, Immo Bastogne, L'Agence, Delzandre, Easyhome, Alison, Lio Immo, Immo Centre Ardennes, Home Sweet Gaume, Isimmo (403), Euro Ardennes, Dynasty, Logesud | inactives, couvertes par les portails ; URL et logiciel notés dans le YAML |
+| Site non trouvé ou domaine deviné faux | 20 agences (liste dans `docs/05`) | inactives ; ajouter l'URL dans le YAML si tu la connais |
+
+Les 10 agences actives sont testées sur leurs pages réelles (`tests/test_agences.py`).
+
+**Biddit et notaires.** Biddit est une application Angular dont l'API de
+recherche est protégée par un pare-feu applicatif (réponse « The requested
+URL was rejected » depuis GitHub) ; seul le détail d'un lot par référence
+répond, ce qui ne permet pas de découvrir les nouveautés par province. En
+revanche, **immo.notaire.be** publie une page par province, rendue côté
+serveur, qui liste toutes les ventes notariales, y compris les enchères en
+ligne Biddit (« Vente online ») : c'est la source `notaire` (achat), lue
+toutes les 3 heures.
+
+**Non retenu :** athome.lu (la page de la province ne filtre pas et renvoie
+des biens du Grand-Duché et de France), Zimmo / Logic-immo / Realo en direct
+(défis anti-bot) → alertes e-mail.

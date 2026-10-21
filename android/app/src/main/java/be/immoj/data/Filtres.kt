@@ -64,7 +64,13 @@ data class Filtres(
             // Les annonces sans PEB restent visibles (is.null).
             p["or"] = "(peb.in.(${admis.joinToString(",") { "\"$it\"" }}),peb.is.null)"
         }
-        if (sources.isNotEmpty()) p["sources"] = "ov.{${sources.joinToString(",")}}"
+        if (sources.isNotEmpty()) {
+            // « agences » regroupe toutes les sources d'agences (un code par logiciel).
+            val codes = sources.flatMap {
+                if (it == "agences") listOf("agences:whise", "agences:generique") else listOf(it)
+            }
+            p["sources"] = "ov.{${codes.joinToString(",")}}"
+        }
         return p
     }
 
@@ -74,6 +80,6 @@ data class Filtres(
             "kot" to "Kot", "terrain" to "Terrain")
         val PEB = listOf("A", "B", "C", "D", "E", "F")
         val SOURCES = listOf("immovlan" to "Immovlan", "immoweb" to "Immoweb", "2ememain" to "2ememain",
-            "zimmo" to "Zimmo", "logicimmo" to "Logic-immo")
+            "zimmo" to "Zimmo", "logicimmo" to "Logic-immo", "agences" to "Sites d'agences")
     }
 }
