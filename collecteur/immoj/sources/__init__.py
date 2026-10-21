@@ -7,10 +7,14 @@ hérite de `Source`, puis l'inscrire ici. L'ordre est l'ordre d'exécution.
 from __future__ import annotations
 
 from .base import ResultatCollecte, Source
+from .deuxiememain import DeuxiemeMain
 from .immovlan import Immovlan
+from .immoweb import Immoweb
 
 REGISTRE: dict[str, type[Source]] = {
     Immovlan.nom: Immovlan,
+    Immoweb.nom: Immoweb,
+    DeuxiemeMain.nom: DeuxiemeMain,
 }
 
 __all__ = ["REGISTRE", "ResultatCollecte", "Source"]

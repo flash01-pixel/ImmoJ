@@ -162,6 +162,11 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             log.error("source inconnue : %s (disponibles : %s)", nom, ", ".join(REGISTRE))
             code_sortie = 2
             continue
+        heure = datetime.now(ZoneInfo(config.FUSEAU)).hour
+        if not forcer and not noms_sources and not REGISTRE[nom].doit_tourner(heure):
+            log.info("[%s] pas cette heure-ci (une exécution sur %d)", nom,
+                     REGISTRE[nom].frequence_heures)
+            continue
         debut = maintenant()
         source = REGISTRE[nom](pages_max=pages)
         resultat = source.executer(transactions)
