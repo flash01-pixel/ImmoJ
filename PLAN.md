@@ -252,3 +252,23 @@ Chaque étape se termine par un push sur la branche, des tests qui passent et un
 6. **Identifiant d'application** `be.immoj` et nom affiché « ImmoJ » : OK ?
 
 Dès validation, je commence par l'étape 0 (guides de création des comptes) et l'étape 1 (MVP).
+
+---
+
+## 8. Reconnaissance des sources (résultats réels, 21 octobre 2026)
+
+Pages capturées depuis les serveurs GitHub Actions (c'est là que le collecteur
+tourne). Fichiers dans `collecteur/tests/fixtures/html/`.
+
+| Source | Résultat | Conséquence |
+|---|---|---|
+| **Immovlan** | HTML de liste complet, avec JSON-LD par annonce (prix, PEB, date, agence, téléphone) | **source du MVP, opérationnelle** |
+| **Immoweb** | la page de recherche **et** son point d'entrée JSON (`/fr/search-results/...`) répondent : 30 résultats par page, 420 biens en location dans la province, photos, type, localité, chambres | phase 2 : collecte directe possible, à basse fréquence et avec repli e-mail si blocage ultérieur |
+| **2ememain** | l'API JSON (`/lrp/api/search`) répond : 30 annonces par page, position GPS, prix, photos | phase 2 : filtrer sur la catégorie immobilier + code postal/rayon |
+| **athome.lu** | page HTML complète, données embarquées (`__INITIAL_STATE__`) | optionnel, faisable |
+| **Zimmo** | défi Cloudflare (« Just a moment… ») sur toutes les pages | bloqué depuis GitHub ; piste : alertes e-mail Zimmo lues en IMAP, comme pour Immoweb |
+| **Logic-immo.be** | défi Cloudflare | idem Zimmo (alertes e-mail) |
+| **Realo** | défi JavaScript AWS WAF | idem ; faible priorité (Realo agrège surtout les autres portails) |
+
+Ordre proposé pour la phase 2 : Immoweb (JSON) → 2ememain (JSON) → athome.lu
+→ lecteur d'alertes e-mail générique (Immoweb, Zimmo, Logic-immo).
