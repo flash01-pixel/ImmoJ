@@ -19,6 +19,17 @@ from pathlib import Path
 
 import requests
 
+
+def corriger_encodage(r):
+    """Sans charset dans l'en-tête, lire l'UTF-8 comme tel (sinon « € » → « â¬ »)."""
+    if "charset" in r.headers.get("Content-Type", "").lower():
+        return
+    try:
+        r.content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    r.encoding = "utf-8"
+
 DOSSIER_FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "html"
 
 ENTETES = {
@@ -65,6 +76,7 @@ def capturer(ligne: str) -> None:
     try:
         if methode == "POST":
             reponse = requests.post(url, headers=entetes, data=donnees, json=corps_json, timeout=30)
+            corriger_encodage(reponse)
         else:
             reponse = requests.get(url, headers=entetes, timeout=30)
     except requests.RequestException as erreur:

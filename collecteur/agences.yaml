@@ -72,10 +72,10 @@ agences:
       pages: 2
       pagination: "&pagenumber={n}"
   # --- Arlon ---
-  - {nom: W Immobilière (Double V), commune: Arlon, url: https://www.wimmobiliere.com, candidats: [https://www.wimmobiliere.com, https://doublevimmo.com], logiciel: inconnu, actif: false,
-     note: "Avenue de Longwy 340, IPI 504408. À analyser"}
+  - {nom: W Immobilière (Double V), commune: Arlon, url: https://www.wimmobiliere.com, logiciel: inconnu, actif: false,
+     note: "Avenue de Longwy 340. Application JavaScript (Omnicasa) sans données côté serveur : non exploitable sans navigateur"}
   - {nom: Tadam Immobilière, commune: Arlon, url: https://www.tadam.immo, logiciel: inconnu, actif: false,
-     note: "Avenue de Mersch 67, Arlon. À analyser"}
+     note: "Avenue de Mersch 67. Site Wix : les biens sont chargés par JavaScript, aucun prix côté serveur. Non exploitable"}
   - nom: Immo 23
     commune: Arlon
     url: https://immo23.be
@@ -119,8 +119,8 @@ agences:
         surface: "label:Surface habitable"
   - {nom: Brion Immo, commune: Aubange, url: "", logiciel: inconnu, actif: false,
      note: "Rue du Commerce 19, Athus, tél. 063 38 29 30. Aucun site trouvé"}
-  - {nom: Berns Immobilier, commune: Messancy, url: http://www.jacquesberns.eu, candidats: [http://www.jacquesberns.eu, https://bernspropertyconsulting.eu, https://www.berns-immobilier.be], logiciel: inconnu, actif: false,
-     note: "Berns Property Consulting, Rue du Dolberg 15, Messancy. À analyser"}
+  - {nom: Berns Immobilier, commune: Messancy, url: http://www.jacquesberns.eu, logiciel: inconnu, actif: false,
+     note: "Berns Property Consulting, Messancy. Site vitrine (2019) sans liste de biens : rien à collecter"}
   # --- Gaume ---
   - {nom: Access Immo, commune: Virton, url: "", candidats: [https://www.access-immo.be, https://access-immo.be], logiciel: inconnu, actif: false,
      note: "Rue Charles Magnette 9, Virton, info@access-immo.be. Site à confirmer"}
@@ -198,8 +198,23 @@ agences:
     actif: true
     options: {mode: html}
     note: "Modèle Whise rendu côté serveur (cartes T11)"
-  - {nom: "Ard'Immo & Conseils", commune: Bertrix, url: https://ardimmoc.be, logiciel: inconnu, actif: false,
-     note: "Rue de la Gare 9, Bertrix. À analyser"}
+  - nom: Ard'Immo & Conseils
+    commune: Bertrix
+    url: https://ardimmoc.be
+    logiciel: generique
+    actif: true
+    note: "WordPress + extension Estatik : listes /a-vendre/ et /location/ rendues côté serveur"
+    options:
+      liste_location: https://ardimmoc.be/location/
+      liste_achat: https://ardimmoc.be/a-vendre/
+      carte: ".es-listing"
+      lien: ".es-listing__title a"
+      titre: ".es-listing__title"
+      prix: ".es-price"
+      lieu: ".es-address"
+      chambres: ".es-listing__meta-bedrooms"
+      pages: 2
+      pagination: "page/{n}/"
   - {nom: Euro Ardennes Immo, commune: Bouillon, url: https://www.euroardennesimmo.be, logiciel: inconnu, actif: false,
      note: "Site maison sans signature ; page des biens à identifier"}
   - nom: Mobilimmo
@@ -335,8 +350,12 @@ agences:
     logiciel: whise
     actif: true
     options: {mode: scroll}
-  - {nom: Benjamin Gaspard Immobilier, commune: Rendeux, url: https://www.bg-immo.be, logiciel: inconnu, actif: false,
-     note: "Rue de Hotton 22, Rendeux. À analyser"}
+  - nom: Benjamin Gaspard Immobilier
+    commune: Rendeux
+    url: https://www.bg-immo.be
+    logiciel: omnicasa_gatsby
+    actif: true
+    note: "Omnicasa/Gatsby (même générateur qu'Immo Bastogne) ; les biens hors province sont écartés à l'intégration"
   - nom: Wellimmo
     commune: Wellin
     url: https://wellimmo.be

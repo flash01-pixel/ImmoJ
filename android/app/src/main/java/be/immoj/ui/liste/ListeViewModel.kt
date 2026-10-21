@@ -6,6 +6,7 @@ import be.immoj.data.Annonce
 import be.immoj.data.Commune
 import be.immoj.data.Depot
 import be.immoj.data.Filtres
+import be.immoj.data.GitHubActions
 import be.immoj.data.Preferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

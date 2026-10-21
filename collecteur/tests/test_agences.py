@@ -344,3 +344,12 @@ def test_immocentreardennes(lire_fixture):
     vente = verifier(analyser_liste(html_vente, ag["options"]["liste_achat"], ag, "achat"),
                      "achat", ag["nom"], 5)
     assert all("achat," in x.url for x in vente)
+
+
+def test_ardimmoc(lire_fixture):
+    loc = generique(lire_fixture, "Ard'Immo & Conseils", "ardimmoc_louer.html", "location", 20)
+    a = next(x for x in loc if "maissin-appartement-rez" in x.url)
+    assert a.code_postal == "6852" and a.chambres == 2 and a.type == "appartement" and a.prix
+    vente = generique(lire_fixture, "Ard'Immo & Conseils", "ardimmoc_vendre.html", "achat", 30)
+    a = next(x for x in vente if "noirefontaine-agreable-maison-de-plain-pied-avec-jardin" in x.url)
+    assert a.prix == 279000 and a.code_postal == "6831" and a.chambres == 2

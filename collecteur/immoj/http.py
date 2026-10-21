@@ -23,6 +23,18 @@ from . import config
 log = logging.getLogger(__name__)
 
 
+def corriger_encodage(r: requests.Response) -> None:
+    """Sans charset dans l'en-tête, requests décode en latin-1 : « € » devient « â¬ ».
+    Si le contenu est de l'UTF-8 valide, on le lit comme tel."""
+    if "charset" in r.headers.get("Content-Type", "").lower():
+        return
+    try:
+        r.content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    r.encoding = "utf-8"
+
+
 class Blocage(Exception):
     """Le site refuse de nous servir (anti-bot, interdiction robots.txt...)."""
 
@@ -98,6 +110,7 @@ class ClientHttp:
                 derniere_erreur = RuntimeError(f"HTTP {r.status_code} sur {url}")
                 log.warning("[%s] %s", self.nom_source, derniere_erreur)
                 continue
+            corriger_encodage(r)
             return r
         raise RuntimeError(f"échec après {config.NB_TENTATIVES} tentatives : {derniere_erreur}")
 
