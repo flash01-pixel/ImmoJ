@@ -1,33 +1,5 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html
-# --- Phase 3 : pages « à louer » des sites d'agences joignables ---
-https://www.honesty.be/biens-a-louer/ | agences/honesty_louer.html
-https://vosagences.be/fr/a-louer/ | agences/vosagences_louer.html
-https://homesweetgaume.be/bien-immobilier-gaume/ | agences/homesweetgaume_biens.html
-https://www.century21.be/fr/a-louer | agences/century21_louer.html
-https://www.trevi.be/fr/louer-bien-immobilier | agences/trevi_louer.html
-https://www.era.be/fr/a-louer | agences/era_louer.html
-https://immo23.be/fr/louer | agences/immo23_louer.html
-https://www.groupearcade.be/fr/7/chercher-bien/a-louer | agences/groupearcade_louer.html
-https://www.alisonimmo.be/ | agences/alisonimmo_accueil.html
-https://pepit-immo.be/ | agences/pepitimmo_accueil.html
-https://dynasty.be/fr-fr | agences/dynasty_accueil.html
-https://www.lio-immo.be/ | agences/lioimmo_accueil.html
-https://www.immocentreardennes.be/fr/ | agences/immocentreardennes_accueil.html
-https://www.neufcoeur.be/fr/7/chercher-bien/a-louer | agences/neufcoeur_louer.html
-https://www.euroardennesimmo.be/ | agences/euroardennesimmo_accueil.html
-https://mobilimmo.be/ | agences/mobilimmo_accueil.html
-https://www.bd-immo.be/fr/a-louer | agences/bdimmo_louer.html
-https://www.immoplainchamp.be/fr/7/chercher-bien/a-louer | agences/immoplainchamp_louer.html
-https://www.immobastogne.be/fr/a-louer/ | agences/immobastogne_louer.html
-https://www.lagence-immo.be/fr/a-louer/ | agences/lagence_louer.html
-https://dg-immo.be/biens/a-louer | agences/dgimmo_louer.html
-https://www.ardenneimmo.be/ | agences/ardenneimmo_accueil.html
-https://www.immopeter.be/fr/a-louer | agences/immopeter_louer.html
-https://www.easyhome-immo.be/ | agences/easyhome_accueil.html
-https://www.delzandreimmo.be/ | agences/delzandre_accueil.html
-https://www.picardimmo.be/fr/7/chercher-bien/a-louer | agences/picardimmo_louer.html
-https://wellimmo.be/ | agences/wellimmo_accueil.html
 # --- Phase 4 : Biddit (bundle JS pour trouver l'API, plan de site) et immo.notaris.be ---
 https://www.biddit.be/main.ca5817f750a367c3.js | biddit/main.js
 https://www.biddit.be/stg/eco/sitemap_index.xml | biddit/sitemap_index.xml
