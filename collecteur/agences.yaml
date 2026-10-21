@@ -306,8 +306,12 @@ agences:
      note: "WordPress + extension Whise (upimmo) ; page des biens à identifier"}
   - {nom: Delzandre Immo, commune: Marche-en-Famenne, url: https://www.delzandreimmo.be, logiciel: inconnu, actif: false,
      note: "WordPress + extension Whise ; page des biens à identifier"}
-  - {nom: MCA Immobilier, commune: Durbuy, url: https://maisons-chalets-ardennes.be, logiciel: inconnu, actif: false,
-     note: "Rue de Lantigné 22, Durbuy. À analyser"}
+  - nom: MCA Immobilier
+    commune: Durbuy
+    url: https://maisons-chalets-ardennes.be
+    logiciel: omnicasa_api
+    actif: true
+    note: "Site maison (Vercel) : API JSON /api/biens?goal=0|1 ; fiche /bien-<id>-<type-ville>"
   - {nom: Isimmo, commune: Durbuy, url: https://www.isimmo.be, logiciel: inconnu, actif: false,
      note: "HTTP 403 depuis GitHub (anti-bot)"}
   - nom: BIA Immo

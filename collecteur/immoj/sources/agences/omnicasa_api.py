@@ -4,7 +4,8 @@ dans une petite API JSON (ex. MCA Immobilier : `/api/biens?goal=0|1`).
 Champs observés : id, goal (0 vente, 1 location), etat (nouveau, actif, option,
 vendu, loue...), typeNom, titre, ville, cp, adresse, prix, chambres, sdb,
 surface, terrain, photo, date. L'URL de la fiche se construit d'après le
-gabarit `url_fiche` du YAML (ex. "{base}/bien.html?id={id}").
+gabarit `url_fiche` du YAML ; par défaut celui de MCA :
+"{base}/bien-{id}-{type_ville}" (ex. /bien-4991-appartement-marche-en-famenne).
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ class OmnicasaApi(SourceAgences):
 
 def analyser_api(donnees, base: str, agence: dict, transaction: str) -> list[Annonce]:
     options = agence.get("options") or {}
-    gabarit = options.get("url_fiche", "{base}/bien.html?id={id}")
+    gabarit = options.get("url_fiche", "{base}/bien-{id}-{type_ville}")
     biens = donnees.get("biens") if isinstance(donnees, dict) else donnees
     hote = re.sub(r"^https?://", "", base).split("/")[0]
     annonces: list[Annonce] = []
@@ -60,7 +61,8 @@ def analyser_api(donnees, base: str, agence: dict, transaction: str) -> list[Ann
             source=f"agences:{OmnicasaApi.logiciel}",
             id_externe=f"{hote}:{b['id']}",
             url=gabarit.format(base=base.rstrip("/"), id=b["id"], slug=_slug(titre),
-                               ville=_slug(ville)),
+                               ville=_slug(ville),
+                               type_ville=_slug(f"{b.get('typeNom') or ''} {ville}")),
             titre=titre[:150],
             transaction=transaction,
             type=deviner_type(f"{b.get('typeNom') or ''} {titre}"),
