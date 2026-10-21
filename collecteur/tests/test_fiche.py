@@ -103,14 +103,16 @@ def test_fiches_nouvelles_seulement_et_plafond():
 
 
 def test_budget_de_temps_global():
-    import time
 
     src = _Fausse()
-    Source.echeance_fiches = time.monotonic() - 1      # budget déjà épuisé
+    Source.budget_fiches_s, Source.temps_fiches_s = 10.0, 10.0      # budget déjà épuisé
     try:
         annonces = [Annonce(source="fausse", id_externe="f:9", url="https://x/9", titre="T",
                             transaction="achat")]
         src._enrichir_nouvelles(annonces)
         assert src.lues == [] and annonces[0].details == {}
+        Source.temps_fiches_s = 0.0
+        src._enrichir_nouvelles(annonces)
+        assert src.lues == ["f:9"] and Source.temps_fiches_s >= 0.0
     finally:
-        Source.echeance_fiches = None
+        Source.budget_fiches_s, Source.temps_fiches_s = None, 0.0

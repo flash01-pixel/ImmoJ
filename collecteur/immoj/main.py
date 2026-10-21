@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -195,7 +194,8 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
     code_sortie = 0
     # Les fiches (toutes les photos, détails) se partagent un budget de temps global.
     from .sources.base import Source
-    Source.echeance_fiches = time.monotonic() + config.BUDGET_FICHES_S
+    Source.budget_fiches_s = config.BUDGET_FICHES_S
+    Source.temps_fiches_s = 0.0
     for nom in noms:
         if nom not in REGISTRE:
             log.error("source inconnue : %s (disponibles : %s)", nom, ", ".join(REGISTRE))
@@ -225,6 +225,8 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
                 ok, erreur = False, f"intégration : {type(e).__name__}: {e}"
             stockage.enregistrer_collecte(nom, debut, ok, len(resultat.annonces), nouvelles,
                                           erreur, resultat.bloque, resultat.duree_s)
+            if isinstance(stockage, StockageFichier):
+                stockage.sauvegarder()   # un arrêt brutal (timeout) ne perd pas l'acquis
             if ok:
                 log.info("[%s] OK (%s) : %d annonces vues, %d nouvelles, %d requêtes, %.0f s",
                          nom, c["nom"], len(resultat.annonces), nouvelles,
