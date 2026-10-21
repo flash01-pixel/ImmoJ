@@ -56,15 +56,20 @@ jobs:
 
       - name: Lancer le collecteur
         env:
-          SUPABASE_URL: ${{ env.SUPABASE_URL || secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SERVICE_KEY }}
-          NTFY_TOPIC: ${{ env.NTFY_TOPIC || secrets.NTFY_TOPIC }}
+          # Secrets explicites (voie manuelle) ; les valeurs résolues par le jeton,
+          # écrites dans GITHUB_ENV à l'étape précédente, sont déjà dans l'environnement.
+          SUPABASE_URL_SECRET: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NTFY_TOPIC_SECRET: ${{ secrets.NTFY_TOPIC }}
           GMAIL_UTILISATEUR: ${{ secrets.GMAIL_UTILISATEUR }}
           GMAIL_MOT_DE_PASSE: ${{ secrets.GMAIL_MOT_DE_PASSE }}
           SOURCE: ${{ inputs.source }}
           PAGES: ${{ inputs.pages }}
         run: |
-          # Tant que les secrets ne sont pas configurés, on s'arrête sans erreur
+          export SUPABASE_URL="${SUPABASE_URL:-$SUPABASE_URL_SECRET}"
+          export SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY:-$SUPABASE_SERVICE_KEY_SECRET}"
+          export NTFY_TOPIC="${NTFY_TOPIC:-$NTFY_TOPIC_SECRET}"
+          # Tant que Supabase n'est pas configuré, on s'arrête sans erreur
           # (sinon GitHub enverrait un e-mail d'échec à chaque heure).
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
             echo "Supabase non configuré : rien à faire (voir docs/00-demarrage-rapide.md)."
