@@ -192,6 +192,15 @@ class StockageFichier:
                 n += 1
         return n
 
+    def desactiver_hors_province(self) -> int:
+        n = 0
+        for a in self.annonces.values():
+            cp = a.get("code_postal")
+            if a.get("actif", True) and cp and str(cp).isdigit() and not 6600 <= int(cp) <= 6999:
+                a["actif"] = False
+                n += 1
+        return n
+
     def marquer_notification(self, annonce_id: str, type_notif: str,
                              recherche_id: str | None) -> bool:
         return False   # les notifications sont gérées par l'appli en mode fichier

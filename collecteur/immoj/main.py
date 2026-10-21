@@ -229,6 +229,9 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
                     notificateur.source_en_panne(nom, erreur, echecs)
 
     for c in cibles:
+        nb_hors = c["stockage"].desactiver_hors_province()
+        if nb_hors:
+            log.info("[%s] %d annonce(s) hors province désactivée(s)", c["nom"], nb_hors)
         nb = c["stockage"].desactiver_anciennes(config.JOURS_AVANT_DESACTIVATION)
         if nb:
             log.info("[%s] %d annonce(s) désactivée(s) (plus vues depuis %d jours)",
