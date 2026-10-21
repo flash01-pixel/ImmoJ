@@ -24,6 +24,7 @@ def _modules() -> dict[str, type[SourceAgences]]:
     from .era import Era
     from .generique import Generique
     from .honesty import WhiseWebulous
+    from .omnicasa_api import OmnicasaApi
     from .omnicasa_gatsby import OmnicasaGatsby
     from .whise import Whise
     from .wordpress import WordPress
@@ -33,6 +34,7 @@ def _modules() -> dict[str, type[SourceAgences]]:
         WhiseWebulous.logiciel: WhiseWebulous,
         Era.logiciel: Era,
         OmnicasaGatsby.logiciel: OmnicasaGatsby,
+        OmnicasaApi.logiciel: OmnicasaApi,
         WordPress.logiciel: WordPress,
     }
 
