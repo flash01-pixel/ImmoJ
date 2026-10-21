@@ -1,3 +1,3 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-https://maisons-chalets-ardennes.be/assets/js/mca.js | agences/mca_mca.js
+https://maisons-chalets-ardennes.be/assets/js/biens-rendu.js | agences/mca_biens-rendu.js
