@@ -1,10 +1,8 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# --- Agences : API WordPress et ERA ---
-https://homesweetgaume.be/wp-json/wp/v2/bien?per_page=50 | agences/homesweetgaume_bien.json
-https://www.alisonimmo.be/wp-json/wp/v2/property?per_page=50 | agences/alisonimmo_property.json
-https://www.easyhome-immo.be/wp-json/wp/v2/whise_estate?per_page=50 | agences/easyhome_whise_estate.json
-https://www.delzandreimmo.be/wp-json/wp/v2/wpis_estates?per_page=50 | agences/delzandre_wpis_estates.json
-https://www.era.be/jsonapi/index/property_index?page[limit]=3 | agences/era_jsonapi_index.json | {"Accept": "application/vnd.api+json"}
-https://www.era.be/api/locations | agences/era_api_locations.json | {"Accept": "application/json"}
+# --- ERA : index JSON:API filtré (rayon 60 km autour de Neufchâteau, plus récents d'abord) ---
+https://www.era.be/fr/jsonapi/index/property_index?filter[sale_or_rent]=rent&filter[location-radius][field_coordinates][lat]=49.85&filter[location-radius][field_coordinates][lon]=5.43&filter[location-radius][field_coordinates][radius]=60&sort=-field_start_date&page[limit]=50 | agences/era_index_louer.json | {"Accept": "application/vnd.api+json"}
+https://www.era.be/fr/jsonapi/index/property_index?filter[sale_or_rent]=sale&filter[location-radius][field_coordinates][lat]=49.85&filter[location-radius][field_coordinates][lon]=5.43&filter[location-radius][field_coordinates][radius]=60&sort=-field_start_date&page[limit]=50 | agences/era_index_vendre.json | {"Accept": "application/vnd.api+json"}
 https://www.trevi.be/fr/louer-bien-immobilier?agences=luxembourg | agences/trevi_louer_lux.html
+https://www.lagence-immo.be/page-data/fr/a-louer/page-data.json | agences/lagence_pagedata_louer_fr.json
+https://www.lagence-immo.be/page-data/index/page-data.json | agences/lagence_pagedata_index.json
