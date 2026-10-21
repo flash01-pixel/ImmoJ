@@ -65,7 +65,7 @@ def main() -> int:
                          help="Fichier texte contenant une ligne par page (les lignes "
                               "commençant par # sont ignorées)")
     args = parseur.parse_args()
-    toutes = list(args.lignes) + [l for l in args.bloc.splitlines() if l.strip()]
+    toutes = list(args.lignes) + [x for x in args.bloc.splitlines() if x.strip()]
     if args.fichier:
         for ligne in Path(args.fichier).read_text(encoding="utf-8").splitlines():
             if ligne.strip() and not ligne.lstrip().startswith("#"):

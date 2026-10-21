@@ -1,0 +1,11 @@
+# Dépendances du collecteur. Installées par GitHub Actions à chaque exécution
+# (avec un cache pip pour gagner du temps).
+requests==2.32.3
+beautifulsoup4==4.12.3
+lxml==5.3.0
+rapidfuzz==3.10.1
+PyYAML==6.0.2
+python-dateutil==2.9.0.post0
+# Outils de développement (tests et vérification du style)
+pytest==8.3.3
+ruff==0.6.9
