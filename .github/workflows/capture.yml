@@ -11,12 +11,17 @@
 name: Capturer des pages HTML
 
 on:
+  # Déclenchement manuel (visible dans l'onglet Actions une fois le workflow sur main).
   workflow_dispatch:
     inputs:
       pages:
         description: "Une ligne par page : URL | source/fichier.html"
         required: true
         type: string
+  # Déclenchement automatique : modifier le fichier pages_a_capturer.txt et pousser.
+  push:
+    paths:
+      - "collecteur/outils/pages_a_capturer.txt"
 
 permissions:
   contents: write
@@ -38,7 +43,12 @@ jobs:
       - name: Télécharger les pages
         env:
           PAGES: ${{ inputs.pages }}
-        run: python collecteur/outils/capturer_page.py --lignes "$PAGES"
+        run: |
+          if [ -n "$PAGES" ]; then
+            python collecteur/outils/capturer_page.py --lignes "$PAGES"
+          else
+            python collecteur/outils/capturer_page.py --fichier collecteur/outils/pages_a_capturer.txt
+          fi
 
       - name: Pousser les pages dans le dépôt
         run: |

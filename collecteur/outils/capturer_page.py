@@ -61,8 +61,15 @@ def main() -> int:
     parseur.add_argument("lignes", nargs="*", help="« URL | source/fichier.html »")
     parseur.add_argument("--lignes", dest="bloc", default="",
                          help="Plusieurs lignes dans une seule chaîne")
+    parseur.add_argument("--fichier", default="",
+                         help="Fichier texte contenant une ligne par page (les lignes "
+                              "commençant par # sont ignorées)")
     args = parseur.parse_args()
     toutes = list(args.lignes) + [l for l in args.bloc.splitlines() if l.strip()]
+    if args.fichier:
+        for ligne in Path(args.fichier).read_text(encoding="utf-8").splitlines():
+            if ligne.strip() and not ligne.lstrip().startswith("#"):
+                toutes.append(ligne)
     if not toutes:
         parseur.print_help()
         return 1

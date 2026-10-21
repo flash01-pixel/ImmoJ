@@ -1,0 +1,10 @@
+# Pages à capturer par le workflow « Capturer des pages HTML ».
+# Une ligne par page : URL | source/fichier.html
+# Modifier ce fichier et pousser déclenche la capture automatiquement.
+https://immovlan.be/fr/immobilier?transactiontypes=a-louer&propertytypes=maison,appartement,studio,kot&provinces=luxembourg&noindex=1 | immovlan/liste_location.html
+https://immovlan.be/fr/immobilier?transactiontypes=a-vendre&propertytypes=maison,appartement&provinces=luxembourg&noindex=1 | immovlan/liste_achat.html
+https://immovlan.be/robots.txt | immovlan/robots.txt
+https://www.zimmo.be/fr/a-louer/luxembourg/ | zimmo/liste_location.html
+https://www.logic-immo.be/fr/location/province-luxembourg | logicimmo/liste_location.html
+https://www.realo.be/fr/a-louer/province-de-luxembourg | realo/liste_location.html
+https://www.2ememain.be/l/immo/a-louer/ | 2ememain/liste_location.html
