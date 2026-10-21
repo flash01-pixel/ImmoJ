@@ -10,9 +10,9 @@ Le plan complet est dans [PLAN.md](PLAN.md).
 
 ## Mise en service
 
-**Voie rapide (recommandée)** : [Démarrage rapide](docs/00-demarrage-rapide.md).
-Un compte Supabase, un jeton collé dans GitHub, trois clics : la base est créée
-et installée automatiquement, et l'appli est compilée déjà configurée.
+**[Démarrage rapide](docs/00-demarrage-rapide.md)** : sans compte (dépôt
+public, annonces publiées par GitHub, tout sur le téléphone) ou avec Supabase
+(un jeton, installation automatique, appli préconfigurée).
 
 Voie manuelle détaillée (si tu préfères tout faire toi-même) :
 guides [01](docs/01-creer-les-comptes.md), [02](docs/02-configurer-supabase.md),

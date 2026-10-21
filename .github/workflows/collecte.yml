@@ -70,6 +70,7 @@ jobs:
       # clé service et le topic ntfy sont retrouvés automatiquement.
       - name: Résoudre les accès Supabase
         if: env.SUPABASE_ACCESS_TOKEN != ''
+        continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python outils/supabase_admin.py env

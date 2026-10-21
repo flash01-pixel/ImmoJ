@@ -181,7 +181,15 @@ def main() -> int:
     parseur.add_argument("commande", choices=("installer", "env"))
     args = parseur.parse_args()
     admin = Admin(os.environ.get("SUPABASE_ACCESS_TOKEN", "").strip())
-    return commande_installer(admin) if args.commande == "installer" else commande_env(admin)
+    if args.commande == "installer":
+        return commande_installer(admin)
+    try:
+        return commande_env(admin)
+    except SystemExit as e:
+        # En mode « env », une erreur Supabase ne doit pas bloquer la collecte ni
+        # la compilation : le stockage JSON (mode sans compte) continue.
+        print(f"Supabase indisponible pour cette exécution : {e}")
+        return 0
 
 
 if __name__ == "__main__":
