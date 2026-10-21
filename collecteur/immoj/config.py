@@ -69,15 +69,19 @@ class Secrets:
         return bool(self.ntfy_topic)
 
 
-def charger_secrets() -> Secrets:
-    """Lit les variables d'environnement et vérifie celles qui sont obligatoires."""
+def supabase_configure() -> bool:
+    return bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_KEY"))
+
+
+def charger_secrets(obligatoire: bool = True) -> Secrets:
+    """Lit les variables d'environnement ; vérifie Supabase si `obligatoire`."""
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     cle = os.environ.get("SUPABASE_SERVICE_KEY", "")
     manquants = [n for n, v in (("SUPABASE_URL", url), ("SUPABASE_SERVICE_KEY", cle)) if not v]
-    if manquants:
+    if manquants and obligatoire:
         raise SystemExit(
             "Variables d'environnement manquantes : " + ", ".join(manquants)
-            + ". Voir docs/03-secrets-github.md."
+            + ". Voir docs/00-demarrage-rapide.md."
         )
     return Secrets(
         supabase_url=url,
