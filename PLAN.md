@@ -286,10 +286,14 @@ les agences »). Résultat :
 | Site sur le modèle Whise, annonces chargées par `InfiniteScroll` | Groupe Arcade, Picard Immo, Immo Plainchamp | module `whise` (mode scroll), **actives** |
 | Site Whise rendu côté serveur | Neufcoeur | module `whise` (mode html), **active** |
 | Site avec page de liste lisible (Omnicasa, WordPress, maison) | BD Immo, Immo Peter, Pepit-immo, Mobilimmo, Wellimmo, DG-Immo | module `generique` + sélecteurs CSS, **actives** |
-| Site dont la liste est chargée par JavaScript ou protégée | Honesty, Vos Agences, Trevi, ERA, Century 21, Immo 23, Immo Bastogne, L'Agence, Delzandre, Easyhome, Alison, Lio Immo, Immo Centre Ardennes, Home Sweet Gaume, Isimmo (403), Euro Ardennes, Dynasty, Logesud | inactives, couvertes par les portails ; URL et logiciel notés dans le YAML |
-| Site non trouvé ou domaine deviné faux | 20 agences (liste dans `docs/05`) | inactives ; ajouter l'URL dans le YAML si tu la connais |
+| Liste chargée par JavaScript, mais données accessibles autrement | Honesty (ajax Whise/Webulous → module `whise_webulous`), ERA (API JSON:API du site national, filtrée sur les communes → module `era`), Immo Bastogne et Benjamin Gaspard (données Gatsby `page-data.json` + plan du site → module `omnicasa_gatsby`), Alison Immo et Home Sweet Gaume (API REST WordPress + fiche → module `wordpress`), Trevi (recherche par codes postaux), Immo Centre Ardennes (formulaire POST), ITI Groupe, Immo Bia, Ard'Immo, Juliet Immo, Homeside, Immo 23, Ardenne Immo | **actives** (22 agences actives au total) |
+| Site vraiment inexploitable sans navigateur | Vos Agences, Century 21, L'Agence (données de démonstration d'Anvers), Delzandre et Easyhome (API sans prix), Lio Immo, Isimmo (403), Euro Ardennes (page vide), W Immobilière et Tadam (applications JavaScript), Logesud (Wix), MCA (liens des fiches introuvables) | inactives, couvertes par les portails ; URL et logiciel notés dans le YAML |
+| Site injoignable ou inexistant | Access Immo, Ultimmo, Immo Dek, Sud Immo, Centrale Immobilière, Dynasty, Immobilière des Ardennes, AIS Nord Luxembourg, Immo CM, Brion Immo, Berns (site vitrine) | inactives ; ajouter l'URL dans le YAML si tu la connais |
 
-Les 10 agences actives sont testées sur leurs pages réelles (`tests/test_agences.py`).
+Les 22 agences actives sont testées sur leurs pages réelles (`tests/test_agences.py`).
+Chaque nouvelle annonce est ensuite complétée par sa fiche (toutes les photos,
+salles de bain, garage, terrain, année…), au plus 20 fiches par source et par
+passage, en réutilisant ce qui est déjà en base pour les suivantes.
 
 **Biddit et notaires.** Biddit est une application Angular dont l'API de
 recherche est protégée par un pare-feu applicatif (réponse « The requested

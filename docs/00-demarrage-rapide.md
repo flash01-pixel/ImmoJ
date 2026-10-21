@@ -23,7 +23,26 @@ statuts, notes et critères restent sur ton téléphone.
    le demande. C'est tout.
 
 Les annonces se mettent à jour toutes les heures (collecte GitHub), et l'appli
-vérifie les nouveautés toutes les heures en arrière-plan.
+vérifie les nouveautés en arrière-plan (fréquence réglable).
+
+### Ce que propose l'appli (1.1.0)
+
+- **Actualiser** : le bouton en haut, ou la liste tirée vers le bas,
+  retélécharge vraiment les données. Le menu ⋮ → « Lancer une collecte
+  maintenant » fait tourner le collecteur sur GitHub tout de suite (il faut un
+  jeton GitHub dans les paramètres : GitHub → Settings → Developer settings →
+  Fine-grained tokens → dépôt ImmoJ, permission *Actions : Read and write*).
+- **Carte** : appui long pour placer un cercle de recherche ; glisse son centre
+  ou la poignée sur son bord pour le déplacer et changer le rayon, ou utilise le
+  curseur. Les communes couvertes et le nombre d'annonces s'affichent en
+  direct ; « Retirer » supprime le cercle. Seule la province de Luxembourg est
+  prise en compte (le pointillé vert en montre le contour approximatif).
+- **Fiche** : toutes les photos (appui = plein écran) et toutes les
+  informations trouvées sur la fiche d'origine (salles de bain, garage,
+  terrain, année, chauffage, PEB…).
+- **Paramètres** : thème clair/sombre/système, type d'alerte (mes recherches,
+  toutes les nouveautés, aucune), baisses de prix, silence la nuit, fréquence de
+  vérification, photos dans la liste, jeton GitHub, compte Supabase facultatif.
 
 ## Voie 2 : avec Supabase (optionnelle)
 

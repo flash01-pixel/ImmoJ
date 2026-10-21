@@ -59,11 +59,26 @@ Peter, Wellimmo) servent de modèles.
 3. Lance les tests (`pytest`) : si le parser renvoie des annonces avec prix et
    lieu, active l'agence.
 
-## Agences sans site trouvé (octobre 2026)
+## Couverture (22 octobre 2026)
 
-Immo CM, Brion Immo, Berns Immobilier, Access Immo, Ultimmo (Virton), Juliet
-Immo, Immo Dek, Iti Groupe, Sud Immo, Centrale Immobilière, Ard'Immo &
-Conseils, Immobilière des Ardennes, Guibert Grandjean, Homeside (Vielsalm), MCA
-Immobilier, BIA Immo, Benjamin Gaspard, AIS Nord Luxembourg, Double V, Tadam.
-Si tu connais leur site, ajoute l'URL dans le YAML et pousse : le rapport
-d'analyse dira quel module utiliser.
+**Collectées (22)** : Groupe Arcade, Picard Immo, Immo Plainchamp, Neufcoeur,
+Juliet Immo, Homeside (Whise) · Honesty (Whise/Webulous, ajax) · ERA B-Lux
+(API du site national, toutes les agences ERA de la province) · Immo Bastogne,
+Benjamin Gaspard (Omnicasa/Gatsby) · Alison Immo, Home Sweet Gaume (WordPress +
+fiche) · BD Immo, Immo Peter, Pepit-immo, Mobilimmo, Wellimmo, DG-Immo
+(= Guibert Grandjean), Immo 23, Ardenne Immo, Trevi Luxembourg, Immo Centre
+Ardennes, ITI Groupe, Immo Bia, Ard'Immo & Conseils (module générique).
+
+**Site trouvé mais inexploitable** : Vos Agences et Century 21 (liste
+JavaScript), L'Agence (le site ne contient que des biens de démonstration
+d'Anvers), Delzandre et Easyhome (API sans prix, fiches à analyser), Lio Immo
+(pas de type de bien), Isimmo (défi Cloudflare), Euro Ardennes (page vide),
+W Immobilière et Tadam (applications JavaScript sans données côté serveur),
+Logesud (Wix), MCA Immobilier (API JSON lisible, mais format des liens de
+fiche introuvable). Toutes publient aussi sur Immoweb/Immovlan.
+
+**Site injoignable ou inexistant** : Access Immo, Ultimmo, Immo Dek, Sud Immo,
+Centrale Immobilière, Dynasty, Immobilière des Ardennes, AIS Nord Luxembourg,
+Immo CM, Brion Immo, Berns (site vitrine sans biens). Si tu connais leur site,
+ajoute l'URL dans le YAML et pousse : le rapport d'analyse dira quel module
+utiliser.
