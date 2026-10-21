@@ -1,7 +1,23 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html
-# --- Phase 4 : Biddit (bundle JS pour trouver l'API, plan de site) et immo.notaris.be ---
-https://www.biddit.be/main.ca5817f750a367c3.js | biddit/main.js
-https://www.biddit.be/stg/eco/sitemap_index.xml | biddit/sitemap_index.xml
-https://immo.notaire.be/fr | notaire/immo_notaire_fr.html
-https://immo.notaris.be/immoplatform-public-service_v1/api/search?province=LUXEMBOURG | notaire/api_search.json
+# --- Phase 3 : compléments ---
+https://www.groupearcade.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B2%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/groupearcade_scroll_louer.html
+https://www.picardimmo.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B2%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/picardimmo_scroll_louer.html
+https://www.immoplainchamp.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B2%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/immoplainchamp_scroll_louer.html
+https://www.groupearcade.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/groupearcade_scroll_vendre.html
+https://www.neufcoeur.be/fr/2/chercher-bien/a-vendre | agences/neufcoeur_vendre.html
+https://www.bd-immo.be/fr/a-vendre | agences/bdimmo_vendre.html
+https://dg-immo.be/biens/a-louer | agences/dgimmo_louer2.html
+https://dg-immo.be/en/estates/for-rent | agences/dgimmo_forrent.html
+https://mobilimmo.be/statut/a-louer/ | agences/mobilimmo_louer.html
+https://mobilimmo.be/statut/a-vendre/ | agences/mobilimmo_vendre.html
+https://wellimmo.be/louer/ | agences/wellimmo_louer.html
+https://wellimmo.be/vendre/ | agences/wellimmo_vendre.html
+https://pepit-immo.be/a-louer/ | agences/pepitimmo_louer.html
+https://pepit-immo.be/a-vendre/ | agences/pepitimmo_vendre.html
+https://www.immopeter.be/fr/a-vendre | agences/immopeter_vendre.html
+https://www.immobastogne.be/fr/a-vendre/ | agences/immobastogne_vendre.html
+https://www.lagence-immo.be/fr/a-louer/ | agences/lagence_louer_fr.html
+https://www.delzandreimmo.be/biens-a-louer/ | agences/delzandre_louer.html
+https://www.alisonimmo.be/property-status/a-louer/ | agences/alisonimmo_louer.html
+https://www.honesty.be/wp-content/plugins//whise-webulous/ajax.php | agences/honesty_ajax.txt
