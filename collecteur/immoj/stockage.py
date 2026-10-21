@@ -179,6 +179,15 @@ class Stockage:
             self._modifier("annonces", {"actif": False}, id=f"in.({ids})")
         return len(anciennes)
 
+    def desactiver_hors_province(self) -> int:
+        """Désactive les biens dont le code postal connu n'est pas en province (6600–6999)."""
+        lignes = self._lire("annonces", actif="eq.true", code_postal="not.is.null",
+                            **{"or": "(code_postal.lt.6600,code_postal.gt.6999)"}, select="id")
+        if lignes:
+            ids = ",".join(ligne["id"] for ligne in lignes)
+            self._modifier("annonces", {"actif": False}, id=f"in.({ids})")
+        return len(lignes)
+
     # --- notifications ----------------------------------------------------
     def marquer_notification(self, annonce_id: str, type_notif: str,
                              recherche_id: str | None) -> bool:
@@ -233,3 +242,6 @@ class StockageSimulation(Stockage):
 
     def _modifier(self, table, valeurs, **filtres):
         log.info("[simulation] UPDATE %s %s : %s", table, filtres, str(valeurs)[:120])
+
+    def desactiver_hors_province(self):
+        return 0

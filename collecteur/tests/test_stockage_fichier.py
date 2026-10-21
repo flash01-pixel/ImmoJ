@@ -66,6 +66,15 @@ def test_desactivation(tmp_path):
     assert st.exporter(tmp_path / "annonces.json") == 0
 
 
+def test_hors_province_desactivees(tmp_path):
+    st = StockageFichier(tmp_path / "base.json")
+    integrer(st, ResultatCollecte("immovlan", True, [annonce(ide="A1")]))
+    # Un bien entré avant le filtre, avec un code postal liégeois
+    aid = next(iter(st.annonces))
+    st.annonces[aid]["code_postal"] = "4000"
+    assert st.desactiver_hors_province() == 1 and st.desactiver_hors_province() == 0
+
+
 def test_echecs_consecutifs(tmp_path):
     st = StockageFichier(tmp_path / "base.json")
     for ok in (True, False, False):
