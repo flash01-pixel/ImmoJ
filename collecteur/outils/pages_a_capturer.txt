@@ -10,6 +10,6 @@ https://www.lagence-immo.be/page-data/index/page-data.json | agences/lagence_pag
 https://www.immobastogne.be/component---customers-bastogne-template-page-tmpl-tsx-5dada48026b729449dcc.js | agences/immobastogne_component.js
 https://www.immobastogne.be/page-data/fr/a-louer/bastogne/appartement/rue-des-hetres-2-c2-bastogne/16346/page-data.json | agences/immobastogne_detail_test.json
 https://www.lagence-immo.be/page-data/nl/page-data.json | agences/lagence_pagedata_nl.json
-https://www.honesty.be/wp-content/themes/honesty/lib/jquery/1.11.2/jquery.min.js?ver=7.1.3 | agences/honesty_theme_jquery.min.js
-https://www.honesty.be/wp-content/themes/honesty/lib/fancybox/3.5.7/jquery.fancybox.min.js?ver=7.1.3 | agences/honesty_theme_jquery.fancybox.min.js
 https://www.honesty.be/wp-content/themes/honesty/lib/map/estate-map-min.js?ver=7.1.3 | agences/honesty_theme_estate-map-min.js
+https://www.honesty.be/wp-content/themes/honesty/js/utility.js?v20210601&#038;ver=7.1.3 | agences/honesty_js_utility.js
+https://www.honesty.be/wp-content/themes/honesty/js/site-dev.js?v20230125&#038;ver=7.1.3 | agences/honesty_js_site-dev.js
