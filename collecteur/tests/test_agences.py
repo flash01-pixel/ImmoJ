@@ -367,8 +367,8 @@ def test_mca(lire_fixture):
     assert a.url == "https://maisons-chalets-ardennes.be/bien-4991-appartement-marche-en-famenne"
     assert a.prix == 500 and a.code_postal == "6900" and a.chambres == 1 and a.surface == 38
     assert a.details["Salles de bain"] == 1 and a.photos and a.type == "appartement"
-    vente = verifier(analyser_api(json.loads(lire_fixture("agences/mca_api_vendre.json")), ag["url"],
-                                  ag, "achat"), "achat", ag["nom"], 100)
+    donnees = json.loads(lire_fixture("agences/mca_api_vendre.json"))
+    vente = verifier(analyser_api(donnees, ag["url"], ag, "achat"), "achat", ag["nom"], 100)
     assert all(x.prix is None or x.prix > 1000 for x in vente)
     # Les biens vendus / sous option sont écartés.
     assert len(vente) < 291

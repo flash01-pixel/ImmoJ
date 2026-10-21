@@ -61,21 +61,21 @@ Peter, Wellimmo) servent de modèles.
 
 ## Couverture (22 octobre 2026)
 
-**Collectées (22)** : Groupe Arcade, Picard Immo, Immo Plainchamp, Neufcoeur,
+**Collectées (23)** : Groupe Arcade, Picard Immo, Immo Plainchamp, Neufcoeur,
 Juliet Immo, Homeside (Whise) · Honesty (Whise/Webulous, ajax) · ERA B-Lux
 (API du site national, toutes les agences ERA de la province) · Immo Bastogne,
 Benjamin Gaspard (Omnicasa/Gatsby) · Alison Immo, Home Sweet Gaume (WordPress +
 fiche) · BD Immo, Immo Peter, Pepit-immo, Mobilimmo, Wellimmo, DG-Immo
 (= Guibert Grandjean), Immo 23, Ardenne Immo, Trevi Luxembourg, Immo Centre
-Ardennes, ITI Groupe, Immo Bia, Ard'Immo & Conseils (module générique).
+Ardennes, ITI Groupe, Immo Bia, Ard'Immo & Conseils (module générique) · MCA
+Immobilier (API JSON).
 
 **Site trouvé mais inexploitable** : Vos Agences et Century 21 (liste
 JavaScript), L'Agence (le site ne contient que des biens de démonstration
 d'Anvers), Delzandre et Easyhome (API sans prix, fiches à analyser), Lio Immo
 (pas de type de bien), Isimmo (défi Cloudflare), Euro Ardennes (page vide),
 W Immobilière et Tadam (applications JavaScript sans données côté serveur),
-Logesud (Wix), MCA Immobilier (API JSON lisible, mais format des liens de
-fiche introuvable). Toutes publient aussi sur Immoweb/Immovlan.
+Logesud (Wix). Toutes publient aussi sur Immoweb/Immovlan.
 
 **Site injoignable ou inexistant** : Access Immo, Ultimmo, Immo Dek, Sud Immo,
 Centrale Immobilière, Dynasty, Immobilière des Ardennes, AIS Nord Luxembourg,
