@@ -47,6 +47,8 @@ def _texte(el, selecteur: str | None) -> str:
     if not trouve:
         return ""
     t = trouve.get_text(" ", strip=True)
+    if not t and trouve.name == "img":            # image : son titre ou son texte alternatif
+        return (trouve.get("title") or trouve.get("alt") or "").strip()
     if not t and trouve.parent is not None:      # icône seule : le nombre est à côté
         t = trouve.parent.get_text(" ", strip=True)
     return t

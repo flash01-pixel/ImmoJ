@@ -130,6 +130,19 @@ def test_doublon_rattache_sans_nouvelle_fiche():
     assert nt.envoyees == ["Nouveau : 6600 Bastogne"], "une seule notification pour le même bien"
 
 
+def test_hors_province_ignoree():
+    st, nt = StockageMemoire(), NotificateurEspion()
+    st.reussites.add("immovlan")
+    resultat = ResultatCollecte("immovlan", True, [
+        annonce(ide="L1", commune="Liège", code_postal="4000"),
+        annonce(ide="D1", commune="Dinant", code_postal="5500"),
+        annonce(ide="A1"),
+        annonce(ide="X1", commune="Village-Inconnu", code_postal=None),   # gardée sans commune
+    ])
+    assert integrateur(st, nt).integrer(resultat) == 2
+    assert {a["code_postal"] for a in st.annonces.values()} == {"6600", None}
+
+
 def test_baisse_de_prix():
     st, nt = StockageMemoire(), NotificateurEspion()
     st.reussites.add("immovlan")

@@ -43,6 +43,9 @@ def test_details_dune_annonce(lire_json):
 
 def test_achat(lire_json):
     annonces = analyser_json(lire_json("immoweb/api_achat.json"), "achat")
+    # salesPitch est parfois un objet : la description doit rester une chaîne.
+    assert all(isinstance(a.description, str) for a in annonces)
+    assert any("Fanzel" in a.description for a in annonces)
     assert len(annonces) >= 20
     assert all(a.transaction == "achat" for a in annonces)
     assert sum(1 for a in annonces if a.prix and a.prix > 50_000) >= 15

@@ -126,7 +126,8 @@ def test_immopeter(lire_fixture):
     vente = generique(lire_fixture, "Immo Peter", "immopeter_vendre.html", "achat", 10)
     a = next(x for x in vente if x.url.endswith("id=669"))
     assert a.prix == 369000 and a.commune == "TAILLES" and a.chambres == 4 and a.surface == 163
-    assert a.type == "maison" and a.titre.startswith("MAISON ARDENNAISE")
+    assert a.type == "maison" and a.titre.startswith("Maison à 6661 TAILLES")
+    assert a.description.startswith("Maison") or "MAISON ARDENNAISE" in a.description
     generique(lire_fixture, "Immo Peter", "immopeter_louer.html", "location", 2)
 
 

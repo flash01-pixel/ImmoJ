@@ -45,6 +45,13 @@ def dans_la_plage_horaire(instant: datetime | None = None) -> bool:
     return config.HEURE_DEBUT <= local.hour <= config.HEURE_FIN
 
 
+def hors_province(code_postal: str | None) -> bool:
+    """True si le code postal est connu et n'est pas en province de Luxembourg (6600–6999)."""
+    if not code_postal or not str(code_postal).isdigit():
+        return False
+    return not 6600 <= int(code_postal) <= 6999
+
+
 class Integrateur:
     """Intègre les annonces d'une source dans la base et déclenche les notifications."""
 
@@ -72,6 +79,11 @@ class Integrateur:
 
         for a in resultat.annonces:
             commune = self.geocodeur.trouver(a.commune, a.code_postal)
+            if commune is None and hors_province(a.code_postal):
+                # Les agences publient aussi hors province (Liège, Namur, Grand-Duché…).
+                log.debug("[%s] %s ignorée : %s %s hors province", source, a.id_externe,
+                          a.code_postal, a.commune)
+                continue
             nom_commune = commune.nom if commune else None
             lat, lon = (a.latitude, a.longitude) if a.latitude is not None else (
                 (commune.lat, commune.lon) if commune else (None, None))

@@ -51,6 +51,11 @@ class Annonce:
     def __post_init__(self) -> None:
         if self.transaction not in TRANSACTIONS:
             raise ValueError(f"transaction inconnue : {self.transaction}")
+        # Garde-fou : description et titre sont toujours des chaînes (jamais None ni dict).
+        if not isinstance(self.description, str):
+            self.description = "" if self.description is None else str(self.description)
+        if not isinstance(self.titre, str):
+            self.titre = str(self.titre or "")
         if self.type not in TYPES:
             self.type = "autre"
         if self.peb and self.peb.upper() not in PEB:
