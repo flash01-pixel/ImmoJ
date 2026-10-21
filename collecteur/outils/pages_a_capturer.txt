@@ -1,4 +1,3 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html | {"En-tête": "valeur"} (optionnel)
-# --- Spécification OpenAPI de l'API de gestion Supabase (pour supabase_admin.py) ---
-https://api.supabase.com/api/v1-json | supabase/openapi.json
+# (vide : rien à capturer pour l'instant)

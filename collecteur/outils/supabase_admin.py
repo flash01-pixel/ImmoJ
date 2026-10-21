@@ -75,9 +75,10 @@ class Admin:
         org = self.organisation()
         mdp = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
         print(f"Création du projet « {NOM_PROJET} » dans l'organisation "
-              f"« {org.get('name')} » (id {org.get('id')})…")
+              f"« {org.get('name')} » (slug {org.get('slug')})…")
         # Le mot de passe de la base n'est jamais réutilisé : tout passe par l'API.
-        corps = {"name": NOM_PROJET, "organization_id": org["id"],
+        # L'API attend le « slug » de l'organisation (organization_id est obsolète).
+        corps = {"name": NOM_PROJET, "organization_slug": org.get("slug") or org["id"],
                  "db_pass": mdp, "region": REGION}
         r = self.session.post(f"{API}/projects", json=corps, timeout=120)
         if r.status_code >= 400:
