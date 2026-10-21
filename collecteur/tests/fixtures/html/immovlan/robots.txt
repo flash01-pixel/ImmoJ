@@ -1,0 +1,1347 @@
+# robots.txt - immovlan.be (production)
+#
+# Structure:
+#   1. Sitemap
+#   2. Site-wide crawl policy (User-agent: * plus the AI crawlers that share it)
+#   3. Googlebot-News (news content only)
+#   4. AI crawlers we turn away
+#   5. Legacy scrapers and offline-copy tools we turn away
+#
+# Every rule below is a Disallow on the site-wide group unless stated otherwise.
+# Groups do not inherit from each other in robots.txt, so an agent that should
+# get the normal policy is added as an extra User-agent line on the group in
+# section 2 rather than repeated in a group of its own.
+#
+# Editing rules:
+#   - Patterns are case-sensitive. A path blocked in two casings needs two lines.
+#   - Prefer an anchored pattern (/nl/foo*) over a bare substring (*foo*).
+#     Bare substrings match anywhere in the path and cause collateral damage.
+#   - Matching runs over the path AND the query string, so a rule anchored with
+#     $ stops firing as soon as a parameter is appended. Pair it with a '?' rule.
+#   - Anything advertised in llms.txt must stay crawlable. Immovlan.Website.Tests
+#     LlmsTxtIntegrityTests.NoAdvertisedUrlIsDisallowedByRobots enforces this for
+#     the site-wide group and fails the build on drift.
+
+Sitemap: https://immovlan.be/sitemap.xml
+
+# =============================================================================
+# 2. Site-wide crawl policy
+# =============================================================================
+# The AI agents listed here get exactly the same policy as every other crawler:
+# everything except the sections blocked below. The rule is "cite us, do not
+# train on us": an agent that fetches a page to answer a question and names the
+# source sends a prospective buyer back, and it reads live prices instead of
+# reciting a stale snapshot. See DEV-7718.
+User-agent: *
+# -- answer and search engines (fetch to cite, drive referral traffic)
+User-agent: OAI-SearchBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Applebot
+User-agent: Amazonbot
+# -- fetchers acting for a live user (a person asked for this page right now,
+#    so turning them away is closer to blocking a browser than a crawler)
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+# No blanket "Allow: /" here. It is a no-op for a longest-match parser (nothing
+# is disallowed by default) and actively wrong for a first-match one, which
+# would read it as "everything allowed" and skip every Disallow below. This
+# group is aimed at AI crawlers, whose parsers vary, so the line is left out.
+
+# -- Deliberately not blocked
+#    */map* was dropped in DEV-7718. An answer engine should be able to fetch
+#    the map search and cite it, and the AI agents above share this group, so
+#    allowing it for them is the same as allowing it for everyone. That is the
+#    accepted trade: the page keeps itself out of the index without robots.txt,
+#    because MapSearchController hardcodes RobotsTag = NO_INDEX on both map
+#    actions. llms.txt no longer advertises the map search either (DEV-7724);
+#    the list search covers the same inventory, server-rendered.
+
+# -- Cities handled elsewhere / ambiguous city names
+Disallow: */bruges*
+Disallow: */halle*
+Disallow: */vorst*
+
+# -- Internal and non-content endpoints
+Disallow: */(*
+Disallow: */api*
+Disallow: */Content/*
+Disallow: */tracking/*
+Disallow: */workers/*
+Disallow: *?/*
+Disallow: *Barometer*
+Disallow: *batchdetail*
+Disallow: *cim*
+Disallow: *detail/gotodetail*
+Disallow: *exception*
+Disallow: *Exception*
+Disallow: *imagehandler*
+Disallow: *offline*
+Disallow: *print/*
+Disallow: *ProjectDocument*
+Disallow: *PropertyDocument*
+Disallow: *SearchPartial*
+Disallow: *searchpartial/*
+Disallow: *ShowDetail*
+Disallow: *VlanImmo*
+Disallow: *Yatmo*
+Disallow: *yatmo*
+Disallow: /code/*
+Disallow: /conf/*
+Disallow: /data*
+Disallow: /feed/*
+
+# -- Account, wizard and other transactional flows
+Disallow: *ActivateUser*
+Disallow: *advert/*
+Disallow: *ExternalLogin*
+Disallow: *fr/perso*
+Disallow: *fr/sharedpersopro*
+Disallow: *gotoprowallpaper*
+Disallow: *gotowebsite*
+Disallow: *home/register*
+Disallow: *investorform/*
+Disallow: *LoadButtonFavorite*
+Disallow: *login*
+Disallow: *nl/perso*
+Disallow: *nl/sharedpersopro*
+Disallow: *prorequest/whise*
+Disallow: *savedsearch*
+Disallow: *searchbynetwork*
+Disallow: *showFeedback*
+Disallow: *wizard/*
+Disallow: *wizardv2/step0deleteandstartover*
+
+# -- Query-string and faceted-search noise (duplicate content)
+Disallow: *&title*
+#    Legacy verbolia landing parameter (_r=v), always the start of a query
+#    parameter (?_r=v or &_r=v), never a path segment. Blocked outright in
+#    DEV-8075 to stop crawl volume; this also hides the page's own meta robots
+#    and canonical, so URLs already indexed are frozen, not dropped.
+Disallow: *_r=v*
+Disallow: *articleid*
+Disallow: *cfid*
+Disallow: *cftoken*
+Disallow: *companyname*
+Disallow: *countries*
+Disallow: *country*
+Disallow: *isNewConstruction*
+Disallow: *isnewconstructionproject*
+Disallow: *maxPrice*
+Disallow: *minBedrooms*
+Disallow: *noindex*
+Disallow: *pageOffset*
+Disallow: *pageoffset*
+Disallow: *param1*
+Disallow: *propertysubtypes=appartement*
+Disallow: *propertysubtypes=flat---apartment*
+Disallow: *propertysubtypes=garage*
+Disallow: *propertysubtypes=grond*
+Disallow: *propertysubtypes=huis*
+Disallow: *propertysubtypes=kot*
+Disallow: *propertysubtypes=land*
+Disallow: *propertysubtypes=maison*
+Disallow: *propertysubtypes=residence*
+Disallow: *propertysubtypes=student-flat*
+Disallow: *propertysubtypes=terrain*
+Disallow: *secondhome*
+Disallow: *showForSale*
+Disallow: *showforsale*
+Disallow: *showToRent*
+Disallow: *showtorent*
+Disallow: *sort-by*
+Disallow: *sort-direction*
+Disallow: *sortby*
+Disallow: *sortdirection*
+Disallow: *sortorder*
+Disallow: *urlprouser*
+Disallow: *useNavigation*
+Disallow: *userids*
+Disallow: *vlanCode*
+Disallow: *vlancode*
+Disallow: *zipcode*
+#    A second '?' only comes from a query string glued onto a URL that already
+#    had one (DEV-8075). Never a valid URL on this site.
+Disallow: /*?*?*
+
+# -- Legacy search entry points, placeholder and undetermined values
+Disallow: *0000/*
+#    'any' as a placeholder filter value. Was a bare *any* substring until
+#    DEV-7718, which also blocked every city and country containing those
+#    three letters (germany, brittany, tuscany, albany).
+Disallow: */any/*
+Disallow: */any$
+Disallow: *=any*
+Disallow: *commune-indeterminee*
+Disallow: *Index/*
+Disallow: *onbepaalde-gemeente*
+Disallow: *Recherche/*
+Disallow: *recherche/*
+Disallow: *Search/*
+Disallow: *undetermined-city*
+Disallow: *Zoek/*
+Disallow: *zoek/*
+
+# -- Retired content sections and old advice/news URLs
+Disallow: */Actualite*
+Disallow: */Advies*
+Disallow: */Conseils*
+Disallow: */news*
+Disallow: */News*
+Disallow: */Nieuws*
+Disallow: *advies/entretien*
+Disallow: *advies/financement*
+Disallow: *advies/finances*
+Disallow: *advies/voisinage*
+Disallow: *conseils/aankoop*
+Disallow: *conseils/advice*
+Disallow: *conseils/badkamer*
+Disallow: *conseils/bouw*
+Disallow: *conseils/buren*
+Disallow: *conseils/de-wet*
+Disallow: *conseils/decoratie*
+Disallow: *conseils/erfenis*
+Disallow: *conseils/huren*
+Disallow: *conseils/inrichting*
+Disallow: *conseils/isolatie*
+Disallow: *conseils/keuken*
+Disallow: *conseils/kopen*
+Disallow: *conseils/legaal*
+Disallow: *conseils/mede*
+Disallow: *conseils/onderhoud*
+Disallow: *conseils/praktische*
+Disallow: *conseils/tuin*
+Disallow: *conseils/verhuren*
+Disallow: *en/actualite*
+Disallow: *en/advice/*
+Disallow: *en/advices*
+Disallow: *en/advies*
+Disallow: *en/conseils*
+Disallow: *en/nieuws*
+Disallow: *fr/advice*
+Disallow: *fr/advies*
+Disallow: *location-advice-fr*
+Disallow: *nl/advice*
+Disallow: *nl/advies/achat*
+Disallow: *nl/advies/advice*
+Disallow: *nl/conseils*
+Disallow: *voisinage-copropriete-advice-fr*
+Disallow: *workers/advice*
+
+# -- Retired widgets, campaigns and one-off landing pages
+Disallow: */alle/*
+Disallow: *7594/*
+Disallow: *81985301/*
+Disallow: *a-louer/secteur*
+Disallow: *a-vendre/secteur*
+Disallow: *auto/*
+Disallow: *jobs/*
+Disallow: *widget/belfius*
+Disallow: *widget/cbc*
+Disallow: *widget/lotto*
+Disallow: *widget/test-achats*
+Disallow: *widget/velux*
+Disallow: *widget/verisure*
+Disallow: /1*
+Disallow: /2*
+Disallow: /3*
+Disallow: /4*
+Disallow: /5*
+Disallow: /6*
+Disallow: /7*
+Disallow: /8*
+Disallow: /9*
+Disallow: /:*
+Disallow: /a/*
+Disallow: /agences/*
+Disallow: /agencies/*
+Disallow: /annonces*
+Disallow: /concoursconcours*
+Disallow: /conditions*
+Disallow: /contact/*
+Disallow: /cookie/*
+Disallow: /cuisi*
+Disallow: /dom*
+Disallow: /e/*
+Disallow: /en107000*
+Disallow: /es-uy*
+Disallow: /f/*
+Disallow: /fe/*
+Disallow: /fr-be*
+Disallow: /m/*
+Disallow: /rwa*
+
+# -- English account and internal paths (the nl and fr equivalents are blocked
+#    in their own sections above; English detail, project detail and directory
+#    pages are indexed like the Dutch and French ones since DEV-7718)
+Disallow: *en/BatchDetail*
+Disallow: *en/home/foreign*
+Disallow: *en/perso*
+Disallow: *en/sharedpersopro*
+
+# -- Retired detail URL prefixes (rai/raf/rag/rah, vai/vaf/vag/vah)
+Disallow: *detail/raf*
+Disallow: *detail/rag*
+Disallow: *detail/rah*
+Disallow: *detail/rai*
+Disallow: *detail/vaf*
+Disallow: *detail/vag*
+Disallow: *detail/vah*
+Disallow: *detail/vai*
+Disallow: *immobilier/raf*
+Disallow: *immobilier/rag*
+Disallow: *immobilier/rah*
+Disallow: *immobilier/rai*
+Disallow: *immobilier/vaf*
+Disallow: *immobilier/vag*
+Disallow: *immobilier/vah*
+Disallow: *immobilier/vai*
+
+# -- Directory under the wrong culture prefix (nl uses vastgoedgids, fr uses
+#    guideimmobilier; /nl/directory and /fr/directory are duplicates)
+Disallow: *fr/directory*
+Disallow: *fr/Directory*
+Disallow: *nl/directory*
+Disallow: *nl/Directory*
+
+# -- Retired "properties abroad" entry points
+Disallow: *a/home/foreign*
+Disallow: *fr/home/foreign*
+Disallow: *m/home/foreign*
+Disallow: *nl/home/foreign*
+
+# -- Transaction-only search URLs with no property type (thin duplicates)
+Disallow: *immobilier/a-louer*
+Disallow: *immobilier/a-vendre*
+Disallow: *real-estate/for-rent*
+Disallow: *real-estate/for-sale*
+
+# -- Remaining legacy paths
+Disallow: */property/*/document/*
+Disallow: *Detail/*
+Disallow: *SortOrder*
+Disallow: *workers/property*
+
+# -- One-off spam paths (historic; safe to drop once nothing links them)
+Disallow: /bebvrxzoc*
+Disallow: /bfwrivce*
+Disallow: /bpweplvpuefz*
+Disallow: /cdpenvevlolckr*
+Disallow: /cdvstxcwwvzjfszb*
+Disallow: /cjugufujq*
+Disallow: /clovzvwwe*
+Disallow: /cmizyntec*
+Disallow: /dbnyppelwgrfbzj*
+Disallow: /ebajfduaulct*
+Disallow: /efewccyqt*
+Disallow: /eioojwlszjinvcj*
+Disallow: /eotxcentcclws*
+Disallow: /eqfimfcjl*
+Disallow: /etljenkaqvgcdn*
+Disallow: /ewqcryxt*
+Disallow: /fkahjlssn*
+
+# -- Language purity: no URL may mix slugs from two languages
+#    The route resolves a type, subtype or transaction slug in ANY language
+#    under ANY culture prefix, so /nl/vastgoed/maison/a-vendre/gent serves the
+#    same results as the Dutch URL and duplicates it.
+#
+#    This is the ONLY indexing rule robots.txt owns for search and detail URLs.
+#    PropertyTypeTree membership, the property type and transaction allow-lists
+#    and the excluded combinations are decided by
+#    SearchUrlParameters.ToIndexOrNotToIndex and
+#    PropertyUrlParameters.ToIndexOrNotToIndex, which emit a meta robots tag.
+#    A noindex tag can only be obeyed on a page the crawler may fetch, so
+#    blocking those URLs here would hide the very tag that carries the
+#    decision. Language purity is the one thing the tag cannot express: the
+#    parser resolves a slug in any language, so the mixed URL above parses to
+#    House + Sale and the tag says INDEX.
+#
+#    Three lines per slug: one ending in / for the slug as an inner segment, one
+#    ending in $ for a URL that stops at the slug (/en/real-estate/huis), and one
+#    ending in ? for that same URL carrying a query string, which the $ anchor
+#    does not match (/nl/vastgoed/maison?page=2). A bare prefix would be wrong:
+#    /nl/*/land also matches the city Landen and the Dutch slug landbouwgrond.
+#
+#    GENERATED by tools/generate-language-purity-rules.py from the enums and
+#    Resources/DataAnnotations*.resx. Regenerate after adding or renaming a
+#    type or transaction label; do not edit by hand.
+#
+#    -- section words from another language
+Disallow: *en/immobilier*
+Disallow: *en/vastgoed/*
+Disallow: *fr/real-estate/*
+Disallow: *fr/vastgoed/*
+Disallow: *nl/immobilier*
+Disallow: *nl/real-estate*
+#    -- nl: type, subtype and transaction slugs of the other two languages
+Disallow: /nl/*/a-louer/
+Disallow: /nl/*/a-louer$
+Disallow: /nl/*/a-louer?
+Disallow: /nl/*/a-vendre/
+Disallow: /nl/*/a-vendre$
+Disallow: /nl/*/a-vendre?
+Disallow: /nl/*/apartment/
+Disallow: /nl/*/apartment$
+Disallow: /nl/*/apartment?
+Disallow: /nl/*/appartement-de-vacances/
+Disallow: /nl/*/appartement-de-vacances$
+Disallow: /nl/*/appartement-de-vacances?
+Disallow: /nl/*/autres/
+Disallow: /nl/*/autres$
+Disallow: /nl/*/autres?
+Disallow: /nl/*/bien-divers/
+Disallow: /nl/*/bien-divers$
+Disallow: /nl/*/bien-divers?
+Disallow: /nl/*/bois/
+Disallow: /nl/*/bois$
+Disallow: /nl/*/bois?
+Disallow: /nl/*/bungalow-de-vacances/
+Disallow: /nl/*/bungalow-de-vacances$
+Disallow: /nl/*/bungalow-de-vacances?
+Disallow: /nl/*/bureaux/
+Disallow: /nl/*/bureaux$
+Disallow: /nl/*/bureaux?
+Disallow: /nl/*/business/
+Disallow: /nl/*/business$
+Disallow: /nl/*/business?
+Disallow: /nl/*/business-activity/
+Disallow: /nl/*/business-activity$
+Disallow: /nl/*/business-activity?
+Disallow: /nl/*/business-surface/
+Disallow: /nl/*/business-surface$
+Disallow: /nl/*/business-surface?
+Disallow: /nl/*/caravane-residentielle/
+Disallow: /nl/*/caravane-residentielle$
+Disallow: /nl/*/caravane-residentielle?
+Disallow: /nl/*/chalet-de-vacances/
+Disallow: /nl/*/chalet-de-vacances$
+Disallow: /nl/*/chalet-de-vacances?
+Disallow: /nl/*/chambre-d-hotes/
+Disallow: /nl/*/chambre-d-hotes$
+Disallow: /nl/*/chambre-d-hotes?
+Disallow: /nl/*/chateau/
+Disallow: /nl/*/chateau$
+Disallow: /nl/*/chateau?
+Disallow: /nl/*/commerce-alimentation/
+Disallow: /nl/*/commerce-alimentation$
+Disallow: /nl/*/commerce-alimentation?
+Disallow: /nl/*/commerce-auto---cycles/
+Disallow: /nl/*/commerce-auto---cycles$
+Disallow: /nl/*/commerce-auto---cycles?
+Disallow: /nl/*/commerce-divers/
+Disallow: /nl/*/commerce-divers$
+Disallow: /nl/*/commerce-divers?
+Disallow: /nl/*/commerce-librairie---tabac---fleurs/
+Disallow: /nl/*/commerce-librairie---tabac---fleurs$
+Disallow: /nl/*/commerce-librairie---tabac---fleurs?
+Disallow: /nl/*/commerce-vetements---textiles/
+Disallow: /nl/*/commerce-vetements---textiles$
+Disallow: /nl/*/commerce-vetements---textiles?
+Disallow: /nl/*/commercial-building/
+Disallow: /nl/*/commercial-building$
+Disallow: /nl/*/commercial-building?
+Disallow: /nl/*/cottage/
+Disallow: /nl/*/cottage$
+Disallow: /nl/*/cottage?
+Disallow: /nl/*/demeure-de-prestige/
+Disallow: /nl/*/demeure-de-prestige$
+Disallow: /nl/*/demeure-de-prestige?
+Disallow: /nl/*/development-site/
+Disallow: /nl/*/development-site$
+Disallow: /nl/*/development-site?
+Disallow: /nl/*/divers/
+Disallow: /nl/*/divers$
+Disallow: /nl/*/divers?
+Disallow: /nl/*/en-colocation/
+Disallow: /nl/*/en-colocation$
+Disallow: /nl/*/en-colocation?
+Disallow: /nl/*/en-vente-publique/
+Disallow: /nl/*/en-vente-publique$
+Disallow: /nl/*/en-vente-publique?
+Disallow: /nl/*/entrepot---ateliers/
+Disallow: /nl/*/entrepot---ateliers$
+Disallow: /nl/*/entrepot---ateliers?
+Disallow: /nl/*/farming-site/
+Disallow: /nl/*/farming-site$
+Disallow: /nl/*/farming-site?
+Disallow: /nl/*/farmland/
+Disallow: /nl/*/farmland$
+Disallow: /nl/*/farmland?
+Disallow: /nl/*/ferme/
+Disallow: /nl/*/ferme$
+Disallow: /nl/*/ferme?
+Disallow: /nl/*/first-floor-house/
+Disallow: /nl/*/first-floor-house$
+Disallow: /nl/*/first-floor-house?
+Disallow: /nl/*/fonds-de-commerce/
+Disallow: /nl/*/fonds-de-commerce$
+Disallow: /nl/*/fonds-de-commerce?
+Disallow: /nl/*/food-store/
+Disallow: /nl/*/food-store$
+Disallow: /nl/*/food-store?
+Disallow: /nl/*/for-rent/
+Disallow: /nl/*/for-rent$
+Disallow: /nl/*/for-rent?
+Disallow: /nl/*/for-sale/
+Disallow: /nl/*/for-sale$
+Disallow: /nl/*/for-sale?
+Disallow: /nl/*/green-zone/
+Disallow: /nl/*/green-zone$
+Disallow: /nl/*/green-zone?
+Disallow: /nl/*/ground-floor/
+Disallow: /nl/*/ground-floor$
+Disallow: /nl/*/ground-floor?
+Disallow: /nl/*/hair---beauty-salon/
+Disallow: /nl/*/hair---beauty-salon$
+Disallow: /nl/*/hair---beauty-salon?
+Disallow: /nl/*/holiday-resort/
+Disallow: /nl/*/holiday-resort$
+Disallow: /nl/*/holiday-resort?
+Disallow: /nl/*/house/
+Disallow: /nl/*/house$
+Disallow: /nl/*/house?
+Disallow: /nl/*/immeuble-de-rapport/
+Disallow: /nl/*/immeuble-de-rapport$
+Disallow: /nl/*/immeuble-de-rapport?
+Disallow: /nl/*/immeuble-mixte/
+Disallow: /nl/*/immeuble-mixte$
+Disallow: /nl/*/immeuble-mixte?
+Disallow: /nl/*/in-public-sale/
+Disallow: /nl/*/in-public-sale$
+Disallow: /nl/*/in-public-sale?
+Disallow: /nl/*/industrial-building/
+Disallow: /nl/*/industrial-building$
+Disallow: /nl/*/industrial-building?
+Disallow: /nl/*/industrial-ground/
+Disallow: /nl/*/industrial-ground$
+Disallow: /nl/*/industrial-ground?
+Disallow: /nl/*/investment-property/
+Disallow: /nl/*/investment-property$
+Disallow: /nl/*/investment-property?
+Disallow: /nl/*/land/
+Disallow: /nl/*/land$
+Disallow: /nl/*/land?
+Disallow: /nl/*/luxury-house/
+Disallow: /nl/*/luxury-house$
+Disallow: /nl/*/luxury-house?
+Disallow: /nl/*/maison/
+Disallow: /nl/*/maison$
+Disallow: /nl/*/maison?
+Disallow: /nl/*/maison-bel-etage/
+Disallow: /nl/*/maison-bel-etage$
+Disallow: /nl/*/maison-bel-etage?
+Disallow: /nl/*/maison-de-maitre/
+Disallow: /nl/*/maison-de-maitre$
+Disallow: /nl/*/maison-de-maitre?
+Disallow: /nl/*/maison-de-vacances/
+Disallow: /nl/*/maison-de-vacances$
+Disallow: /nl/*/maison-de-vacances?
+Disallow: /nl/*/mansion/
+Disallow: /nl/*/mansion$
+Disallow: /nl/*/mansion?
+Disallow: /nl/*/master-house/
+Disallow: /nl/*/master-house$
+Disallow: /nl/*/master-house?
+Disallow: /nl/*/miscellaneous/
+Disallow: /nl/*/miscellaneous$
+Disallow: /nl/*/miscellaneous?
+Disallow: /nl/*/mixed-building/
+Disallow: /nl/*/mixed-building$
+Disallow: /nl/*/mixed-building?
+Disallow: /nl/*/office-space/
+Disallow: /nl/*/office-space$
+Disallow: /nl/*/office-space?
+Disallow: /nl/*/other/
+Disallow: /nl/*/other$
+Disallow: /nl/*/other?
+Disallow: /nl/*/recreational-land/
+Disallow: /nl/*/recreational-land$
+Disallow: /nl/*/recreational-land?
+Disallow: /nl/*/reserve-naturelle/
+Disallow: /nl/*/reserve-naturelle$
+Disallow: /nl/*/reserve-naturelle?
+Disallow: /nl/*/residence/
+Disallow: /nl/*/residence$
+Disallow: /nl/*/residence?
+Disallow: /nl/*/residence-de-vacances/
+Disallow: /nl/*/residence-de-vacances$
+Disallow: /nl/*/residence-de-vacances?
+Disallow: /nl/*/rez-de-chaussee/
+Disallow: /nl/*/rez-de-chaussee$
+Disallow: /nl/*/rez-de-chaussee?
+Disallow: /nl/*/salon-coiffure---esthetique/
+Disallow: /nl/*/salon-coiffure---esthetique$
+Disallow: /nl/*/salon-coiffure---esthetique?
+Disallow: /nl/*/shop-books---tobacco---flowers/
+Disallow: /nl/*/shop-books---tobacco---flowers$
+Disallow: /nl/*/shop-books---tobacco---flowers?
+Disallow: /nl/*/shop-car---cycles/
+Disallow: /nl/*/shop-car---cycles$
+Disallow: /nl/*/shop-car---cycles?
+Disallow: /nl/*/shop-clothes---textiles/
+Disallow: /nl/*/shop-clothes---textiles$
+Disallow: /nl/*/shop-clothes---textiles?
+Disallow: /nl/*/student-flat/
+Disallow: /nl/*/student-flat$
+Disallow: /nl/*/student-flat?
+Disallow: /nl/*/student-housing/
+Disallow: /nl/*/student-housing$
+Disallow: /nl/*/student-housing?
+Disallow: /nl/*/studio-de-vacances/
+Disallow: /nl/*/studio-de-vacances$
+Disallow: /nl/*/studio-de-vacances?
+Disallow: /nl/*/surface-commerciale/
+Disallow: /nl/*/surface-commerciale$
+Disallow: /nl/*/surface-commerciale?
+Disallow: /nl/*/surface-industrielle/
+Disallow: /nl/*/surface-industrielle$
+Disallow: /nl/*/surface-industrielle?
+Disallow: /nl/*/terrain/
+Disallow: /nl/*/terrain$
+Disallow: /nl/*/terrain?
+Disallow: /nl/*/terrain-a-batir/
+Disallow: /nl/*/terrain-a-batir$
+Disallow: /nl/*/terrain-a-batir?
+Disallow: /nl/*/terrain-a-lotir/
+Disallow: /nl/*/terrain-a-lotir$
+Disallow: /nl/*/terrain-a-lotir?
+Disallow: /nl/*/terrain-agricole/
+Disallow: /nl/*/terrain-agricole$
+Disallow: /nl/*/terrain-agricole?
+Disallow: /nl/*/terrain-de-loisirs/
+Disallow: /nl/*/terrain-de-loisirs$
+Disallow: /nl/*/terrain-de-loisirs?
+Disallow: /nl/*/terrain-industriel/
+Disallow: /nl/*/terrain-industriel$
+Disallow: /nl/*/terrain-industriel?
+Disallow: /nl/*/to-parcel-out-site/
+Disallow: /nl/*/to-parcel-out-site$
+Disallow: /nl/*/to-parcel-out-site?
+Disallow: /nl/*/to-share/
+Disallow: /nl/*/to-share$
+Disallow: /nl/*/to-share?
+Disallow: /nl/*/undetermined-property/
+Disallow: /nl/*/undetermined-property$
+Disallow: /nl/*/undetermined-property?
+Disallow: /nl/*/vacation-apartment/
+Disallow: /nl/*/vacation-apartment$
+Disallow: /nl/*/vacation-apartment?
+Disallow: /nl/*/vacation-bungalow/
+Disallow: /nl/*/vacation-bungalow$
+Disallow: /nl/*/vacation-bungalow?
+Disallow: /nl/*/vacation-caravan/
+Disallow: /nl/*/vacation-caravan$
+Disallow: /nl/*/vacation-caravan?
+Disallow: /nl/*/vacation-chalet/
+Disallow: /nl/*/vacation-chalet$
+Disallow: /nl/*/vacation-chalet?
+Disallow: /nl/*/vacation-guest-house/
+Disallow: /nl/*/vacation-guest-house$
+Disallow: /nl/*/vacation-guest-house?
+Disallow: /nl/*/vacation-house/
+Disallow: /nl/*/vacation-house$
+Disallow: /nl/*/vacation-house?
+Disallow: /nl/*/vacation-studio/
+Disallow: /nl/*/vacation-studio$
+Disallow: /nl/*/vacation-studio?
+Disallow: /nl/*/warehouse---workshop/
+Disallow: /nl/*/warehouse---workshop$
+Disallow: /nl/*/warehouse---workshop?
+Disallow: /nl/*/wood/
+Disallow: /nl/*/wood$
+Disallow: /nl/*/wood?
+#    -- fr: type, subtype and transaction slugs of the other two languages
+Disallow: /fr/*/andere/
+Disallow: /fr/*/andere$
+Disallow: /fr/*/andere?
+Disallow: /fr/*/apartment/
+Disallow: /fr/*/apartment$
+Disallow: /fr/*/apartment?
+Disallow: /fr/*/auto-s---fietsenwinkel/
+Disallow: /fr/*/auto-s---fietsenwinkel$
+Disallow: /fr/*/auto-s---fietsenwinkel?
+Disallow: /fr/*/bedrijfsvastgoed/
+Disallow: /fr/*/bedrijfsvastgoed$
+Disallow: /fr/*/bedrijfsvastgoed?
+Disallow: /fr/*/bel-etage/
+Disallow: /fr/*/bel-etage$
+Disallow: /fr/*/bel-etage?
+Disallow: /fr/*/boeken---tabak---bloemenwinkel/
+Disallow: /fr/*/boeken---tabak---bloemenwinkel$
+Disallow: /fr/*/boeken---tabak---bloemenwinkel?
+Disallow: /fr/*/boerderij---hoeve/
+Disallow: /fr/*/boerderij---hoeve$
+Disallow: /fr/*/boerderij---hoeve?
+Disallow: /fr/*/bos/
+Disallow: /fr/*/bos$
+Disallow: /fr/*/bos?
+Disallow: /fr/*/bouwgrond/
+Disallow: /fr/*/bouwgrond$
+Disallow: /fr/*/bouwgrond?
+Disallow: /fr/*/business-activity/
+Disallow: /fr/*/business-activity$
+Disallow: /fr/*/business-activity?
+Disallow: /fr/*/business-surface/
+Disallow: /fr/*/business-surface$
+Disallow: /fr/*/business-surface?
+Disallow: /fr/*/caravan---vakantiecaravan/
+Disallow: /fr/*/caravan---vakantiecaravan$
+Disallow: /fr/*/caravan---vakantiecaravan?
+Disallow: /fr/*/commercial-building/
+Disallow: /fr/*/commercial-building$
+Disallow: /fr/*/commercial-building?
+Disallow: /fr/*/cottage/
+Disallow: /fr/*/cottage$
+Disallow: /fr/*/cottage?
+Disallow: /fr/*/development-site/
+Disallow: /fr/*/development-site$
+Disallow: /fr/*/development-site?
+Disallow: /fr/*/farming-site/
+Disallow: /fr/*/farming-site$
+Disallow: /fr/*/farming-site?
+Disallow: /fr/*/farmland/
+Disallow: /fr/*/farmland$
+Disallow: /fr/*/farmland?
+Disallow: /fr/*/first-floor-house/
+Disallow: /fr/*/first-floor-house$
+Disallow: /fr/*/first-floor-house?
+Disallow: /fr/*/food-store/
+Disallow: /fr/*/food-store$
+Disallow: /fr/*/food-store?
+Disallow: /fr/*/for-rent/
+Disallow: /fr/*/for-rent$
+Disallow: /fr/*/for-rent?
+Disallow: /fr/*/for-sale/
+Disallow: /fr/*/for-sale$
+Disallow: /fr/*/for-sale?
+Disallow: /fr/*/garagebox/
+Disallow: /fr/*/garagebox$
+Disallow: /fr/*/garagebox?
+Disallow: /fr/*/gastenkamer/
+Disallow: /fr/*/gastenkamer$
+Disallow: /fr/*/gastenkamer?
+Disallow: /fr/*/gelijkvloers/
+Disallow: /fr/*/gelijkvloers$
+Disallow: /fr/*/gelijkvloers?
+Disallow: /fr/*/green-zone/
+Disallow: /fr/*/green-zone$
+Disallow: /fr/*/green-zone?
+Disallow: /fr/*/grond/
+Disallow: /fr/*/grond$
+Disallow: /fr/*/grond?
+Disallow: /fr/*/ground-floor/
+Disallow: /fr/*/ground-floor$
+Disallow: /fr/*/ground-floor?
+Disallow: /fr/*/hair---beauty-salon/
+Disallow: /fr/*/hair---beauty-salon$
+Disallow: /fr/*/hair---beauty-salon?
+Disallow: /fr/*/handel/
+Disallow: /fr/*/handel$
+Disallow: /fr/*/handel?
+Disallow: /fr/*/handelsfonds/
+Disallow: /fr/*/handelsfonds$
+Disallow: /fr/*/handelsfonds?
+Disallow: /fr/*/handelspand/
+Disallow: /fr/*/handelspand$
+Disallow: /fr/*/handelspand?
+Disallow: /fr/*/herenhuis/
+Disallow: /fr/*/herenhuis$
+Disallow: /fr/*/herenhuis?
+Disallow: /fr/*/holiday-resort/
+Disallow: /fr/*/holiday-resort$
+Disallow: /fr/*/holiday-resort?
+Disallow: /fr/*/house/
+Disallow: /fr/*/house$
+Disallow: /fr/*/house?
+Disallow: /fr/*/huis/
+Disallow: /fr/*/huis$
+Disallow: /fr/*/huis?
+Disallow: /fr/*/huis-gemengd-gebruik/
+Disallow: /fr/*/huis-gemengd-gebruik$
+Disallow: /fr/*/huis-gemengd-gebruik?
+Disallow: /fr/*/in-medehuur/
+Disallow: /fr/*/in-medehuur$
+Disallow: /fr/*/in-medehuur?
+Disallow: /fr/*/in-openbare-verkoop/
+Disallow: /fr/*/in-openbare-verkoop$
+Disallow: /fr/*/in-openbare-verkoop?
+Disallow: /fr/*/in-public-sale/
+Disallow: /fr/*/in-public-sale$
+Disallow: /fr/*/in-public-sale?
+Disallow: /fr/*/industrial-building/
+Disallow: /fr/*/industrial-building$
+Disallow: /fr/*/industrial-building?
+Disallow: /fr/*/industrial-ground/
+Disallow: /fr/*/industrial-ground$
+Disallow: /fr/*/industrial-ground?
+Disallow: /fr/*/industrie/
+Disallow: /fr/*/industrie$
+Disallow: /fr/*/industrie?
+Disallow: /fr/*/industriegrond/
+Disallow: /fr/*/industriegrond$
+Disallow: /fr/*/industriegrond?
+Disallow: /fr/*/investment-property/
+Disallow: /fr/*/investment-property$
+Disallow: /fr/*/investment-property?
+Disallow: /fr/*/kantoor/
+Disallow: /fr/*/kantoor$
+Disallow: /fr/*/kantoor?
+Disallow: /fr/*/kapsalon---schoonheidssalon/
+Disallow: /fr/*/kapsalon---schoonheidssalon$
+Disallow: /fr/*/kapsalon---schoonheidssalon?
+Disallow: /fr/*/kasteel/
+Disallow: /fr/*/kasteel$
+Disallow: /fr/*/kasteel?
+Disallow: /fr/*/kledij---textielwinkel/
+Disallow: /fr/*/kledij---textielwinkel$
+Disallow: /fr/*/kledij---textielwinkel?
+Disallow: /fr/*/land/
+Disallow: /fr/*/land$
+Disallow: /fr/*/land?
+Disallow: /fr/*/landbouwgrond/
+Disallow: /fr/*/landbouwgrond$
+Disallow: /fr/*/landbouwgrond?
+Disallow: /fr/*/luxury-house/
+Disallow: /fr/*/luxury-house$
+Disallow: /fr/*/luxury-house?
+Disallow: /fr/*/magazijn---atelier/
+Disallow: /fr/*/magazijn---atelier$
+Disallow: /fr/*/magazijn---atelier?
+Disallow: /fr/*/mansion/
+Disallow: /fr/*/mansion$
+Disallow: /fr/*/mansion?
+Disallow: /fr/*/master-house/
+Disallow: /fr/*/master-house$
+Disallow: /fr/*/master-house?
+Disallow: /fr/*/miscellaneous/
+Disallow: /fr/*/miscellaneous$
+Disallow: /fr/*/miscellaneous?
+Disallow: /fr/*/mixed-building/
+Disallow: /fr/*/mixed-building$
+Disallow: /fr/*/mixed-building?
+Disallow: /fr/*/natuurgebied/
+Disallow: /fr/*/natuurgebied$
+Disallow: /fr/*/natuurgebied?
+Disallow: /fr/*/office-space/
+Disallow: /fr/*/office-space$
+Disallow: /fr/*/office-space?
+Disallow: /fr/*/onbepaald-pand/
+Disallow: /fr/*/onbepaald-pand$
+Disallow: /fr/*/onbepaald-pand?
+Disallow: /fr/*/opbrengsteigendom/
+Disallow: /fr/*/opbrengsteigendom$
+Disallow: /fr/*/opbrengsteigendom?
+Disallow: /fr/*/other/
+Disallow: /fr/*/other$
+Disallow: /fr/*/other?
+Disallow: /fr/*/recreatiegrond/
+Disallow: /fr/*/recreatiegrond$
+Disallow: /fr/*/recreatiegrond?
+Disallow: /fr/*/recreational-land/
+Disallow: /fr/*/recreational-land$
+Disallow: /fr/*/recreational-land?
+Disallow: /fr/*/residence/
+Disallow: /fr/*/residence$
+Disallow: /fr/*/residence?
+Disallow: /fr/*/shop-books---tobacco---flowers/
+Disallow: /fr/*/shop-books---tobacco---flowers$
+Disallow: /fr/*/shop-books---tobacco---flowers?
+Disallow: /fr/*/shop-car---cycles/
+Disallow: /fr/*/shop-car---cycles$
+Disallow: /fr/*/shop-car---cycles?
+Disallow: /fr/*/shop-clothes---textiles/
+Disallow: /fr/*/shop-clothes---textiles$
+Disallow: /fr/*/shop-clothes---textiles?
+Disallow: /fr/*/student-flat/
+Disallow: /fr/*/student-flat$
+Disallow: /fr/*/student-flat?
+Disallow: /fr/*/student-housing/
+Disallow: /fr/*/student-housing$
+Disallow: /fr/*/student-housing?
+Disallow: /fr/*/te-huur/
+Disallow: /fr/*/te-huur$
+Disallow: /fr/*/te-huur?
+Disallow: /fr/*/te-koop/
+Disallow: /fr/*/te-koop$
+Disallow: /fr/*/te-koop?
+Disallow: /fr/*/to-parcel-out-site/
+Disallow: /fr/*/to-parcel-out-site$
+Disallow: /fr/*/to-parcel-out-site?
+Disallow: /fr/*/to-share/
+Disallow: /fr/*/to-share$
+Disallow: /fr/*/to-share?
+Disallow: /fr/*/uitzonderlijke-woning/
+Disallow: /fr/*/uitzonderlijke-woning$
+Disallow: /fr/*/uitzonderlijke-woning?
+Disallow: /fr/*/undetermined-property/
+Disallow: /fr/*/undetermined-property$
+Disallow: /fr/*/undetermined-property?
+Disallow: /fr/*/vacation-apartment/
+Disallow: /fr/*/vacation-apartment$
+Disallow: /fr/*/vacation-apartment?
+Disallow: /fr/*/vacation-bungalow/
+Disallow: /fr/*/vacation-bungalow$
+Disallow: /fr/*/vacation-bungalow?
+Disallow: /fr/*/vacation-caravan/
+Disallow: /fr/*/vacation-caravan$
+Disallow: /fr/*/vacation-caravan?
+Disallow: /fr/*/vacation-chalet/
+Disallow: /fr/*/vacation-chalet$
+Disallow: /fr/*/vacation-chalet?
+Disallow: /fr/*/vacation-guest-house/
+Disallow: /fr/*/vacation-guest-house$
+Disallow: /fr/*/vacation-guest-house?
+Disallow: /fr/*/vacation-house/
+Disallow: /fr/*/vacation-house$
+Disallow: /fr/*/vacation-house?
+Disallow: /fr/*/vacation-studio/
+Disallow: /fr/*/vacation-studio$
+Disallow: /fr/*/vacation-studio?
+Disallow: /fr/*/vakantieappartement/
+Disallow: /fr/*/vakantieappartement$
+Disallow: /fr/*/vakantieappartement?
+Disallow: /fr/*/vakantiebungalow/
+Disallow: /fr/*/vakantiebungalow$
+Disallow: /fr/*/vakantiebungalow?
+Disallow: /fr/*/vakantiechalet/
+Disallow: /fr/*/vakantiechalet$
+Disallow: /fr/*/vakantiechalet?
+Disallow: /fr/*/vakantiehuis/
+Disallow: /fr/*/vakantiehuis$
+Disallow: /fr/*/vakantiehuis?
+Disallow: /fr/*/vakantiestudio/
+Disallow: /fr/*/vakantiestudio$
+Disallow: /fr/*/vakantiestudio?
+Disallow: /fr/*/vakantiewoning/
+Disallow: /fr/*/vakantiewoning$
+Disallow: /fr/*/vakantiewoning?
+Disallow: /fr/*/varia/
+Disallow: /fr/*/varia$
+Disallow: /fr/*/varia?
+Disallow: /fr/*/verkavelingsgrond/
+Disallow: /fr/*/verkavelingsgrond$
+Disallow: /fr/*/verkavelingsgrond?
+Disallow: /fr/*/voedingszaak/
+Disallow: /fr/*/voedingszaak$
+Disallow: /fr/*/voedingszaak?
+Disallow: /fr/*/warehouse---workshop/
+Disallow: /fr/*/warehouse---workshop$
+Disallow: /fr/*/warehouse---workshop?
+Disallow: /fr/*/wood/
+Disallow: /fr/*/wood$
+Disallow: /fr/*/wood?
+#    -- en: type, subtype and transaction slugs of the other two languages
+Disallow: /en/*/a-louer/
+Disallow: /en/*/a-louer$
+Disallow: /en/*/a-louer?
+Disallow: /en/*/a-vendre/
+Disallow: /en/*/a-vendre$
+Disallow: /en/*/a-vendre?
+Disallow: /en/*/andere/
+Disallow: /en/*/andere$
+Disallow: /en/*/andere?
+Disallow: /en/*/appartement/
+Disallow: /en/*/appartement$
+Disallow: /en/*/appartement?
+Disallow: /en/*/appartement-de-vacances/
+Disallow: /en/*/appartement-de-vacances$
+Disallow: /en/*/appartement-de-vacances?
+Disallow: /en/*/auto-s---fietsenwinkel/
+Disallow: /en/*/auto-s---fietsenwinkel$
+Disallow: /en/*/auto-s---fietsenwinkel?
+Disallow: /en/*/autres/
+Disallow: /en/*/autres$
+Disallow: /en/*/autres?
+Disallow: /en/*/bedrijfsvastgoed/
+Disallow: /en/*/bedrijfsvastgoed$
+Disallow: /en/*/bedrijfsvastgoed?
+Disallow: /en/*/bel-etage/
+Disallow: /en/*/bel-etage$
+Disallow: /en/*/bel-etage?
+Disallow: /en/*/bien-divers/
+Disallow: /en/*/bien-divers$
+Disallow: /en/*/bien-divers?
+Disallow: /en/*/boeken---tabak---bloemenwinkel/
+Disallow: /en/*/boeken---tabak---bloemenwinkel$
+Disallow: /en/*/boeken---tabak---bloemenwinkel?
+Disallow: /en/*/boerderij---hoeve/
+Disallow: /en/*/boerderij---hoeve$
+Disallow: /en/*/boerderij---hoeve?
+Disallow: /en/*/bois/
+Disallow: /en/*/bois$
+Disallow: /en/*/bois?
+Disallow: /en/*/bos/
+Disallow: /en/*/bos$
+Disallow: /en/*/bos?
+Disallow: /en/*/bouwgrond/
+Disallow: /en/*/bouwgrond$
+Disallow: /en/*/bouwgrond?
+Disallow: /en/*/bungalow-de-vacances/
+Disallow: /en/*/bungalow-de-vacances$
+Disallow: /en/*/bungalow-de-vacances?
+Disallow: /en/*/bureaux/
+Disallow: /en/*/bureaux$
+Disallow: /en/*/bureaux?
+Disallow: /en/*/caravan---vakantiecaravan/
+Disallow: /en/*/caravan---vakantiecaravan$
+Disallow: /en/*/caravan---vakantiecaravan?
+Disallow: /en/*/caravane-residentielle/
+Disallow: /en/*/caravane-residentielle$
+Disallow: /en/*/caravane-residentielle?
+Disallow: /en/*/chalet-de-vacances/
+Disallow: /en/*/chalet-de-vacances$
+Disallow: /en/*/chalet-de-vacances?
+Disallow: /en/*/chambre-d-hotes/
+Disallow: /en/*/chambre-d-hotes$
+Disallow: /en/*/chambre-d-hotes?
+Disallow: /en/*/chateau/
+Disallow: /en/*/chateau$
+Disallow: /en/*/chateau?
+Disallow: /en/*/commerce-alimentation/
+Disallow: /en/*/commerce-alimentation$
+Disallow: /en/*/commerce-alimentation?
+Disallow: /en/*/commerce-auto---cycles/
+Disallow: /en/*/commerce-auto---cycles$
+Disallow: /en/*/commerce-auto---cycles?
+Disallow: /en/*/commerce-divers/
+Disallow: /en/*/commerce-divers$
+Disallow: /en/*/commerce-divers?
+Disallow: /en/*/commerce-librairie---tabac---fleurs/
+Disallow: /en/*/commerce-librairie---tabac---fleurs$
+Disallow: /en/*/commerce-librairie---tabac---fleurs?
+Disallow: /en/*/commerce-vetements---textiles/
+Disallow: /en/*/commerce-vetements---textiles$
+Disallow: /en/*/commerce-vetements---textiles?
+Disallow: /en/*/demeure-de-prestige/
+Disallow: /en/*/demeure-de-prestige$
+Disallow: /en/*/demeure-de-prestige?
+Disallow: /en/*/divers/
+Disallow: /en/*/divers$
+Disallow: /en/*/divers?
+Disallow: /en/*/en-colocation/
+Disallow: /en/*/en-colocation$
+Disallow: /en/*/en-colocation?
+Disallow: /en/*/en-vente-publique/
+Disallow: /en/*/en-vente-publique$
+Disallow: /en/*/en-vente-publique?
+Disallow: /en/*/entrepot---ateliers/
+Disallow: /en/*/entrepot---ateliers$
+Disallow: /en/*/entrepot---ateliers?
+Disallow: /en/*/ferme/
+Disallow: /en/*/ferme$
+Disallow: /en/*/ferme?
+Disallow: /en/*/fermette/
+Disallow: /en/*/fermette$
+Disallow: /en/*/fermette?
+Disallow: /en/*/fonds-de-commerce/
+Disallow: /en/*/fonds-de-commerce$
+Disallow: /en/*/fonds-de-commerce?
+Disallow: /en/*/garagebox/
+Disallow: /en/*/garagebox$
+Disallow: /en/*/garagebox?
+Disallow: /en/*/gastenkamer/
+Disallow: /en/*/gastenkamer$
+Disallow: /en/*/gastenkamer?
+Disallow: /en/*/gelijkvloers/
+Disallow: /en/*/gelijkvloers$
+Disallow: /en/*/gelijkvloers?
+Disallow: /en/*/grond/
+Disallow: /en/*/grond$
+Disallow: /en/*/grond?
+Disallow: /en/*/handel/
+Disallow: /en/*/handel$
+Disallow: /en/*/handel?
+Disallow: /en/*/handelsfonds/
+Disallow: /en/*/handelsfonds$
+Disallow: /en/*/handelsfonds?
+Disallow: /en/*/handelspand/
+Disallow: /en/*/handelspand$
+Disallow: /en/*/handelspand?
+Disallow: /en/*/herenhuis/
+Disallow: /en/*/herenhuis$
+Disallow: /en/*/herenhuis?
+Disallow: /en/*/huis/
+Disallow: /en/*/huis$
+Disallow: /en/*/huis?
+Disallow: /en/*/huis-gemengd-gebruik/
+Disallow: /en/*/huis-gemengd-gebruik$
+Disallow: /en/*/huis-gemengd-gebruik?
+Disallow: /en/*/immeuble-de-rapport/
+Disallow: /en/*/immeuble-de-rapport$
+Disallow: /en/*/immeuble-de-rapport?
+Disallow: /en/*/immeuble-mixte/
+Disallow: /en/*/immeuble-mixte$
+Disallow: /en/*/immeuble-mixte?
+Disallow: /en/*/in-medehuur/
+Disallow: /en/*/in-medehuur$
+Disallow: /en/*/in-medehuur?
+Disallow: /en/*/in-openbare-verkoop/
+Disallow: /en/*/in-openbare-verkoop$
+Disallow: /en/*/in-openbare-verkoop?
+Disallow: /en/*/industrie/
+Disallow: /en/*/industrie$
+Disallow: /en/*/industrie?
+Disallow: /en/*/industriegrond/
+Disallow: /en/*/industriegrond$
+Disallow: /en/*/industriegrond?
+Disallow: /en/*/kantoor/
+Disallow: /en/*/kantoor$
+Disallow: /en/*/kantoor?
+Disallow: /en/*/kapsalon---schoonheidssalon/
+Disallow: /en/*/kapsalon---schoonheidssalon$
+Disallow: /en/*/kapsalon---schoonheidssalon?
+Disallow: /en/*/kasteel/
+Disallow: /en/*/kasteel$
+Disallow: /en/*/kasteel?
+Disallow: /en/*/kledij---textielwinkel/
+Disallow: /en/*/kledij---textielwinkel$
+Disallow: /en/*/kledij---textielwinkel?
+Disallow: /en/*/kot/
+Disallow: /en/*/kot$
+Disallow: /en/*/kot?
+Disallow: /en/*/landbouwgrond/
+Disallow: /en/*/landbouwgrond$
+Disallow: /en/*/landbouwgrond?
+Disallow: /en/*/magazijn---atelier/
+Disallow: /en/*/magazijn---atelier$
+Disallow: /en/*/magazijn---atelier?
+Disallow: /en/*/maison/
+Disallow: /en/*/maison$
+Disallow: /en/*/maison?
+Disallow: /en/*/maison-bel-etage/
+Disallow: /en/*/maison-bel-etage$
+Disallow: /en/*/maison-bel-etage?
+Disallow: /en/*/maison-de-maitre/
+Disallow: /en/*/maison-de-maitre$
+Disallow: /en/*/maison-de-maitre?
+Disallow: /en/*/maison-de-vacances/
+Disallow: /en/*/maison-de-vacances$
+Disallow: /en/*/maison-de-vacances?
+Disallow: /en/*/natuurgebied/
+Disallow: /en/*/natuurgebied$
+Disallow: /en/*/natuurgebied?
+Disallow: /en/*/onbepaald-pand/
+Disallow: /en/*/onbepaald-pand$
+Disallow: /en/*/onbepaald-pand?
+Disallow: /en/*/opbrengsteigendom/
+Disallow: /en/*/opbrengsteigendom$
+Disallow: /en/*/opbrengsteigendom?
+Disallow: /en/*/recreatiegrond/
+Disallow: /en/*/recreatiegrond$
+Disallow: /en/*/recreatiegrond?
+Disallow: /en/*/reserve-naturelle/
+Disallow: /en/*/reserve-naturelle$
+Disallow: /en/*/reserve-naturelle?
+Disallow: /en/*/residence-de-vacances/
+Disallow: /en/*/residence-de-vacances$
+Disallow: /en/*/residence-de-vacances?
+Disallow: /en/*/rez-de-chaussee/
+Disallow: /en/*/rez-de-chaussee$
+Disallow: /en/*/rez-de-chaussee?
+Disallow: /en/*/salon-coiffure---esthetique/
+Disallow: /en/*/salon-coiffure---esthetique$
+Disallow: /en/*/salon-coiffure---esthetique?
+Disallow: /en/*/studio-de-vacances/
+Disallow: /en/*/studio-de-vacances$
+Disallow: /en/*/studio-de-vacances?
+Disallow: /en/*/surface-commerciale/
+Disallow: /en/*/surface-commerciale$
+Disallow: /en/*/surface-commerciale?
+Disallow: /en/*/surface-industrielle/
+Disallow: /en/*/surface-industrielle$
+Disallow: /en/*/surface-industrielle?
+Disallow: /en/*/te-huur/
+Disallow: /en/*/te-huur$
+Disallow: /en/*/te-huur?
+Disallow: /en/*/te-koop/
+Disallow: /en/*/te-koop$
+Disallow: /en/*/te-koop?
+Disallow: /en/*/terrain/
+Disallow: /en/*/terrain$
+Disallow: /en/*/terrain?
+Disallow: /en/*/terrain-a-batir/
+Disallow: /en/*/terrain-a-batir$
+Disallow: /en/*/terrain-a-batir?
+Disallow: /en/*/terrain-a-lotir/
+Disallow: /en/*/terrain-a-lotir$
+Disallow: /en/*/terrain-a-lotir?
+Disallow: /en/*/terrain-agricole/
+Disallow: /en/*/terrain-agricole$
+Disallow: /en/*/terrain-agricole?
+Disallow: /en/*/terrain-de-loisirs/
+Disallow: /en/*/terrain-de-loisirs$
+Disallow: /en/*/terrain-de-loisirs?
+Disallow: /en/*/terrain-industriel/
+Disallow: /en/*/terrain-industriel$
+Disallow: /en/*/terrain-industriel?
+Disallow: /en/*/uitzonderlijke-woning/
+Disallow: /en/*/uitzonderlijke-woning$
+Disallow: /en/*/uitzonderlijke-woning?
+Disallow: /en/*/vakantieappartement/
+Disallow: /en/*/vakantieappartement$
+Disallow: /en/*/vakantieappartement?
+Disallow: /en/*/vakantiebungalow/
+Disallow: /en/*/vakantiebungalow$
+Disallow: /en/*/vakantiebungalow?
+Disallow: /en/*/vakantiechalet/
+Disallow: /en/*/vakantiechalet$
+Disallow: /en/*/vakantiechalet?
+Disallow: /en/*/vakantiehuis/
+Disallow: /en/*/vakantiehuis$
+Disallow: /en/*/vakantiehuis?
+Disallow: /en/*/vakantiestudio/
+Disallow: /en/*/vakantiestudio$
+Disallow: /en/*/vakantiestudio?
+Disallow: /en/*/vakantiewoning/
+Disallow: /en/*/vakantiewoning$
+Disallow: /en/*/vakantiewoning?
+Disallow: /en/*/varia/
+Disallow: /en/*/varia$
+Disallow: /en/*/varia?
+Disallow: /en/*/verkavelingsgrond/
+Disallow: /en/*/verkavelingsgrond$
+Disallow: /en/*/verkavelingsgrond?
+Disallow: /en/*/voedingszaak/
+Disallow: /en/*/voedingszaak$
+Disallow: /en/*/voedingszaak?
+
+# =============================================================================
+# 3. Googlebot-News: news and article content only
+# =============================================================================
+User-agent: Googlebot-News
+Allow: /fr/article*
+Allow: /nl/article*
+Allow: /en/article*
+Allow: /fr/catalogue/content-section*
+Allow: /nl/catalogue/content-section*
+Allow: /en/catalogue/content-section*
+Allow: /fr/content*
+Allow: /nl/content*
+Allow: /en/content*
+Disallow: /
+
+# =============================================================================
+# 4. AI crawlers we turn away
+# =============================================================================
+# Training-only crawlers. They take the content and send nothing back: no
+# citation, no referral. Listings are perishable, so a model trained on a
+# snapshot quotes prices that were right months ago and attributes them to us.
+# The listings are also supplied by agencies and private owners under terms that
+# do not contemplate model training, so this is the licensing-safe default.
+#
+# Google-Extended and Applebot-Extended are robots.txt control tokens, not
+# crawlers. Blocking them gates Gemini and Apple Intelligence training only, and
+# has NO effect on Google Search or Spotlight indexing.
+#
+# Note this file is advisory. Bytespider and CCBot honour it inconsistently;
+# enforcement is Akamai Bot Manager (DEV-7773), currently on Monitor.
+User-agent: GPTBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: Bytespider
+User-agent: meta-externalagent
+Disallow: /
+
+# =============================================================================
+# 5. Legacy scrapers, media monitoring and offline-copy tools
+# =============================================================================
+User-agent: 5emeRue
+User-agent: 5erue
+User-agent: adequat
+User-agent: adequat-systems
+User-agent: AmiSoftware
+User-agent: Argus
+User-agent: Ask n read
+User-agent: asknread.com
+User-agent: Augure
+User-agent: auramundi
+User-agent: Bloodhound
+User-agent: Cision
+User-agent: coexel
+User-agent: ConveraCrawler
+User-agent: Corporama
+User-agent: cydralspider
+User-agent: Digimind
+User-agent: Download Ninja
+User-agent: downloadexpress
+User-agent: EDD
+User-agent: ellisphere
+User-agent: eureka
+User-agent: Europresse
+User-agent: Explore
+User-agent: Factiva
+User-agent: Fasterfox
+User-agent: Fetch
+User-agent: gammaSpider
+User-agent: grub-client
+User-agent: HTTrack
+User-agent: ia_archiver
+User-agent: ia_archiver-web.archive.org
+User-agent: indexer
+User-agent: infoseek
+User-agent: Jetbot
+User-agent: k2spider
+User-agent: Kantar
+User-agent: kbcrawl
+User-agent: Knowings
+User-agent: larbin
+User-agent: leadbox
+User-agent: libwww
+User-agent: linkfluence
+User-agent: linko
+User-agent: manageo
+User-agent: mediacompil
+User-agent: Meltwater
+User-agent: mention
+User-agent: Moreover
+User-agent: MSIECrawler
+User-agent: mytwip
+User-agent: newscan-online
+User-agent: NewsNow
+User-agent: Newzbin
+User-agent: NPBot
+User-agent: ObjectsSearch
+User-agent: Offline Explorer
+User-agent: opinion-tracker
+User-agent: Pimptrain
+User-agent: proxem
+User-agent: QuepasaCreep
+User-agent: Qwam content intelligence
+User-agent: Raven
+User-agent: readability.com
+User-agent: scoop.it
+User-agent: score3
+User-agent: Sindup
+User-agent: sitecheck.internetseer.com
+User-agent: SiteSnagger
+User-agent: spotter
+User-agent: Synthesio
+User-agent: Talkwater
+User-agent: Teleport
+User-agent: TeleportPro
+User-agent: trendeo
+User-agent: trendybuzz
+User-agent: TunitinBot
+User-agent: TurnitinBot
+User-agent: up2news
+User-agent: vecteurplus
+User-agent: Verif
+User-agent: verticalsearch
+User-agent: vsw
+User-agent: wapspider
+User-agent: WebCopier
+User-agent: WebReaper
+User-agent: WebStripper
+User-agent: WebZinger
+User-agent: WebZIP
+User-agent: Wget
+User-agent: winello
+User-agent: Youmag
+User-agent: Zealbot
+User-agent: Zite
+User-agent: ZyBORG
+Disallow: /
