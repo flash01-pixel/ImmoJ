@@ -142,8 +142,10 @@ def commande_installer(admin: Admin) -> int:
 def commande_env(admin: Admin) -> int:
     p = admin.projet()
     if p is None:
-        print("Projet « immoj » introuvable : lance d'abord le workflow « Installer Supabase ».")
-        return 1
+        # Pas bloquant : le stockage JSON (mode sans compte) continue de fonctionner.
+        print("Projet « immoj » introuvable : lance le workflow « Installer Supabase ». "
+              "En attendant, seul le stockage JSON est alimenté.")
+        return 0
     ref = p["id"]
     cles = admin.cles(ref)
     valeurs = {
