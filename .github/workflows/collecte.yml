@@ -53,6 +53,12 @@ jobs:
           SOURCE: ${{ inputs.source }}
           PAGES: ${{ inputs.pages }}
         run: |
+          # Tant que les secrets ne sont pas configurés, on s'arrête sans erreur
+          # (sinon GitHub enverrait un e-mail d'échec à chaque heure).
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "Secrets SUPABASE_URL / SUPABASE_SERVICE_KEY absents : rien à faire (voir docs/03-secrets-github.md)."
+            exit 0
+          fi
           ARGS=""
           if [ -n "$SOURCE" ]; then ARGS="$ARGS --source $SOURCE"; fi
           if [ -n "$PAGES" ]; then ARGS="$ARGS --pages $PAGES"; fi
