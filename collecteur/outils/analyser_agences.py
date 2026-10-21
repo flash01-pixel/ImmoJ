@@ -59,7 +59,8 @@ def analyser(html: str, base: str) -> tuple[list[str], list[str]]:
     liens: list[str] = []
     for href in re.findall(r'href=["\']([^"\']+)["\']', html):
         bas = href.lower()
-        if any(m in bas for m in MOTS_LISTE) and not bas.startswith(("mailto:", "tel:", "#", "javascript")):
+        if any(m in bas for m in MOTS_LISTE) and not bas.startswith(
+                ("mailto:", "tel:", "#", "javascript")):
             complet = urljoin(base, href)
             if urlsplit(complet).netloc == urlsplit(base).netloc and complet not in liens:
                 liens.append(complet)
@@ -68,7 +69,8 @@ def analyser(html: str, base: str) -> tuple[list[str], list[str]]:
 
 def main() -> int:
     parseur = argparse.ArgumentParser()
-    parseur.add_argument("--seulement", default="", help="ne tester que les agences dont le nom contient ce texte")
+    parseur.add_argument("--seulement", default="",
+                         help="ne tester que les agences dont le nom contient ce texte")
     args = parseur.parse_args()
     agences = yaml.safe_load(FICHIER.read_text(encoding="utf-8"))["agences"]
     for a in agences:

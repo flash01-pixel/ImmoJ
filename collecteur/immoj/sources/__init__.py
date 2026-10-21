@@ -19,4 +19,12 @@ REGISTRE: dict[str, type[Source]] = {
     AlertesMail.nom: AlertesMail,
 }
 
+# Sources « agences » (une par logiciel ayant des agences actives dans agences.yaml).
+try:
+    from .agences import charger_sources_agences
+    REGISTRE.update(charger_sources_agences())
+except Exception as _e:  # noqa: BLE001 - un YAML cassé ne doit pas bloquer les portails
+    import logging
+    logging.getLogger(__name__).error("agences.yaml illisible : %s", _e)
+
 __all__ = ["REGISTRE", "ResultatCollecte", "Source"]
