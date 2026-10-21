@@ -28,3 +28,8 @@ https://www.easyhome-immo.be/ | agences/easyhome_accueil.html
 https://www.delzandreimmo.be/ | agences/delzandre_accueil.html
 https://www.picardimmo.be/fr/7/chercher-bien/a-louer | agences/picardimmo_louer.html
 https://wellimmo.be/ | agences/wellimmo_accueil.html
+# --- Phase 4 : Biddit (bundle JS pour trouver l'API, plan de site) et immo.notaris.be ---
+https://www.biddit.be/main.ca5817f750a367c3.js | biddit/main.js
+https://www.biddit.be/stg/eco/sitemap_index.xml | biddit/sitemap_index.xml
+https://immo.notaire.be/fr | notaire/immo_notaire_fr.html
+https://immo.notaris.be/immoplatform-public-service_v1/api/search?province=LUXEMBOURG | notaire/api_search.json
