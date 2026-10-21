@@ -55,6 +55,9 @@ class Source(ABC):
     def __init__(self, pages_max: int | None = None) -> None:
         self.client = ClientHttp(self.nom, respecter_robots=self.respecter_robots)
         self.pages_max = pages_max
+        #: annonces déjà en base pour cette source (id_externe → champs), remplies par
+        #: main.py ; permet d'éviter de relire des fiches déjà connues.
+        self.connues: dict[str, dict] = {}
 
     @abstractmethod
     def collecter(self, transaction: str) -> list[Annonce]:

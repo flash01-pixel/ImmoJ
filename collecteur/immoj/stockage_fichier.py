@@ -107,6 +107,12 @@ class StockageFichier:
     def sources_connues(self, source: str) -> dict[str, dict]:
         return {s["id_externe"]: s for s in self.sources.values() if s["source"] == source}
 
+    def annonces_connues(self, source: str) -> dict[str, dict]:
+        """id_externe → champs de l'annonce (prix, chambres...) déjà en base pour une source."""
+        return {s["id_externe"]: self.annonces[s["annonce_id"]]
+                for s in self.sources.values()
+                if s["source"] == source and s["annonce_id"] in self.annonces}
+
     def candidats_doublon(self, transaction: str, commune: str | None,
                           code_postal: str | None) -> list[Candidat]:
         return [

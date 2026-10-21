@@ -207,6 +207,9 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             continue
         debut = maintenant()
         source = REGISTRE[nom](pages_max=pages)
+        for c in cibles:   # ce qu'on sait déjà de cette source (évite de relire des fiches)
+            if isinstance(c["stockage"], StockageFichier):
+                source.connues = c["stockage"].annonces_connues(nom)
         resultat = source.executer(transactions)
         for c in cibles:
             stockage, notificateur = c["stockage"], c["notificateur"]

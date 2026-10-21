@@ -21,11 +21,19 @@ log = logging.getLogger(__name__)
 
 def _modules() -> dict[str, type[SourceAgences]]:
     # Import tardif pour éviter les boucles d'import.
+    from .era import Era
     from .generique import Generique
+    from .honesty import WhiseWebulous
+    from .omnicasa_gatsby import OmnicasaGatsby
     from .whise import Whise
+    from .wordpress import WordPress
     return {
         Generique.logiciel: Generique,
         Whise.logiciel: Whise,
+        WhiseWebulous.logiciel: WhiseWebulous,
+        Era.logiciel: Era,
+        OmnicasaGatsby.logiciel: OmnicasaGatsby,
+        WordPress.logiciel: WordPress,
     }
 
 

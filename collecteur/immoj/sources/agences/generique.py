@@ -25,6 +25,10 @@ Exemple dans agences.yaml :
       exclure: "vendu|loué"      # optionnel : regex (insensible à la casse) sur le texte
                                  # de la carte pour ignorer des cartes. Par défaut, seule
                                  # une carte dont le PRIX affiche « vendu/loué » est ignorée.
+      lieu_url: "/annonces/[^/]+/([^/]+)/"  # optionnel : localité = groupe 1 de cette regex
+                                 # appliquée à l'URL de la fiche (sites sans lieu dans la carte)
+      donnees_location: {type: 2} # optionnel : la liste s'obtient par un formulaire POST
+      donnees_achat: {type: 1}    # (champs envoyés à liste_location / liste_achat)
 
 Un attribut `data-filter` JSON sur la carte (ex. DG-Immo) est lu automatiquement :
 postal_code, price, bedrooms, liveable_area, garden, terrace, furnished, et
@@ -86,6 +90,21 @@ def _prix_selecteur(carte, selecteur: str) -> int | None:
     return None
 
 
+def _chambres(carte, selecteur: str) -> int | None:
+    """Nombre de chambres : parmi les éléments du sélecteur, le premier qui parle de
+    chambres (« 2 chambres », « 3 ch. », « 2 slpk ») ; sinon le premier, sauf s'il
+    s'agit visiblement d'une surface (« 97 m² »)."""
+    elements = carte.select(selecteur)
+    for el in elements:
+        t = el.get_text(" ", strip=True)
+        if re.search(r"\bch(ambre|\.|b)|\bbed|slaapk|slpk|kamer", t, re.I):
+            return nombre(t)
+    texte = _texte(carte, selecteur)
+    if re.search(r"m[²2]", texte):
+        return None
+    return nombre(texte)
+
+
 def _surface(texte: str) -> int | None:
     """« 163.04 m² » → 163 (partie entière, sans confondre avec les milliers)."""
     m = re.search(r"(\d{2,4})(?:[.,]\d+)?\s*m[²2]", texte or "")
@@ -116,10 +135,15 @@ class Generique(SourceAgences):
         if not url_liste:
             return []
         annonces: list[Annonce] = []
+        # Certains sites « maison » n'ont qu'un formulaire de recherche (POST).
+        donnees = options.get(f"donnees_{transaction}")
         for page in range(1, int(options.get("pages", 1)) + 1):
             gabarit = options.get("pagination", "?page={n}")
             url = url_liste if page == 1 else url_liste + gabarit.format(n=page)
-            reponse = self.client.get(url)
+            if donnees is not None:
+                reponse = self.client.post(url, data=donnees)
+            else:
+                reponse = self.client.get(url)
             trouvees = analyser_liste(reponse.text, url_liste, agence, transaction)
             if not trouvees:
                 break
@@ -171,6 +195,10 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
         titre = _texte(carte, options.get("titre")) or lien.get("title") or \
             lien.get_text(" ", strip=True) or agence["nom"]
         code_postal, localite = _lieu(_texte(carte, options.get("lieu")))
+        if not localite and options.get("lieu_url"):      # localité dans l'URL de la fiche
+            m = re.search(options["lieu_url"], url)
+            if m:
+                localite = m.group(1).replace("-", " ").title()
         if not code_postal and extra.get("postal_code"):
             code_postal = str(extra["postal_code"])
         img = carte.select_one(options.get("photo", "img"))
@@ -185,8 +213,7 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
         if prix is None:   # pas de sélecteur : premier montant en € de la carte
             m = re.search(r"(\d[\d .\u202f\u00a0]{1,12})\s*€", texte_carte)
             prix = nombre(m.group(1)) if m else None
-        chambres = (nombre(_texte(carte, options.get("chambres")))
-                    if options.get("chambres") else None)
+        chambres = _chambres(carte, options.get("chambres")) if options.get("chambres") else None
         if chambres is None and isinstance(extra.get("bedrooms"), int):
             chambres = extra["bedrooms"]
         surface = _surface(_texte(carte, options.get("surface"))) if options.get("surface") \
