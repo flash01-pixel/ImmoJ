@@ -1,17 +1,10 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html
-# Modifier ce fichier et pousser déclenche la capture automatiquement.
-https://immovlan.be/fr/immobilier?transactiontypes=a-louer&propertytypes=maison,appartement,studio,kot&provinces=luxembourg&noindex=1 | immovlan/liste_location.html
-https://immovlan.be/fr/immobilier?transactiontypes=a-vendre&propertytypes=maison,appartement&provinces=luxembourg&noindex=1 | immovlan/liste_achat.html
-https://immovlan.be/robots.txt | immovlan/robots.txt
-https://www.zimmo.be/fr/a-louer/luxembourg/ | zimmo/liste_location.html
-https://www.logic-immo.be/fr/location/province-luxembourg | logicimmo/liste_location.html
-https://www.realo.be/fr/a-louer/province-de-luxembourg | realo/liste_location.html
-https://www.2ememain.be/l/immo/a-louer/ | 2ememain/liste_location.html
-# --- 2e série : points d'entrée JSON (souvent moins protégés que le HTML) ---
-https://www.2ememain.be/l/immo/ | 2ememain/categorie_immo.html
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_search.json
-https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_location.json
-https://www.immoweb.be/fr/recherche/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/liste_location.html
-https://www.zimmo.be/fr/ | zimmo/accueil.html
-https://www.athome.lu/fr/location/belgique/province-de-luxembourg | athome/liste_location.html
+# Modifier ce fichier et pousser (sur une branche de travail) déclenche la capture.
+https://www.immoweb.be/fr/search-results/maison-et-appartement/a-vendre/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_achat.json
+https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=2&orderBy=newest | immoweb/api_location_page2.json
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2143&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_maisons_location.json
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2771&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_apparts_location.json
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2142&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_maisons_achat.json
+https://www.athome.lu/fr/vente/belgique/province-de-luxembourg | athome/liste_achat.html
+https://www.athome.lu/fr/location/belgique/province-de-luxembourg?page=2 | athome/liste_location_page2.html
