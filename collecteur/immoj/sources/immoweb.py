@@ -13,6 +13,7 @@ exécution ; la lecture des alertes e-mail (immoweb_mail.py) prend le relais.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from urllib.parse import urlencode
@@ -48,6 +49,17 @@ class Immoweb(Source):
         chemin, _ = CHEMINS[transaction]
         params = {"countries": "BE", "page": str(page), "orderBy": "newest"}
         return f"{BASE}/fr/search-results/{chemin}?{urlencode(params)}"
+
+    def enrichir(self, a: Annonce) -> None:
+        """La fiche Immoweb embarque `window.classified = {...}` : toutes les photos
+        et des dizaines de champs. Sinon, lecture générique de la page."""
+        from ..fiche import enrichir_depuis_html
+        r = self.client.get(a.url)
+        donnees = extraire_classified(r.text)
+        if donnees:
+            completer_depuis_classified(a, donnees)
+        else:
+            enrichir_depuis_html(a, r.text, r.url)
 
     def collecter(self, transaction: str) -> list[Annonce]:
         annonces: list[Annonce] = []
@@ -176,4 +188,102 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
         photos=photos,
         description=str(argumentaire or ""),
         agence=r.get("customerName") or None,
+        details=details_immoweb(prop, trans),
     )
+
+
+#: champs Immoweb (property.*) → libellé affiché
+CHAMPS_PROPRIETE = {
+    "bathroomCount": "Salles de bain", "showerRoomCount": "Salles de douche",
+    "toiletCount": "Toilettes", "landSurface": "Terrain", "roomCount": "Pièces",
+    "floor": "Étage", "floorCount": "Étages", "parkingCountIndoor": "Parkings intérieurs",
+    "parkingCountOutdoor": "Parkings extérieurs", "hasGarden": "Jardin", "gardenSurface": "Jardin",
+    "hasTerrace": "Terrasse", "terraceSurface": "Terrasse", "hasLift": "Ascenseur",
+    "hasBasement": "Cave", "hasAttic": "Grenier", "hasSwimmingPool": "Piscine",
+    "hasGarage": "Garage", "gardenOrientation": "Orientation du jardin",
+    "terraceOrientation": "Orientation de la terrasse", "constructionYear": "Année de construction",
+    "buildingCondition": "État", "facadeCount": "Façades", "kitchenType": "Cuisine",
+    "heatingType": "Chauffage", "isFurnished": "Meublé", "availableAt": "Disponibilité",
+    "cadastralIncome": "Revenu cadastral",
+    "primaryEnergyConsumptionPerSqm": "Consommation (kWh/m²/an)",
+    # clés imbriquées de la fiche (window.classified)
+    "building.condition": "État", "building.constructionYear": "Année de construction",
+    "building.facadeCount": "Façades", "building.floorCount": "Étages",
+    "kitchen.type": "Cuisine", "energy.heatingType": "Chauffage",
+    "energy.primaryEnergyConsumptionPerSqm": "Consommation (kWh/m²/an)",
+    "land.surface": "Terrain", "outdoor.garden.surface": "Jardin",
+    "outdoor.terrace.surface": "Terrasse",
+    "outdoor.terrace.orientation": "Orientation de la terrasse",
+    "outdoor.garden.orientation": "Orientation du jardin",
+    "wellnessEquipment.hasSwimmingPool": "Piscine",
+    "location.floor": "Étage", "specificities.SME.office.floor": "Étage",
+    "epcScore": "PEB", "hasDoubleGlazing": "Double vitrage", "hasSolarPanels": "Panneaux solaires",
+    "monthlyRentalCosts": "Charges", "rentalDepositMonths": "Garantie locative (mois)",
+    "leaseDurationMonths": "Bail (mois)", "isPetsAllowed": "Animaux",
+}
+_VALEURS = {"GOOD": "bon", "AS_NEW": "comme neuf", "TO_RENOVATE": "à rénover",
+            "TO_BE_DONE_UP": "à rafraîchir", "JUST_RENOVATED": "rénové",
+            "TO_RESTORE": "à restaurer", "HYPER_EQUIPPED": "hyper équipée",
+            "SEMI_EQUIPPED": "semi-équipée", "INSTALLED": "équipée", "NOT_INSTALLED": "non équipée",
+            "USA_HYPER_EQUIPPED": "américaine hyper équipée", "USA_INSTALLED": "américaine équipée",
+            "GAS": "gaz", "FUELOIL": "mazout", "ELECTRIC": "électrique", "WOOD": "bois",
+            "PELLET": "pellets", "SOLAR": "solaire", "CARBON": "charbon"}
+
+
+def _plat(d: dict, prefixe: str = "") -> dict:
+    """Aplatis un dict imbriqué : {"building": {"condition": x}} → {"building.condition": x}."""
+    plat = {}
+    for k, v in (d or {}).items():
+        if isinstance(v, dict):
+            plat.update(_plat(v, f"{prefixe}{k}."))
+        else:
+            plat[f"{prefixe}{k}"] = v
+    return plat
+
+
+def details_immoweb(prop: dict, trans: dict) -> dict:
+    """Détails lisibles d'après les blocs `property` et `transaction` d'Immoweb."""
+    details: dict = {}
+    plat = {**_plat(prop), **_plat(trans)}
+    for cle, valeur in plat.items():
+        nom = cle.rsplit(".", 1)[-1]
+        libelle = CHAMPS_PROPRIETE.get(cle) or CHAMPS_PROPRIETE.get(nom)
+        if not libelle or valeur in (None, "", [], {}) or libelle in details:
+            continue
+        if isinstance(valeur, bool):
+            details[libelle] = valeur
+        elif isinstance(valeur, int | float):
+            if nom.endswith(("Surface", "landSurface")):
+                details[libelle] = f"{int(valeur)} m²"
+            elif valeur > 0:
+                details[libelle] = int(valeur) if float(valeur).is_integer() else valeur
+        elif isinstance(valeur, str):
+            details[libelle] = _VALEURS.get(valeur, valeur.replace("_", " ").lower())[:60]
+    return details
+
+
+def extraire_classified(html: str) -> dict | None:
+    """Objet `window.classified = {...};` de la fiche Immoweb (None s'il est absent)."""
+    m = re.search(r"window\.classified\s*=\s*(\{.*?\});\s*(?:\n|</script>)", html, re.S)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(1))
+    except ValueError:
+        return None
+
+
+def completer_depuis_classified(a: Annonce, donnees: dict) -> None:
+    photos = []
+    for p in (donnees.get("media") or {}).get("pictures") or []:
+        u = p.get("largeUrl") or p.get("mediumUrl") or p.get("smallUrl")
+        if u:
+            photos.append(u)
+    vues = set(a.photos)
+    a.photos = a.photos + [u for u in photos if u not in vues]
+    for cle, valeur in details_immoweb(donnees.get("property") or {},
+                                       donnees.get("transaction") or {}).items():
+        a.details.setdefault(cle, valeur)
+    desc = (donnees.get("property") or {}).get("description")
+    if isinstance(desc, str) and len(desc) > len(a.description or ""):
+        a.description = re.sub(r"<[^>]+>", " ", desc)[:3000]

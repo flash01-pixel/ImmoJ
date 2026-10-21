@@ -47,10 +47,13 @@ create table if not exists annonces (
     derniere_vue        timestamptz not null default now(),
     photos              text[] not null default '{}',
     description         text,
+    details             jsonb not null default '{}'::jsonb,  -- infos complémentaires (libellé → valeur)
     agence              text,
     telephone           text,
     actif               boolean not null default true
 );
+-- Projets créés avant l'ajout de la colonne « details » :
+alter table annonces add column if not exists details jsonb not null default '{}'::jsonb;
 create index if not exists annonces_actif_transaction_idx on annonces (actif, transaction);
 create index if not exists annonces_commune_idx on annonces (commune);
 create index if not exists annonces_premiere_detection_idx on annonces (premiere_detection desc);

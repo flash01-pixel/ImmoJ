@@ -47,6 +47,9 @@ class Annonce:
     description: str = ""
     agence: str | None = None
     telephone: str | None = None
+    #: informations complémentaires libres (libellé français → valeur), ex.
+    #: {"Salles de bain": 1, "Garage": "oui", "Terrain": "631 m²", "Année": 1998}
+    details: dict[str, str | int | float | bool] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.transaction not in TRANSACTIONS:

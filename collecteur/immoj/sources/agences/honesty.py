@@ -51,6 +51,7 @@ def url_fiche(base: str, bien: dict) -> str:
 
 class WhiseWebulous(SourceAgences):
     logiciel = "whise_webulous"
+    lire_fiches = False     # le JSON de la liste contient déjà toutes les photos et détails
 
     def collecter_agence(self, agence: dict, transaction: str) -> list[Annonce]:
         options = agence.get("options") or {}
@@ -119,11 +120,40 @@ def convertir(bien: dict, base: str, agence: dict, transaction: str) -> Annonce 
         terrasse=_bool(bien.get("terrace")),
         meuble=_bool(bien.get("furnished")),
         date_publication=_date(bien.get("putOnlineDateTime") or bien.get("createDateTime")),
-        photos=photos[:10],
-        description=str(description)[:1000],
+        photos=photos,
+        description=str(description)[:3000],
         agence=agence["nom"],
         telephone=agence.get("telephone"),
+        details=_details(bien),
     )
+
+
+def _details(bien: dict) -> dict:
+    d: dict = {}
+    def ajouter(libelle, valeur, suffixe=""):
+        if valeur not in (None, "", 0, "0") and libelle not in d:
+            d[libelle] = f"{valeur}{suffixe}" if suffixe else valeur
+    ajouter("Salles de bain", _entier(bien.get("bathRooms")))
+    ajouter("Garage", _entier(bien.get("garage")))
+    ajouter("Parking", _entier(bien.get("parking")))
+    ajouter("Terrain", _entier(bien.get("groundArea")), " m²")
+    ajouter("Jardin", _entier(bien.get("gardenArea")), " m²")
+    ajouter("Façades", _entier(bien.get("fronts")))
+    ajouter("Étage", bien.get("floor") if str(bien.get("floor") or "") not in ("", "0") else None)
+    ajouter("État", (bien.get("state") or {}).get("name"))
+    ajouter("Disponibilité", (bien.get("availability") or {}).get("name"))
+    ajouter("Consommation (kWh/m²/an)", _entier(bien.get("energyValue")))
+    ajouter("Référence", bien.get("referenceNumber") or bien.get("name"))
+    ajouter("Bureau", (bien.get("office") or "").strip())
+    if bien.get("availabilityDateTime"):
+        ajouter("Libre le", str(bien["availabilityDateTime"])[:10])
+    for det in bien.get("details") or []:
+        lib = det.get("label") or det.get("name")
+        val = det.get("value")
+        if lib and val not in (None, "", False) and len(d) < 40:
+            d.setdefault(str(lib)[:40],
+                         val if isinstance(val, int | float | bool) else str(val)[:60])
+    return d
 
 
 def _hote(base: str) -> str:

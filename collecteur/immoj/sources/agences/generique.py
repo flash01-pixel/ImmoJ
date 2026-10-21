@@ -71,8 +71,10 @@ def _lieu(texte: str) -> tuple[str | None, str | None]:
         # (« Gouvy (Cherain) (6670) »), sans parenthèses ni adresse.
         apres = re.sub(r"[()]", " ", texte[m.end():]).strip(" -,")
         avant = re.sub(r"\(\s*$", "", texte[:m.start()]).strip(" -,(")
-        reste = apres or avant
-        return m.group(1), (re.sub(r"\s+", " ", reste)[:40] or None)
+        reste = re.sub(r"\s+", " ", apres or avant)[:40]
+        if reste.islower():                      # « hotton » → « Hotton »
+            reste = reste.title()
+        return m.group(1), (reste or None)
     reste = re.sub(r"^.*?,\s*", "", texte) if "," in texte else texte   # « Rue X 1, Virton »
     reste = re.sub(r"\s+", " ", reste).strip(" -,")
     return None, (reste[:40] or None)
@@ -84,7 +86,8 @@ def _prix_selecteur(carte, selecteur: str) -> int | None:
         t = el.get_text(" ", strip=True)
         if "charge" in t.lower():
             continue
-        m = re.search(r"(\d[\d .\u202f\u00a0]{0,12})\s*€", t)
+        m = re.search(r"(\d[\d .\u202f\u00a0]{0,12})\s*€", t) or \
+            re.search(r"€\s*(\d[\d .\u202f\u00a0]{0,12})", t)       # « € 820 / mois »
         if m:
             return nombre(m.group(1))
     return None

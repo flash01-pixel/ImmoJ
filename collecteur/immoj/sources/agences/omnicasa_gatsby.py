@@ -28,6 +28,7 @@ STATUTS_FINIS = {"vendu", "verkocht", "loué", "loue", "verhuurd", "option", "op
 
 class OmnicasaGatsby(SourceAgences):
     logiciel = "omnicasa_gatsby"
+    lire_fiches = False     # page-data contient déjà toutes les photos et les détails
 
     def __init__(self, pages_max: int | None = None) -> None:
         super().__init__(pages_max)
@@ -120,12 +121,31 @@ def analyser_page_data(donnees: dict, base: str, agence: dict, transaction: str,
             peb=(str(bien.get("EPCLabelText") or "").strip().upper() or None),
             jardin=bool(bien["HasGarden"]) if bien.get("HasGarden") is not None else None,
             terrasse=bool(bien["HasTerrace"]) if bien.get("HasTerrace") is not None else None,
-            photos=photos[:10],
-            description=description[:1000],
+            photos=photos,
+            description=description[:3000],
             agence=agence["nom"],
             telephone=agence.get("telephone"),
+            details=_details(bien),
         )
     return list(par_id.values())
+
+
+def _details(bien: dict) -> dict:
+    d: dict = {}
+    for cle, libelle, suffixe in (
+        ("NumberOfBathRooms", "Salles de bain", ""),
+        ("NumberOfShowerRooms", "Salles de douche", ""),
+        ("NumberOfToilets", "Toilettes", ""), ("NumberOfGarages", "Garage", ""),
+        ("SurfaceGround2", "Terrain", " m²"),
+        ("EnergyPerformance", "Consommation (kWh/m²/an)", ""),
+        ("Street", "Adresse", ""), ("Ident", "Référence", ""),
+    ):
+        v = bien.get(cle)
+        if v not in (None, "", 0, "0", False):
+            d[libelle] = f"{v}{suffixe}" if suffixe else v
+    if bien.get("Street") and bien.get("HouseNumber"):
+        d["Adresse"] = f"{bien['Street']} {bien['HouseNumber']}"
+    return d
 
 
 def slug(texte: str) -> str:

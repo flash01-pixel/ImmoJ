@@ -30,6 +30,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
+from ...fiche import enrichir_depuis_html
 from ...modele import Annonce, deviner_transaction, deviner_type, nombre
 from .base import SourceAgences
 from .generique import _lieu, _surface
@@ -43,6 +44,7 @@ PAR_PAGE = 100
 class WordPress(SourceAgences):
     logiciel = "wordpress"
     frequence_heures = 3
+    lire_fiches = False     # la fiche est déjà lue par collecter_agence (prix, photos, détails)
 
     def collecter_agence(self, agence: dict, transaction: str) -> list[Annonce]:
         options = agence.get("options") or {}
@@ -109,7 +111,7 @@ def depuis_rest(entree: dict, base: str, agence: dict, options: dict) -> Annonce
         type=deviner_type(f"{valeurs.get('type') or ''} {titre}"),
         commune=lieu.replace("-", " ").title() if lieu else None,
         date_publication=publication,
-        photos=photos[:5],
+        photos=photos,
         description=description[:1000],
         agence=agence["nom"],
         telephone=agence.get("telephone"),
@@ -119,6 +121,7 @@ def depuis_rest(entree: dict, base: str, agence: dict, options: dict) -> Annonce
 def completer_depuis_fiche(a: Annonce, page: str, options: dict) -> Annonce:
     """Lit prix, chambres, surface, lieu et PEB sur la fiche du bien."""
     spec = options.get("detail") or {}
+    enrichir_depuis_html(a, page)          # toutes les photos + détails génériques
     soup = BeautifulSoup(page, "lxml")
     for el in soup.select("script, style, noscript"):
         el.decompose()
@@ -178,6 +181,10 @@ def _depuis_cache(a: Annonce, connue: dict) -> Annonce:
     a.peb = connue.get("peb")
     a.code_postal = connue.get("code_postal") or a.code_postal
     a.commune = connue.get("localite") or connue.get("commune") or a.commune
+    if len(connue.get("photos") or []) > len(a.photos):
+        a.photos = list(connue["photos"])
+    for cle, valeur in (connue.get("details") or {}).items():
+        a.details.setdefault(cle, valeur)
     return a
 
 

@@ -20,7 +20,7 @@ from . import config
 from .dedoublonnage import Candidat
 from .geocodage import Geocodeur
 from .modele import Annonce
-from .stockage import maintenant
+from .stockage import fusionner_photos, maintenant
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class StockageFichier:
             "chambres": a.chambres, "surface": a.surface, "peb": a.peb,
             "jardin": a.jardin, "terrasse": a.terrasse, "animaux": a.animaux, "meuble": a.meuble,
             "date_publication": a.date_publication.isoformat() if a.date_publication else None,
-            "photos": a.photos, "description": a.description,
+            "photos": a.photos, "description": a.description, "details": dict(a.details),
             "agence": a.agence, "telephone": a.telephone,
             "premiere_detection": maintenant(), "derniere_vue": maintenant(), "actif": True,
         }
@@ -161,8 +161,8 @@ class StockageFichier:
         e = self.annonces.get(annonce_id)
         if not e:
             return
-        if not e.get("photos") and a.photos:
-            e["photos"] = a.photos
+        e["photos"] = fusionner_photos(e.get("photos") or [], a.photos)
+        e["details"] = {**a.details, **(e.get("details") or {})}
         for champ in ("peb", "surface", "chambres", "telephone", "agence"):
             if e.get(champ) in (None, "") and getattr(a, champ) not in (None, ""):
                 e[champ] = getattr(a, champ)
