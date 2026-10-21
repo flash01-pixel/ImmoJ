@@ -100,3 +100,17 @@ def test_fiches_nouvelles_seulement_et_plafond():
     assert annonces[0].photos == ["https://x/a.jpg", "https://x/b.jpg"]
     assert annonces[0].details == {"Cave": True}
     assert annonces[1].details == {"Garage": True} and annonces[3].details == {}
+
+
+def test_budget_de_temps_global():
+    import time
+
+    src = _Fausse()
+    Source.echeance_fiches = time.monotonic() - 1      # budget déjà épuisé
+    try:
+        annonces = [Annonce(source="fausse", id_externe="f:9", url="https://x/9", titre="T",
+                            transaction="achat")]
+        src._enrichir_nouvelles(annonces)
+        assert src.lues == [] and annonces[0].details == {}
+    finally:
+        Source.echeance_fiches = None
