@@ -111,11 +111,15 @@ def test_bdimmo(lire_fixture):
 
 
 def test_dgimmo(lire_fixture):
-    tous = generique(lire_fixture, "DG-Immo", "dgimmo_louer2.html", "location", 50)
-    a = next(x for x in tous if x.url.endswith("/2868"))
+    # La même page liste tout : 93 cartes dont 74 « Vendu » ; data-filter donne sale/rent.
+    loc = generique(lire_fixture, "DG-Immo", "dgimmo_louer2.html", "location", 5)
+    assert all(a.prix is None or a.prix < 5000 for a in loc)
+    vente = generique(lire_fixture, "DG-Immo", "dgimmo_louer2.html", "achat", 5)
+    a = next(x for x in vente if x.url.endswith("/2868"))
     assert a.prix == 379000 and a.code_postal == "6670" and a.chambres == 4 and a.surface == 190
     assert a.jardin is True and a.terrasse is True and a.peb == "B" and a.type == "maison"
     assert a.commune.startswith("Gouvy")
+    assert not any(x.url.endswith("/2868") for x in loc)
 
 
 def test_immopeter(lire_fixture):

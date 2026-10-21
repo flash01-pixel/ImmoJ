@@ -33,7 +33,7 @@ object Format {
         "2ememain" -> "2ememain"
         "immoweb" -> "Immoweb"
         "immoweb_mail" -> "Immoweb (e-mail)"
-        else -> code.removePrefix("agence:").replaceFirstChar { it.uppercase() }
+        else -> if (code.startsWith("agences:")) "Agence" else code.replaceFirstChar { it.uppercase() }
     }
 
     /** « il y a 3 h », « hier », « il y a 5 j » à partir d'un timestamp ISO. */

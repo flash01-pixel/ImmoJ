@@ -24,7 +24,8 @@ Exemple dans agences.yaml :
                                  # une carte dont le PRIX affiche « vendu/loué » est ignorée.
 
 Un attribut `data-filter` JSON sur la carte (ex. DG-Immo) est lu automatiquement :
-postal_code, price, bedrooms, liveable_area, garden, terrace, furnished.
+postal_code, price, bedrooms, liveable_area, garden, terrace, furnished, et
+purpose ("sale"/"rent") qui sert à ne garder que la transaction demandée.
 """
 
 from __future__ import annotations
@@ -148,6 +149,9 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
             except json.JSONDecodeError:
                 extra = {}
 
+        if extra.get("purpose") in ("sale", "rent") and \
+                extra["purpose"] != {"location": "rent", "achat": "sale"}[transaction]:
+            continue
         titre = _texte(carte, options.get("titre")) or lien.get("title") or \
             lien.get_text(" ", strip=True) or agence["nom"]
         code_postal, localite = _lieu(_texte(carte, options.get("lieu")))
