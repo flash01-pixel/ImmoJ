@@ -1,23 +1,10 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# --- Agences : points d'entrée de données ---
-https://www.honesty.be/wp-content/plugins//whise-webulous/ajax.php | agences/honesty_ajax_louer.json | {"X-Requested-With": "XMLHttpRequest", "Referer": "https://www.honesty.be/biens-a-louer/"} | POST isajax=1&estateaction=getestates&purpose=2&displayStatusIdList[]=2&rooms=&minprice=&maxprice=&pagenumber=1
-https://www.honesty.be/wp-content/plugins//whise-webulous/ajax.php | agences/honesty_ajax_vendre.json | {"X-Requested-With": "XMLHttpRequest", "Referer": "https://www.honesty.be/biens-a-vendre/"} | POST isajax=1&estateaction=getestates&purpose=1&displayStatusIdList[]=2&rooms=&minprice=&maxprice=&pagenumber=1
-https://www.trevi.be/wp-content/plugins//webulous-omnicasa/ajax.php | agences/trevi_ajax_louer.json | {"X-Requested-With": "XMLHttpRequest", "Referer": "https://www.trevi.be/fr/louer-bien-immobilier"} | POST isajax=1&estateaction=getestates&purpose=2&pagenumber=1
-https://www.era.be/modules/custom/era_overviews/react/properties/dist/property-search.umd.js | agences/era_property_search.js
-https://www.century21.be/page-data/fr/a-louer/page-data.json | agences/century21_pagedata_louer.json
-https://www.immobastogne.be/page-data/fr/a-louer/page-data.json | agences/immobastogne_pagedata_louer.json
-https://www.immobastogne.be/page-data/fr/a-vendre/page-data.json | agences/immobastogne_pagedata_vendre.json
-https://www.lagence-immo.be/page-data/nl/te-huur/page-data.json | agences/lagence_pagedata_huur.json
-https://www.lagence-immo.be/page-data/nl/te-koop/page-data.json | agences/lagence_pagedata_koop.json
-https://vosagences.be/wp-json/wp/v2/types | agences/vosagences_types.json
-https://homesweetgaume.be/wp-json/wp/v2/types | agences/homesweetgaume_types.json
-https://www.alisonimmo.be/wp-json/wp/v2/types | agences/alisonimmo_types.json
-https://www.lio-immo.be/wp-json/wp/v2/types | agences/lioimmo_types.json
-https://www.easyhome-immo.be/wp-json/wp/v2/types | agences/easyhome_types.json
-https://www.delzandreimmo.be/wp-json/wp/v2/types | agences/delzandre_types.json
-https://www.immocentreardennes.be/fr/results | agences/immocentreardennes_results_louer.html | {} | POST choix_frm_select_type=2&site_frm_select_type=
-https://www.immocentreardennes.be/fr/results | agences/immocentreardennes_results_vendre.html | {} | POST choix_frm_select_type=1&site_frm_select_type=
-https://www.euroardennesimmo.be/ | agences/euroardennesimmo_accueil2.html
-http://www.euroardennesimmo.be/ | agences/euroardennesimmo_http.html
-https://immo23.be/fr/a-vendre | agences/immo23_vendre.html
+# --- Agences : API WordPress et ERA ---
+https://homesweetgaume.be/wp-json/wp/v2/bien?per_page=50 | agences/homesweetgaume_bien.json
+https://www.alisonimmo.be/wp-json/wp/v2/property?per_page=50 | agences/alisonimmo_property.json
+https://www.easyhome-immo.be/wp-json/wp/v2/whise_estate?per_page=50 | agences/easyhome_whise_estate.json
+https://www.delzandreimmo.be/wp-json/wp/v2/wpis_estates?per_page=50 | agences/delzandre_wpis_estates.json
+https://www.era.be/jsonapi/index/property_index?page[limit]=3 | agences/era_jsonapi_index.json | {"Accept": "application/vnd.api+json"}
+https://www.era.be/api/locations | agences/era_api_locations.json | {"Accept": "application/json"}
+https://www.trevi.be/fr/louer-bien-immobilier?agences=luxembourg | agences/trevi_louer_lux.html
