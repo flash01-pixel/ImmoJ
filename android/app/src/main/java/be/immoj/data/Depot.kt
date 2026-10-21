@@ -10,13 +10,50 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
- * Dépôt de données : seul point de contact entre les écrans et Supabase.
- *
- * Le client Retrofit est reconstruit quand l'URL ou la clé change (écran
- * Paramètres). Toutes les fonctions sont `suspend` et lèvent une exception
- * en cas d'erreur réseau : les ViewModels la transforment en message.
+ * Dépôt de données : seul point de contact entre les écrans et les données.
+ * Deux implémentations : Supabase ([DepotSupabase]) et le mode « sans compte »
+ * ([DepotLocal], fichier JSON publié par GitHub + stockage sur le téléphone).
+ * Toutes les fonctions sont `suspend` et lèvent une exception en cas d'erreur :
+ * les ViewModels la transforment en message.
  */
-class Depot(private val preferences: Preferences) {
+interface Depot {
+    suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce>
+    suspend fun annonce(id: String): Annonce?
+    suspend fun historiquePrix(id: String): List<PrixHistorique>
+    suspend fun changerStatut(id: String, statut: StatutPerso, note: String?)
+    suspend fun etatSources(): List<EtatSource>
+    suspend fun communes(): List<Commune>
+    suspend fun recherches(): List<RechercheSauvegardee>
+    suspend fun creerRecherche(r: RechercheSauvegardee): RechercheSauvegardee
+    suspend fun modifierRecherche(id: String, champs: Map<String, Boolean>)
+    suspend fun supprimerRecherche(id: String)
+}
+
+/** Choisit le dépôt selon les réglages : Supabase si configuré, sinon le mode local. */
+class DepotRouteur(
+    private val preferences: Preferences,
+    private val supabase: DepotSupabase,
+    private val local: DepotLocal,
+) : Depot {
+    private suspend fun actif(): Depot = if (preferences.lire().configure) supabase else local
+
+    override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres) =
+        actif().listerAnnonces(transaction, tri, filtres)
+    override suspend fun annonce(id: String) = actif().annonce(id)
+    override suspend fun historiquePrix(id: String) = actif().historiquePrix(id)
+    override suspend fun changerStatut(id: String, statut: StatutPerso, note: String?) =
+        actif().changerStatut(id, statut, note)
+    override suspend fun etatSources() = actif().etatSources()
+    override suspend fun communes() = actif().communes()
+    override suspend fun recherches() = actif().recherches()
+    override suspend fun creerRecherche(r: RechercheSauvegardee) = actif().creerRecherche(r)
+    override suspend fun modifierRecherche(id: String, champs: Map<String, Boolean>) =
+        actif().modifierRecherche(id, champs)
+    override suspend fun supprimerRecherche(id: String) = actif().supprimerRecherche(id)
+}
+
+/** Dépôt Supabase : API REST (PostgREST), client Retrofit reconstruit si l'URL ou la clé change. */
+class DepotSupabase(private val preferences: Preferences) : Depot {
 
     private val json = Json {
         ignoreUnknownKeys = true   // une colonne ajoutée côté Supabase ne casse pas l'appli
@@ -65,7 +102,7 @@ class Depot(private val preferences: Preferences) {
      * Zone : communes ET/OU rayon. Si les deux sont définis, on fait deux
      * requêtes et on fusionne (l'un ou l'autre suffit).
      */
-    suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
+    override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
         val ordre = when (tri) {
             "prix" -> "prix.asc.nullslast"
             "prix_desc" -> "prix.desc.nullslast"
@@ -102,29 +139,29 @@ class Depot(private val preferences: Preferences) {
         }
     }
 
-    suspend fun communes(): List<Commune> = api().communes()
+    override suspend fun communes(): List<Commune> = api().communes()
 
-    suspend fun recherches(): List<RechercheSauvegardee> = api().recherches()
+    override suspend fun recherches(): List<RechercheSauvegardee> = api().recherches()
 
-    suspend fun creerRecherche(r: RechercheSauvegardee): RechercheSauvegardee =
+    override suspend fun creerRecherche(r: RechercheSauvegardee): RechercheSauvegardee =
         api().creerRecherche(r).first()
 
-    suspend fun modifierRecherche(id: String, champs: Map<String, Boolean>) {
+    override suspend fun modifierRecherche(id: String, champs: Map<String, Boolean>) {
         val r = api().modifierRecherche("eq.$id", champs)
         if (!r.isSuccessful) throw IllegalStateException("Modification refusée (HTTP ${r.code()})")
     }
 
-    suspend fun supprimerRecherche(id: String) {
+    override suspend fun supprimerRecherche(id: String) {
         val r = api().supprimerRecherche("eq.$id")
         if (!r.isSuccessful) throw IllegalStateException("Suppression refusée (HTTP ${r.code()})")
     }
 
-    suspend fun annonce(id: String): Annonce? =
+    override suspend fun annonce(id: String): Annonce? =
         api().annonces(mapOf("select" to "*", "id" to "eq.$id")).firstOrNull()
 
-    suspend fun historiquePrix(id: String): List<PrixHistorique> = api().historiquePrix(id)
+    override suspend fun historiquePrix(id: String): List<PrixHistorique> = api().historiquePrix(id)
 
-    suspend fun changerStatut(id: String, statut: StatutPerso, note: String?) {
+    override suspend fun changerStatut(id: String, statut: StatutPerso, note: String?) {
         val reponse = api().enregistrerStatut(
             Statut(annonceId = id, statut = statut.code, note = note?.ifBlank { null },
                 modifieLe = Instant.now().toString())
@@ -135,7 +172,7 @@ class Depot(private val preferences: Preferences) {
         }
     }
 
-    suspend fun etatSources(): List<EtatSource> = api().etatSources()
+    override suspend fun etatSources(): List<EtatSource> = api().etatSources()
 
     /** Teste une URL et une clé sans les enregistrer. Renvoie null si OK, sinon le message. */
     suspend fun testerConnexion(url: String, cle: String): String? = try {

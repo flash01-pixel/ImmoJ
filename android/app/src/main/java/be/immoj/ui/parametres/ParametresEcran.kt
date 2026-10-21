@@ -82,12 +82,19 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Connexion à Supabase", style = MaterialTheme.typography.titleMedium)
+            Text("Source des données", style = MaterialTheme.typography.titleMedium)
             Text(
-                if (integree) "Configuration intégrée à l'application : rien à saisir. " +
-                    "Tu peux la remplacer ci-dessous si nécessaire."
-                else "Dans Supabase : Project Settings → API. Copie « Project URL » et la clé « anon public ».",
+                if (url.isBlank()) "Mode sans compte : les annonces sont téléchargées depuis GitHub " +
+                    "(collecte toutes les heures). Dernière mise à jour des données : " +
+                    (app.depotLocal.derniereMiseAJour()?.let { be.immoj.util.Format.depuis(it) } ?: "pas encore") +
+                    ". Tes statuts, notes et recherches restent sur ce téléphone."
+                else if (integree) "Supabase, configuration intégrée à l'application : rien à saisir."
+                else "Supabase : Project Settings → API, « Project URL » et clé « anon public ».",
                 style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Supabase (optionnel) : laisse vide pour rester en mode sans compte.",
+                style = MaterialTheme.typography.labelSmall,
             )
             OutlinedTextField(
                 value = url, onValueChange = { url = it },
@@ -107,13 +114,14 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
                     onClick = {
                         portee.launch {
                             enTest = true
-                            test = app.depot.testerConnexion(url, cle) ?: "Connexion réussie ✔"
+                            test = app.depotSupabase.testerConnexion(url, cle) ?: "Connexion réussie ✔"
                             enTest = false
                         }
                     },
                 ) { Text("Tester") }
                 Button(
-                    enabled = chargeInitiale && url.isNotBlank() && cle.isNotBlank(),
+                    // Vide + Enregistrer = retour au mode sans compte.
+                    enabled = chargeInitiale && (url.isBlank() == cle.isBlank()),
                     onClick = {
                         portee.launch {
                             app.preferences.enregistrerConnexion(url, cle)
@@ -132,7 +140,14 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
             }
             Spacer(Modifier.padding(8.dp))
             Text("Notifications", style = MaterialTheme.typography.titleMedium)
-            if (topic.isNotBlank()) {
+            if (url.isBlank()) {
+                Text(
+                    "Mode sans compte : l'application vérifie les nouveautés toutes les heures et " +
+                        "affiche une notification Android pour chaque annonce correspondant à tes " +
+                        "recherches sauvegardées (ou toute nouvelle location s'il n'y en a aucune).",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            } else if (topic.isNotBlank()) {
                 Text(
                     "Les notifications arrivent par l'application ntfy (gratuite, Play Store). " +
                         "Installe-la, puis appuie sur le bouton : ntfy te propose de t'abonner au sujet « $topic ».",

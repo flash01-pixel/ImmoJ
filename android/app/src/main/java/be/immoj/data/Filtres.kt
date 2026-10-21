@@ -83,3 +83,48 @@ data class Filtres(
             "zimmo" to "Zimmo", "logicimmo" to "Logic-immo", "agences" to "Sites d'agences")
     }
 }
+
+/** Même logique que [Filtres.versRequete], appliquée en mémoire (mode sans compte). */
+fun Filtres.correspond(a: Annonce): Boolean {
+    if (prixMin != null && (a.prix == null || a.prix < prixMin)) return false
+    if (prixMax != null && (a.prix == null || a.prix > prixMax)) return false
+    if (types.isNotEmpty() && a.type !in types) return false
+    if (chambresMin != null && (a.chambres == null || a.chambres < chambresMin)) return false
+    if (surfaceMin != null && (a.surface == null || a.surface < surfaceMin)) return false
+    val heures = when (periode) { "24h" -> 24L; "3j" -> 72L; "7j" -> 168L; else -> null }
+    if (heures != null) {
+        val detection = a.premiereDetection?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        if (detection == null || detection.isBefore(Instant.now().minus(heures, ChronoUnit.HOURS))) return false
+    }
+    if (jardin && a.jardin != true) return false
+    if (animaux && a.animaux != true) return false
+    if (meuble && a.meuble != true) return false
+    pebMax?.let { max ->
+        val ordre = listOf("A++", "A+", "A", "B", "C", "D", "E", "F", "G")
+        if (a.peb != null && ordre.indexOf(a.peb) > ordre.indexOf(max)) return false
+    }
+    if (sources.isNotEmpty()) {
+        val codes = sources.flatMap {
+            if (it == "agences") listOf("agences:whise", "agences:generique") else listOf(it)
+        }
+        if (a.sources.none { it in codes }) return false
+    }
+    val zone = communes.isNotEmpty() || rayonDefini
+    if (zone) {
+        val dansCommunes = communes.isNotEmpty() && a.commune != null && a.commune in communes
+        val dansRayon = rayonDefini && a.latitude != null && a.longitude != null &&
+            distanceKm(centreLat!!, centreLon!!, a.latitude, a.longitude) <= rayonKm!!
+        if (!dansCommunes && !dansRayon) return false
+    }
+    return true
+}
+
+/** Distance à vol d'oiseau en km (haversine). */
+fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val r = 6371.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    return 2 * r * Math.asin(Math.sqrt(a))
+}

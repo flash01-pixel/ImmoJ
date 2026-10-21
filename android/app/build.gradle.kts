@@ -25,6 +25,11 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"${propriete("supabaseUrl")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${propriete("supabaseAnonKey")}\"")
         buildConfigField("String", "NTFY_TOPIC", "\"${propriete("ntfyTopic")}\"")
+        // Mode sans compte : fichier d'annonces publié par le collecteur sur GitHub.
+        val donneesUrl = propriete("donneesUrl").ifBlank {
+            "https://raw.githubusercontent.com/flash01-pixel/ImmoJ/donnees/annonces.json"
+        }
+        buildConfigField("String", "DONNEES_URL", "\"$donneesUrl\"")
     }
 
     buildTypes {
@@ -65,4 +70,5 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
     implementation(libs.osmdroid)
+    implementation(libs.androidx.work.runtime)
 }

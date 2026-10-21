@@ -40,9 +40,10 @@ fun AppNavigation(app: ImmoJApp) {
     val portee = rememberCoroutineScope()
     val reglages by app.preferences.flux.collectAsState(initial = null)
     // Tant que les réglages ne sont pas lus, on n'affiche rien (une fraction de seconde).
-    val r = reglages ?: return
-    // Premier lancement : on commence par l'écran de configuration.
-    val depart = if (r.configure) Routes.PRINCIPAL else Routes.PARAMETRES
+    if (reglages == null) return
+    // Sans configuration Supabase, l'appli fonctionne en mode « sans compte »
+    // (fichier publié par GitHub) : on va directement à la liste.
+    val depart = Routes.PRINCIPAL
 
     // ViewModel partagé par la liste, la carte et les filtres (durée de vie : l'activité).
     val vm: ListeViewModel = viewModel { ListeViewModel(app.depot, app.preferences) }
