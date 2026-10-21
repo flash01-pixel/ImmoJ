@@ -362,11 +362,13 @@ def test_mca(lire_fixture):
 
     ag = AGENCES["MCA Immobilier"]
     loc = verifier(analyser_api(json.loads(lire_fixture("agences/mca_api_louer.json")), ag["url"],
-                                ag, "location"), "location", ag["nom"], 10)
-    a = next(x for x in loc if x.id_externe.endswith(":4991"))
-    assert a.url == "https://maisons-chalets-ardennes.be/bien-4991-appartement-marche-en-famenne"
-    assert a.prix == 500 and a.code_postal == "6900" and a.chambres == 1 and a.surface == 38
-    assert a.details["Salles de bain"] == 1 and a.photos and a.type == "appartement"
+                                ag, "location"), "location", ag["nom"], 5)
+    a = next(x for x in loc if x.id_externe.endswith(":5039"))
+    assert a.url == "https://maisons-chalets-ardennes.be/bien-5039-appartement-marche-en-famenne"
+    assert a.prix == 695 and a.code_postal == "6900" and a.chambres == 2
+    assert a.surface == 80 and a.details["Salles de bain"] == 1 and a.photos
+    # Un bien déjà loué (etat « loue ») n'est pas repris.
+    assert not any(x.id_externe.endswith(":4991") for x in loc)
     donnees = json.loads(lire_fixture("agences/mca_api_vendre.json"))
     vente = verifier(analyser_api(donnees, ag["url"], ag, "achat"), "achat", ag["nom"], 100)
     assert all(x.prix is None or x.prix > 1000 for x in vente)
