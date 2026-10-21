@@ -1,5 +1,15 @@
 package be.immoj.ui.detail
 
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -166,17 +176,51 @@ fun DetailEcran(app: ImmoJApp, id: String, retour: () -> Unit) {
     }
 }
 
+/** Toutes les photos : bandeau défilant avec compteur ; un appui ouvre le plein écran. */
 @Composable
 private fun Photos(a: Annonce) {
     if (a.photos.isEmpty()) return
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(a.photos) { url ->
-            AsyncImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.height(220.dp).width(300.dp).clip(RoundedCornerShape(12.dp)),
-            )
+    var pleinEcran by remember(a.id) { mutableStateOf<Int?>(null) }
+    Column {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(a.photos) { index, url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = "Photo ${index + 1}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.height(220.dp).width(300.dp).clip(RoundedCornerShape(12.dp))
+                        .clickable { pleinEcran = index },
+                )
+            }
+        }
+        Text(
+            "${a.photos.size} photo(s) · appuie pour agrandir",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    pleinEcran?.let { depart ->
+        Dialog(onDismissRequest = { pleinEcran = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            val pager = rememberPagerState(initialPage = depart) { a.photos.size }
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
+                    AsyncImage(
+                        model = a.photos[page],
+                        contentDescription = "Photo ${page + 1}",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().clickable { pleinEcran = null },
+                    )
+                }
+                Text(
+                    "${pager.currentPage + 1} / ${a.photos.size}",
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
+                )
+                TextButton(onClick = { pleinEcran = null }, modifier = Modifier.align(Alignment.TopEnd)) {
+                    Text("Fermer", color = Color.White)
+                }
+            }
         }
     }
 }
@@ -194,8 +238,13 @@ private fun Caracteristiques(a: Annonce) {
         ouiNon(a.animaux)?.let { "Animaux acceptés : $it" },
         ouiNon(a.meuble)?.let { "Meublé : $it" },
     )
+    // Détails supplémentaires lus sur la fiche (variables selon la source).
+    val dejaAffiches = setOf("Chambres", "Surface habitable", "PEB", "Charges", "Jardin", "Terrasse",
+        "Animaux", "Meublé")
+    val extras = a.detailsLisibles.filter { it.first !in dejaAffiches }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         lignes.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        extras.forEach { (cle, valeur) -> Text("$cle : $valeur", style = MaterialTheme.typography.bodyMedium) }
     }
 }
 

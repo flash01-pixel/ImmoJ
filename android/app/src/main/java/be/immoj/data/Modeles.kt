@@ -2,6 +2,8 @@ package be.immoj.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Une annonce telle que renvoyée par la vue Supabase `v_annonces_liste`
@@ -34,6 +36,8 @@ data class Annonce(
     @SerialName("derniere_vue") val derniereVue: String? = null,
     val photos: List<String> = emptyList(),
     val description: String? = null,
+    /** Informations complémentaires (libellé → valeur), variables selon la source. */
+    val details: Map<String, JsonElement> = emptyMap(),
     val agence: String? = null,
     val telephone: String? = null,
     val actif: Boolean = true,
@@ -47,6 +51,14 @@ data class Annonce(
     /** « 6700 Arlon » ou la localité affichée par la source. */
     val lieu: String
         get() = listOfNotNull(codePostal, localite ?: commune).joinToString(" ")
+
+    /** Détails lisibles : « Salles de bain » → « 2 », « Garage » → « oui ». */
+    val detailsLisibles: List<Pair<String, String>>
+        get() = details.mapNotNull { (cle, v) ->
+            val p = v as? JsonPrimitive ?: return@mapNotNull null
+            val texte = when (p.content) { "true" -> "oui"; "false" -> "non"; else -> p.content }
+            if (texte.isBlank() || texte == "null") null else cle to texte
+        }
 }
 
 /** Ligne de la table `statuts` (écrite par l'appli). */

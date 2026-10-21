@@ -16,6 +16,11 @@ object Format {
         return if (transaction == "location") "$texte / mois" else texte
     }
 
+    /** « 7,5 km » ou « 10 km ». */
+    fun km(valeur: Double): String =
+        if (valeur == valeur.toLong().toDouble()) "${valeur.toLong()} km"
+        else String.format(fr, "%.1f km", valeur)
+
     fun type(code: String): String = when (code) {
         "appartement" -> "Appartement"
         "maison" -> "Maison"

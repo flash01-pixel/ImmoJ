@@ -19,8 +19,8 @@ android {
         applicationId = "be.immoj"
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.0"
+        versionCode = 5
+        versionName = "1.1.0"
 
         buildConfigField("String", "SUPABASE_URL", "\"${propriete("supabaseUrl")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${propriete("supabaseAnonKey")}\"")

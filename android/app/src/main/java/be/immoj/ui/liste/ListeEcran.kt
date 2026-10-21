@@ -1,5 +1,7 @@
 package be.immoj.ui.liste
 
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +47,7 @@ import coil.compose.AsyncImage
 
 /** Onglet « Annonces » : bascule location/achat, tri, liste. */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ListeContenu(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         SingleChoiceSegmentedButtonRow(
@@ -75,6 +78,12 @@ fun ListeContenu(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> 
                 label = { Text("Prix décroissant") })
         }
 
+        // Tirer la liste vers le bas = vraie actualisation (nouveau téléchargement).
+        PullToRefreshBox(
+            isRefreshing = etat.chargement && etat.annonces.isNotEmpty(),
+            onRefresh = { vm.charger(forcer = true) },
+            modifier = Modifier.fillMaxSize(),
+        ) {
         when {
             etat.chargement && etat.annonces.isEmpty() -> Centre { CircularProgressIndicator() }
             etat.erreur != null -> Centre {
@@ -96,9 +105,10 @@ fun ListeContenu(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> 
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(etat.annonces, key = { it.id }) { a ->
-                    CarteAnnonce(a) { ouvrirDetail(a.id) }
+                    CarteAnnonce(a, photo = etat.photosEnListe) { ouvrirDetail(a.id) }
                 }
             }
+        }
         }
     }
 }
@@ -112,16 +122,18 @@ private fun Centre(contenu: @Composable () -> Unit) {
 
 /** Une annonce dans la liste : photo, prix, lieu, caractéristiques, badges. */
 @Composable
-fun CarteAnnonce(a: Annonce, auClic: () -> Unit) {
+fun CarteAnnonce(a: Annonce, photo: Boolean = true, auClic: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = auClic)) {
         Row(modifier = Modifier.padding(12.dp)) {
-            AsyncImage(
-                model = a.photos.firstOrNull(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)),
-            )
-            Spacer(Modifier.width(12.dp))
+            if (photo) {
+                AsyncImage(
+                    model = a.photos.firstOrNull(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)),
+                )
+                Spacer(Modifier.width(12.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     Format.prix(a.prix, a.transaction),

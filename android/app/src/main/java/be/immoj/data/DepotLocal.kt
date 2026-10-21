@@ -166,6 +166,9 @@ class DepotLocal(private val contexte: Context) : Depot {
         )
     }
 
+    /** Retélécharge le fichier publié, quel que soit l'âge du cache. */
+    override suspend fun rafraichir() { synchroniser(forcer = true) }
+
     override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
         synchroniser()
         val liste = annonces.asSequence()

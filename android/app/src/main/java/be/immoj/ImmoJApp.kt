@@ -8,6 +8,9 @@ import be.immoj.data.DepotSupabase
 import be.immoj.data.Preferences
 import be.immoj.sync.Notifications
 import be.immoj.sync.SyncWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Classe Application : crée les objets partagés par tous les écrans
@@ -23,7 +26,11 @@ class ImmoJApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.creerCanal(this)
-        // Vérification en arrière-plan toutes les heures (nouveautés et baisses de prix).
+        // Vérification en arrière-plan (fréquence réglable dans les paramètres).
         SyncWorker.planifier(this)
+        CoroutineScope(Dispatchers.IO).launch {
+            val h = preferences.lire().frequenceHeures
+            if (h != 1) SyncWorker.planifier(this@ImmoJApp, h, remplacer = true)
+        }
     }
 }
