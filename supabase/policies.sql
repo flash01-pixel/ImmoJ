@@ -21,16 +21,25 @@ alter table notifications_envoyees   enable row level security;
 alter table collectes                enable row level security;
 
 -- Lecture pour l'appli
+drop policy if exists "lecture anon" on communes;
 create policy "lecture anon" on communes                for select to anon using (true);
+drop policy if exists "lecture anon" on annonces;
 create policy "lecture anon" on annonces                for select to anon using (true);
+drop policy if exists "lecture anon" on annonce_sources;
 create policy "lecture anon" on annonce_sources         for select to anon using (true);
+drop policy if exists "lecture anon" on historique_prix;
 create policy "lecture anon" on historique_prix         for select to anon using (true);
+drop policy if exists "lecture anon" on statuts;
 create policy "lecture anon" on statuts                 for select to anon using (true);
+drop policy if exists "lecture anon" on recherches_sauvegardees;
 create policy "lecture anon" on recherches_sauvegardees for select to anon using (true);
+drop policy if exists "lecture anon" on collectes;
 create policy "lecture anon" on collectes               for select to anon using (true);
 
 -- Écriture pour l'appli : uniquement mes statuts et mes recherches
+drop policy if exists "ecriture anon" on statuts;
 create policy "ecriture anon" on statuts
     for all to anon using (true) with check (true);
+drop policy if exists "ecriture anon" on recherches_sauvegardees;
 create policy "ecriture anon" on recherches_sauvegardees
     for all to anon using (true) with check (true);

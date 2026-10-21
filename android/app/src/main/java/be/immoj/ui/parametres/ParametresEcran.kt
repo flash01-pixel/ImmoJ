@@ -1,5 +1,7 @@
 package be.immoj.ui.parametres
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import be.immoj.ImmoJApp
@@ -44,7 +47,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
     val portee = rememberCoroutineScope()
+    val contexte = LocalContext.current
     var url by remember { mutableStateOf("") }
+    var integree by remember { mutableStateOf(false) }
+    var topic by remember { mutableStateOf("") }
     var cle by remember { mutableStateOf("") }
     var chargeInitiale by remember { mutableStateOf(false) }
     var test by remember { mutableStateOf<String?>(null) }
@@ -54,6 +60,8 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
         val r = app.preferences.lire()
         url = r.supabaseUrl
         cle = r.supabaseCle
+        integree = r.integree
+        topic = r.ntfyTopic
         chargeInitiale = true
     }
 
@@ -76,7 +84,9 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
         ) {
             Text("Connexion à Supabase", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Dans Supabase : Project Settings → API. Copie « Project URL » et la clé « anon public ».",
+                if (integree) "Configuration intégrée à l'application : rien à saisir. " +
+                    "Tu peux la remplacer ci-dessous si nécessaire."
+                else "Dans Supabase : Project Settings → API. Copie « Project URL » et la clé « anon public ».",
                 style = MaterialTheme.typography.bodySmall,
             )
             OutlinedTextField(
@@ -122,11 +132,28 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
             }
             Spacer(Modifier.padding(8.dp))
             Text("Notifications", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Les notifications sont envoyées par le collecteur via ntfy. Installe l'appli ntfy et abonne-toi " +
-                    "au même topic que celui configuré dans les secrets GitHub (NTFY_TOPIC).",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            if (topic.isNotBlank()) {
+                Text(
+                    "Les notifications arrivent par l'application ntfy (gratuite, Play Store). " +
+                        "Installe-la, puis appuie sur le bouton : ntfy te propose de t'abonner au sujet « $topic ».",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        contexte.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ntfy.sh/$topic")))
+                    }) { Text("S'abonner dans ntfy") }
+                    OutlinedButton(onClick = {
+                        contexte.startActivity(Intent(Intent.ACTION_VIEW,
+                            Uri.parse("https://play.google.com/store/apps/details?id=io.heckel.ntfy")))
+                    }) { Text("Installer ntfy") }
+                }
+            } else {
+                Text(
+                    "Les notifications sont envoyées par le collecteur via ntfy. Installe l'appli ntfy et " +
+                        "abonne-toi au topic configuré dans les secrets GitHub (NTFY_TOPIC).",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }

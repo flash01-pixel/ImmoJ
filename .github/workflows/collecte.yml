@@ -34,6 +34,9 @@ jobs:
     defaults:
       run:
         working-directory: collecteur
+    env:
+      # Le contexte « secrets » n'est pas utilisable dans un « if » : on passe par env.
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,20 +46,33 @@ jobs:
           cache-dependency-path: collecteur/requirements.txt
       - run: pip install -r requirements.txt
 
+      # Zéro configuration : avec le seul secret SUPABASE_ACCESS_TOKEN, l'URL, la
+      # clé service et le topic ntfy sont retrouvés automatiquement.
+      - name: Résoudre les accès Supabase
+        if: env.SUPABASE_ACCESS_TOKEN != ''
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python outils/supabase_admin.py env
+
       - name: Lancer le collecteur
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # Secrets explicites (voie manuelle) ; les valeurs résolues par le jeton,
+          # écrites dans GITHUB_ENV à l'étape précédente, sont déjà dans l'environnement.
+          SUPABASE_URL_SECRET: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY_SECRET: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NTFY_TOPIC_SECRET: ${{ secrets.NTFY_TOPIC }}
           GMAIL_UTILISATEUR: ${{ secrets.GMAIL_UTILISATEUR }}
           GMAIL_MOT_DE_PASSE: ${{ secrets.GMAIL_MOT_DE_PASSE }}
           SOURCE: ${{ inputs.source }}
           PAGES: ${{ inputs.pages }}
         run: |
-          # Tant que les secrets ne sont pas configurés, on s'arrête sans erreur
+          export SUPABASE_URL="${SUPABASE_URL:-$SUPABASE_URL_SECRET}"
+          export SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY:-$SUPABASE_SERVICE_KEY_SECRET}"
+          export NTFY_TOPIC="${NTFY_TOPIC:-$NTFY_TOPIC_SECRET}"
+          # Tant que Supabase n'est pas configuré, on s'arrête sans erreur
           # (sinon GitHub enverrait un e-mail d'échec à chaque heure).
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "Secrets SUPABASE_URL / SUPABASE_SERVICE_KEY absents : rien à faire (voir docs/03-secrets-github.md)."
+            echo "Supabase non configuré : rien à faire (voir docs/00-demarrage-rapide.md)."
             exit 0
           fi
           ARGS=""

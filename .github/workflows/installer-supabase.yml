@@ -1,0 +1,27 @@
+# Installation automatique de Supabase (zéro configuration manuelle).
+#
+# Pré-requis : le secret SUPABASE_ACCESS_TOKEN (jeton personnel créé sur
+# supabase.com → compte → Access Tokens). Avec lui, ce workflow :
+#   1. crée le projet « immoj » s'il n'existe pas (offre gratuite, Irlande) ;
+#   2. attend qu'il soit prêt ;
+#   3. installe les tables, vues et règles de sécurité (supabase/*.sql).
+# Relançable sans risque : les scripts SQL sont idempotents.
+name: Installer Supabase
+
+on:
+  workflow_dispatch:
+
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Créer le projet et installer la base
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: python collecteur/outils/supabase_admin.py installer
