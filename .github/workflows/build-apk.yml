@@ -50,6 +50,7 @@ jobs:
           python-version: "3.12"
       - name: Résoudre la configuration à intégrer
         if: env.SUPABASE_ACCESS_TOKEN != ''
+        continue-on-error: true
         working-directory: collecteur
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
