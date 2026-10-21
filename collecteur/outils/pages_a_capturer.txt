@@ -1,25 +1,10 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# --- Sites retrouvés : Whise (Juliet Immo, Homeside) ---
-https://www.julietimmo.com/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B2%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/julietimmo_scroll_louer.html
-https://www.julietimmo.com/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/julietimmo_scroll_vendre.html
-https://www.julietimmo.com/fr/10001/biens/a-louer | agences/julietimmo_louer.html
-https://www.home-side.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B2%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/homeside_scroll_louer.html
-https://www.home-side.be/fr/7/chercher-bien/a-louer | agences/homeside_louer.html
-# --- Omnicasa : MCA (API JSON), Immo Bia, BG Immo ---
-https://maisons-chalets-ardennes.be/api/biens?goal=0 | agences/mca_api_vendre.json
-https://maisons-chalets-ardennes.be/api/biens?goal=1 | agences/mca_api_louer.json
-https://maisons-chalets-ardennes.be/louer.html | agences/mca_louer.html
-https://www.immo-bia.com/fr/a-louer/ | agences/immobia_louer.html
-https://www.immo-bia.com/fr/a-vendre/ | agences/immobia_vendre.html
-https://www.bg-immo.be/ | agences/bgimmo_accueil.html
-https://www.bg-immo.be/fr/a-louer | agences/bgimmo_louer.html
-https://www.bg-immo.be/fr/a-vendre | agences/bgimmo_vendre.html
-# --- Sites maison : ITI Groupe, Berns, Ard'Immo ---
-http://www.iti.be/index.php?ctypmandatmeta=l&action=list&ctypmandatl=1&ctypmandatlm=1&ctypmandatls=1&cbien=&ctypmeta=&qchambres=&llocalite=&mprixmax= | agences/iti_louer.html
-http://www.iti.be/index.php?action=list&ctypmandatmeta=v&cbien=&ctypmeta=&qchambres=&llocalite=&mprixmax= | agences/iti_vendre.html
-http://www.jacquesberns.eu/biensresidentiels.html | agences/berns_biens.html
-https://ardimmoc.be/wp-json/wp/v2/types | agences/ardimmoc_types.json
-https://ardimmoc.be/ | agences/ardimmoc_accueil.html
-# --- Immo Centre Ardennes : page de résultats (achat) ---
-https://www.immocentreardennes.be/fr/ | agences/immocentreardennes_fr.html
+# --- BG Immo : même générateur Gatsby qu'Immo Bastogne ---
+https://www.bg-immo.be/page-data/fr/a-vendre/page-data.json | agences/bgimmo_pagedata_vendre.json
+https://www.bg-immo.be/page-data/fr/a-louer/page-data.json | agences/bgimmo_pagedata_louer.json
+https://www.bg-immo.be/sitemap/sitemap-0.xml | agences/bgimmo_sitemap_0.xml
+# --- Homeside : ventes (InfiniteScroll) ---
+https://www.home-side.be/fr/List/InfiniteScroll?json=%7B%22SliderList%22%3Afalse%2C%22SliderMultiAgencies%22%3Afalse%2C%22IsProject%22%3Afalse%2C%22PageMaximum%22%3A0%2C%22FirstPage%22%3Atrue%2C%22CanGetNextPage%22%3Afalse%2C%22CMSListType%22%3A2%2C%22SortParameter%22%3A5%2C%22MaxItemsPerPage%22%3A48%2C%22PageNumber%22%3A0%2C%22EstateSearchParams%22%3A%5B%7B%22FieldName%22%3A%22StatusIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22PurposeIDList%22%2C%22FieldValue%22%3A%5B1%5D%7D%2C%7B%22FieldName%22%3A%22ShowDetails%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22ShowRepresentatives%22%2C%22FieldValue%22%3Atrue%7D%2C%7B%22FieldName%22%3A%22CanHaveChildren%22%2C%22FieldValue%22%3Afalse%7D%5D%2C%22CustomQuery%22%3Anull%2C%22jsonEstateParams%22%3Anull%2C%22BaseEstateID%22%3A0%7D | agences/homeside_scroll_vendre.html
+# --- Ard'Immo : pages de biens ---
+https://ardimmoc.be/wp-json/wp/v2/pages?per_page=50&_fields=id,link,title | agences/ardimmoc_pages.json
