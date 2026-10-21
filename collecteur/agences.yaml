@@ -1,0 +1,81 @@
+# Agences immobilières de la province de Luxembourg.
+#
+# Chaque entrée :
+#   nom        : nom de l'agence (affiché dans l'appli)
+#   commune    : commune principale
+#   url        : site officiel (vide si inconnu)
+#   candidats  : domaines à tester par outils/analyser_agences.py quand url est vide
+#   logiciel   : module de collecte à utiliser (voir immoj/sources/agences/) :
+#                whise, sweepbright, omnicasa, apimo, era, century21, trevi, honesty,
+#                vosagences, generique, inconnu
+#   actif      : false = ignorée (pas de site, publie seulement sur les portails,
+#                ou logiciel pas encore géré)
+#   options    : paramètres propres au module (url des listes, sélecteurs...)
+#
+# Pour ajouter une agence : copier un bloc, adapter, pousser. Rien d'autre.
+agences:
+  # --- Réseaux ---
+  - {nom: Honesty Arlon, commune: Arlon, url: https://www.honesty.be, logiciel: inconnu, actif: false, reseau: honesty}
+  - {nom: Honesty Virton, commune: Virton, url: https://www.honesty.be, logiciel: inconnu, actif: false, reseau: honesty}
+  - {nom: Honesty Libramont, commune: Libramont-Chevigny, url: https://www.honesty.be, logiciel: inconnu, actif: false, reseau: honesty}
+  - {nom: Honesty Bertrix, commune: Bertrix, url: https://www.honesty.be, logiciel: inconnu, actif: false, reseau: honesty}
+  - {nom: Honesty Marche, commune: Marche-en-Famenne, url: https://www.honesty.be, logiciel: inconnu, actif: false, reseau: honesty}
+  - {nom: ERA B-Lux Bastogne, commune: Bastogne, url: "", candidats: [https://www.era.be, https://www.erablux.be, https://www.era-blux.be], logiciel: inconnu, actif: false, reseau: era}
+  - {nom: ERA B-Lux Marche, commune: Marche-en-Famenne, url: "", logiciel: inconnu, actif: false, reseau: era}
+  - {nom: ERA B-Lux Libramont, commune: Libramont-Chevigny, url: "", logiciel: inconnu, actif: false, reseau: era}
+  - {nom: Vos Agences Condrogest, commune: Marche-en-Famenne, url: https://www.vosagences.be, logiciel: inconnu, actif: false, reseau: vosagences}
+  - {nom: Vos Agences Ardenne, commune: Libramont-Chevigny, url: https://www.vosagences.be, logiciel: inconnu, actif: false, reseau: vosagences}
+  - {nom: Home Sweet Gaume Virton, commune: Virton, url: "", candidats: [https://www.homesweetgaume.be, https://homesweetgaume.be, https://www.home-sweet-gaume.be], logiciel: inconnu, actif: false}
+  - {nom: Home Sweet Gaume Florenville, commune: Florenville, url: "", logiciel: inconnu, actif: false}
+  - {nom: Century 21 Cofilux, commune: Arlon, url: "", candidats: [https://www.century21.be/fr/agence/cofilux, https://www.century21.be, https://www.century21cofilux.be], logiciel: inconnu, actif: false, reseau: century21}
+  - {nom: Trevi Luxembourg, commune: Arlon, url: https://www.trevi.be, logiciel: inconnu, actif: false, reseau: trevi}
+  # --- Arlon ---
+  - {nom: W Immobilière (Double V), commune: Arlon, url: "", candidats: [https://www.wimmobiliere.be, https://www.w-immobiliere.be, https://wimmo.be, https://www.doublev-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Tadam Immobilière, commune: Arlon, url: "", candidats: [https://www.tadam-immo.be, https://www.tadamimmo.be, https://www.tadam.be], logiciel: inconnu, actif: false}
+  - {nom: Immo 23, commune: Arlon, url: "", candidats: [https://www.immo23.be, https://immo23.be], logiciel: inconnu, actif: false}
+  # --- Sud (Aubange, Athus, Messancy) ---
+  - {nom: Groupe Arcade Immobilier, commune: Aubange, url: "", candidats: [https://www.arcade-immobilier.be, https://www.groupearcade.be, https://www.arcadeimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Immo CM, commune: Aubange, url: "", candidats: [https://www.immocm.be, https://immocm.be, https://www.immo-cm.be], logiciel: inconnu, actif: false}
+  - {nom: Alison Immo, commune: Messancy, url: "", candidats: [https://www.alisonimmo.be, https://www.alison-immo.be, https://alisonimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Brion Immo, commune: Aubange, url: "", candidats: [https://www.brionimmo.be, https://www.brion-immo.be, https://brionimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Berns Immobilier, commune: Aubange, url: "", candidats: [https://www.berns.be, https://www.bernsimmo.be, https://www.berns-immobilier.be], logiciel: inconnu, actif: false}
+  # --- Gaume ---
+  - {nom: Access Immo, commune: Virton, url: "", candidats: [https://www.accessimmo.be, https://www.access-immo.be, https://accessimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Ultimmo, commune: Virton, url: "", candidats: [https://www.ultimmo.be, https://ultimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Juliet Immo, commune: Saint-Léger, url: "", candidats: [https://www.julietimmo.be, https://www.juliet-immo.be, https://julietimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Immo Dek, commune: Étalle, url: "", candidats: [https://www.immodek.be, https://immodek.be, https://www.immo-dek.be], logiciel: inconnu, actif: false}
+  - {nom: Pepit-immo, commune: Habay, url: "", candidats: [https://www.pepit-immo.be, https://pepit-immo.be, https://www.pepitimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Iti Groupe, commune: Florenville, url: "", candidats: [https://www.itigroupe.be, https://www.iti-groupe.be, https://itigroupe.be, https://www.iti.be], logiciel: inconnu, actif: false}
+  - {nom: Sud Immo, commune: Florenville, url: "", candidats: [https://www.sudimmo.be, https://sudimmo.be, https://www.sud-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Centrale Immobilière, commune: Florenville, url: "", candidats: [https://www.centrale-immobiliere.be, https://www.centraleimmobiliere.be, https://www.lacentraleimmobiliere.be], logiciel: inconnu, actif: false}
+  # --- Centre Ardenne ---
+  - {nom: Dynasty, commune: Libramont-Chevigny, url: "", candidats: [https://www.dynasty-immo.be, https://www.dynastyimmo.be, https://www.dynasty.be, https://www.dynasty-immobilier.be], logiciel: inconnu, actif: false}
+  - {nom: Lio Immo, commune: Libramont-Chevigny, url: "", candidats: [https://www.lio-immo.be, https://www.lioimmo.be, https://lioimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Immo Centre Ardennes, commune: Libramont-Chevigny, url: "", candidats: [https://www.immocentreardennes.be, https://www.immo-centre-ardennes.be, https://www.immocentreardenne.be], logiciel: inconnu, actif: false}
+  - {nom: Neufcoeur, commune: Neufchâteau, url: "", candidats: [https://www.neufcoeur.be, https://neufcoeur.be, https://www.neufcoeur-immo.be], logiciel: inconnu, actif: false}
+  - {nom: "Ard'Immo & Conseils", commune: Bertrix, url: "", candidats: [https://www.ardimmo.be, https://www.ardimmo-conseils.be, https://www.ardimmoconseils.be, https://ardimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Euro Ardennes Immo, commune: Bouillon, url: "", candidats: [https://www.euroardennesimmo.be, https://www.euro-ardennes-immo.be, https://www.euroardennes.be], logiciel: inconnu, actif: false}
+  - {nom: Mobilimmo, commune: Saint-Hubert, url: "", candidats: [https://www.mobilimmo.be, https://mobilimmo.be], logiciel: inconnu, actif: false}
+  # --- Nord ---
+  - {nom: BD Immo, commune: Bastogne, url: "", candidats: [https://www.bdimmo.be, https://bdimmo.be, https://www.bd-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Immo Plainchamp, commune: Bastogne, url: "", candidats: [https://www.immoplainchamp.be, https://www.plainchamp.be, https://immoplainchamp.be], logiciel: inconnu, actif: false}
+  - {nom: Immo Bastogne, commune: Bastogne, url: "", candidats: [https://www.immobastogne.be, https://immobastogne.be, https://www.immo-bastogne.be], logiciel: inconnu, actif: false}
+  - {nom: L'Agence par Pauline Moreaux, commune: Houffalize, url: "", candidats: [https://www.lagence-paulinemoreaux.be, https://www.paulinemoreaux.be, https://www.lagencehouffalize.be, https://www.lagence-immo.be], logiciel: inconnu, actif: false}
+  - {nom: DG-Immo, commune: Vielsalm, url: "", candidats: [https://www.dg-immo.be, https://www.dgimmo.be, https://dg-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Immobilière des Ardennes, commune: Vielsalm, url: "", candidats: [https://www.immobiliere-des-ardennes.be, https://www.immobilieredesardennes.be, https://www.immoardennes.be], logiciel: inconnu, actif: false}
+  - {nom: Guibert Grandjean, commune: Vielsalm, url: "", candidats: [https://www.guibertgrandjean.be, https://www.guibert-grandjean.be, https://guibertgrandjean.be], logiciel: inconnu, actif: false}
+  - {nom: Immo Peter, commune: Vielsalm, url: "", candidats: [https://www.immopeter.be, https://immopeter.be, https://www.immo-peter.be], logiciel: inconnu, actif: false}
+  - {nom: Homeside Real Estate, commune: Vielsalm, url: "", candidats: [https://www.homeside.be, https://homeside.be, https://www.homeside-realestate.be], logiciel: inconnu, actif: false}
+  # --- Famenne et Ourthe ---
+  - {nom: Easyhome, commune: Marche-en-Famenne, url: "", candidats: [https://www.easyhome.be, https://easyhome.be, https://www.easyhome-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Delzandre Immo, commune: Marche-en-Famenne, url: "", candidats: [https://www.delzandre.be, https://www.delzandreimmo.be, https://www.delzandre-immo.be], logiciel: inconnu, actif: false}
+  - {nom: MCA Immobilier, commune: Durbuy, url: "", candidats: [https://www.mca-immobilier.be, https://www.mcaimmobilier.be, https://www.mca-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Isimmo, commune: Durbuy, url: "", candidats: [https://www.isimmo.be, https://isimmo.be], logiciel: inconnu, actif: false}
+  - {nom: BIA Immo, commune: La Roche-en-Ardenne, url: "", candidats: [https://www.biaimmo.be, https://www.bia-immo.be, https://biaimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Ardenne Immo, commune: La Roche-en-Ardenne, url: "", candidats: [https://www.ardenne-immo.be, https://www.ardenneimmo.be, https://ardenne-immo.be], logiciel: inconnu, actif: false}
+  - {nom: Picard Immo, commune: Hotton, url: "", candidats: [https://www.picardimmo.be, https://www.picard-immo.be, https://picardimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Benjamin Gaspard Immobilier, commune: Rendeux, url: "", candidats: [https://www.benjamingaspard.be, https://www.benjamin-gaspard.be, https://www.gaspardimmo.be], logiciel: inconnu, actif: false}
+  - {nom: Wellimmo, commune: Wellin, url: "", candidats: [https://www.wellimmo.be, https://wellimmo.be, https://www.well-immo.be], logiciel: inconnu, actif: false}
+  # --- Logement social (location) ---
+  - {nom: AIS Nord Luxembourg, commune: Marche-en-Famenne, url: "", candidats: [https://www.aisnordluxembourg.be, https://www.ais-nord-luxembourg.be, https://aisnordlux.be], logiciel: inconnu, actif: false}
+  - {nom: Logesud, commune: Arlon, url: "", candidats: [https://www.logesud.be, https://logesud.be], logiciel: inconnu, actif: false}

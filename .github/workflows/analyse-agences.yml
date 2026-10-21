@@ -1,0 +1,27 @@
+# Analyse des sites d'agences (phase 3) : teste les URL de agences.yaml et
+# imprime, dans le journal, le logiciel détecté et les pages d'annonces.
+name: Analyser les agences
+
+on:
+  workflow_dispatch:
+    inputs:
+      seulement:
+        description: "Ne tester que les agences dont le nom contient ce texte (vide = toutes)"
+        required: false
+        default: ""
+  push:
+    branches-ignore: ["main"]
+    paths: ["collecteur/agences.yaml", "collecteur/outils/analyser_agences.py"]
+
+jobs:
+  analyser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pyyaml
+      - name: Rapport
+        run: python collecteur/outils/analyser_agences.py --seulement "${{ inputs.seulement }}"
