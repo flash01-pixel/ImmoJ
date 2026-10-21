@@ -138,3 +138,23 @@ def test_wellimmo(lire_fixture):
     maison = next(a for a in loc if a.type == "maison")
     assert maison.prix == 900 and maison.code_postal == "6920" and maison.surface == 98
     assert maison.commune == "WELLIN"
+
+
+def test_immo23(lire_fixture):
+    loc = generique(lire_fixture, "Immo 23", "immo23_louer.html", "location", 10)
+    a = next(x for x in loc if x.url.endswith("+87511643"))
+    assert a.prix == 1750 and a.commune == "Arlon" and a.type == "maison"
+    assert a.chambres == 3 and a.surface == 108
+    assert a.titre.startswith("Maison 3 chambres") and a.photos[0].startswith("https://")
+
+
+def test_ardenneimmo(lire_fixture):
+    ag = AGENCES["Ardenne Immo"]
+    html = lire_fixture("agences/ardenneimmo_accueil.html")
+    vente = verifier(analyser_liste(html, ag["url"], ag, "achat"), "achat", ag["nom"], 20)
+    a = next(x for x in vente if x.url.endswith("-7909441"))
+    assert a.prix == 289000 and a.commune == "HOUFFALIZE" and a.chambres == 5 and a.peb == "F"
+    assert all("a-vendre" in x.url for x in vente)
+    loc = analyser_liste(html, ag["url"], ag, "location")
+    assert all("a-louer" in x.url for x in loc)
+    assert not any(x.url in {v.url for v in vente} for x in loc)

@@ -39,8 +39,24 @@ agences:
      note: "Probablement « W Immobilière » (Avenue de Longwy 340). Site non trouvé (wimmo.be = autre agence, Bruxelles)"}
   - {nom: Tadam Immobilière, commune: Arlon, url: "", logiciel: inconnu, actif: false,
      note: "Site non trouvé (tadam.be = autre société)"}
-  - {nom: Immo 23, commune: Arlon, url: https://immo23.be, logiciel: inconnu, actif: false,
-     note: "Apimo ; liste : /fr/louer et /fr/a-vendre"}
+  - nom: Immo 23
+    commune: Arlon
+    url: https://immo23.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://immo23.be/fr/louer
+      liste_achat: https://immo23.be/fr/a-vendre
+      carte: "li.property"
+      lien: "a.container"
+      titre: "img.propertiesPicture"
+      prix: "p.price"
+      lieu: "span.city"
+      type: "span.subtype"
+      chambres: "li.bedrooms"
+      surface: "li.area"
+      photo: "img.propertiesPicture"
+    note: "Apimo, rendu côté serveur"
   # --- Sud (Aubange, Athus, Messancy) ---
   - nom: Groupe Arcade Immobilier
     commune: Aubange
@@ -185,8 +201,23 @@ agences:
   - {nom: Isimmo, commune: Durbuy, url: https://www.isimmo.be, logiciel: inconnu, actif: false,
      note: "HTTP 403 depuis GitHub (anti-bot)"}
   - {nom: BIA Immo, commune: La Roche-en-Ardenne, url: "", logiciel: inconnu, actif: false, note: "Site non trouvé"}
-  - {nom: Ardenne Immo, commune: La Roche-en-Ardenne, url: https://www.ardenneimmo.be, logiciel: inconnu, actif: false,
-     note: "Whise (modèle « e ») ; liste à identifier"}
+  - nom: Ardenne Immo
+    commune: La Roche-en-Ardenne
+    url: https://www.ardenneimmo.be
+    logiciel: generique
+    actif: true
+    options:
+      liste_location: https://www.ardenneimmo.be/
+      liste_achat: https://www.ardenneimmo.be/
+      url_contient: {location: "a-louer", achat: "a-vendre"}
+      carte: "div.search-result-list-item"
+      lien: "a[href*='/fr/e/']"
+      titre: "img"
+      prix: ".estate-price"
+      lieu: "h1.card-title"
+      chambres: ".estate-specs .count"
+      photo: ".card-img-container img"
+    note: "Whise (modèle « e ») : la page d'accueil liste tous les biens, location et vente ; pas de code postal (localité seule)"
   - nom: Picard Immo
     commune: Hotton
     url: https://www.picardimmo.be

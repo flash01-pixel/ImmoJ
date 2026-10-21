@@ -19,6 +19,9 @@ Exemple dans agences.yaml :
       photo: "img"
       pages: 1                   # pages à lire (ajoute ?page=N ou /page/N, voir pagination)
       pagination: "?page={n}"    # gabarit ajouté à l'URL de liste pour n ≥ 2
+      url_contient: "a-louer"    # optionnel : ne garder que les cartes dont le lien contient ce
+                                 # texte (utile quand une même page mélange location et vente ;
+                                 # on met alors la même liste_* pour les deux transactions)
       exclure: "vendu|loué"      # optionnel : regex (insensible à la casse) sur le texte
                                  # de la carte pour ignorer des cartes. Par défaut, seule
                                  # une carte dont le PRIX affiche « vendu/loué » est ignorée.
@@ -90,6 +93,12 @@ def _surface(texte: str) -> int | None:
 
 
 def _peb(carte) -> str | None:
+    # Variante « classe CSS » : <span class="peb f"> ou <div class="peb-C">
+    for el in carte.select("[class*=peb]"):
+        classes = " ".join(el.get("class", []))
+        m = re.search(r"(?:^|\s)peb[-_ ]?([a-g](?:\+\+|\+)?)(?:\s|$)", classes, re.I)
+        if m:
+            return m.group(1).upper()
     img = carte.select_one("img[alt*=PEB], img[alt*=peb], img[src*=peb]")
     if not img:
         return None
@@ -120,6 +129,9 @@ class Generique(SourceAgences):
 
 def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) -> list[Annonce]:
     options = agence.get("options") or {}
+    marqueur = options.get("url_contient")
+    if isinstance(marqueur, dict):
+        marqueur = marqueur.get(transaction)
     soup = BeautifulSoup(html, "lxml")
     annonces: list[Annonce] = []
     vus: set[str] = set()
@@ -137,6 +149,8 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
         if not lien or not lien.get("href"):
             continue
         url = urljoin(url_liste, lien["href"]).split("#")[0]
+        if marqueur and marqueur not in url:
+            continue
         id_externe = re.sub(r"[^a-z0-9]+", "-", url.lower().split("//", 1)[-1]).strip("-")[-80:]
         if id_externe in vus:
             continue
