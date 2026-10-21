@@ -1,0 +1,54 @@
+# Capture de pages HTML pour les tests des parsers.
+#
+# Pourquoi : les tests des parsers tournent sur des pages HTML enregistrées
+# localement (jamais sur Internet). Ce workflow permet d'enregistrer une page
+# depuis les serveurs GitHub et de la pousser directement dans le dépôt, dans
+# collecteur/tests/fixtures/html/<source>/<fichier>.
+#
+# Utilisation : onglet « Actions » → « Capturer des pages HTML » → « Run workflow »,
+# puis coller une ou plusieurs lignes au format :
+#     https://exemple.be/page | source/nom_fichier.html
+name: Capturer des pages HTML
+
+on:
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: "Une ligne par page : URL | source/fichier.html"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  capturer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        run: pip install requests
+
+      - name: Télécharger les pages
+        env:
+          PAGES: ${{ inputs.pages }}
+        run: python collecteur/outils/capturer_page.py --lignes "$PAGES"
+
+      - name: Pousser les pages dans le dépôt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add collecteur/tests/fixtures/html
+          if git diff --cached --quiet; then
+            echo "Aucune nouvelle page à enregistrer."
+          else
+            git commit -m "Capture de pages HTML pour les tests"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
