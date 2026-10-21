@@ -34,9 +34,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
+      # Le SDK Android est déjà installé sur les machines GitHub (ANDROID_HOME) :
+      # le plugin Android télécharge lui-même les composants manquants.
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"   # version compatible avec le plugin Android 8.7
 
       - name: Compiler
         run: gradle assembleDebug --no-daemon --console=plain

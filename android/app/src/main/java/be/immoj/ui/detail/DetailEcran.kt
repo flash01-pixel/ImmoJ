@@ -206,9 +206,7 @@ private fun StatutEtNote(a: Annonce, onEnregistrer: (StatutPerso, String?) -> Un
     var note by remember(a.id) { mutableStateOf(a.note ?: "") }
 
     Text("Mon statut", style = MaterialTheme.typography.titleSmall)
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Deux rangées de puces pour tenir sur un écran de téléphone.
-    }
+    // Deux rangées de puces pour tenir sur un écran de téléphone.
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatutPerso.entries.chunked(3).forEach { rangee ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
