@@ -3,6 +3,8 @@
 
     <!-- Accès réseau : Supabase et photos des annonces. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Notifications locales (Android 13 et plus demandent l'accord de l'utilisateur). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ImmoJApp"
