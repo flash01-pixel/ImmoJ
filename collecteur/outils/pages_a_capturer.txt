@@ -1,10 +1,10 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # Une ligne par page : URL | source/fichier.html
-# Modifier ce fichier et pousser (sur une branche de travail) déclenche la capture.
-https://www.immoweb.be/fr/search-results/maison-et-appartement/a-vendre/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_achat.json
-https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=2&orderBy=newest | immoweb/api_location_page2.json
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2143&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_maisons_location.json
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2771&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_apparts_location.json
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2142&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_maisons_achat.json
-https://www.athome.lu/fr/vente/belgique/province-de-luxembourg | athome/liste_achat.html
-https://www.athome.lu/fr/location/belgique/province-de-luxembourg?page=2 | athome/liste_location_page2.html
+# --- Phase 4 : reconnaissance Biddit et ventes notariales ---
+https://www.biddit.be/fr | biddit/accueil.html
+https://www.biddit.be/robots.txt | biddit/robots.txt
+https://www.biddit.be/fr/catalog/list?province=luxembourg | biddit/catalogue.html
+https://www.biddit.be/api/v1/properties?province=LUXEMBOURG | biddit/api_properties.json
+https://www.notaire.be/immo | notaire/immo.html
+https://www.notaire.be/immo/vente-publique/luxembourg | notaire/ventes_publiques.html
+https://www.notaire.be/robots.txt | notaire/robots.txt
