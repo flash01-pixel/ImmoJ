@@ -164,7 +164,10 @@ create index if not exists collectes_source_debut_idx on collectes (source, debu
 -- ============================================================================
 
 -- Liste des annonces avec statut, badges et sources agrégées, en une requête.
-create or replace view v_annonces_liste as
+-- « a.* » change quand on ajoute une colonne : on recrée la vue (et la fonction
+-- annonces_dans_rayon qui en dépend, redéfinie plus bas).
+drop view if exists v_annonces_liste cascade;
+create view v_annonces_liste as
 select
     a.*,
     coalesce(s.statut, 'nouveau')                                  as statut,
