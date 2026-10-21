@@ -26,6 +26,8 @@ jobs:
     defaults:
       run:
         working-directory: android
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,10 +49,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Résoudre la configuration à intégrer
-        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        if: env.SUPABASE_ACCESS_TOKEN != ''
         working-directory: collecteur
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: pip install requests && python outils/supabase_admin.py env
 
