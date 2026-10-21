@@ -2,8 +2,10 @@ package be.immoj.data
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Headers
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Query
 import retrofit2.http.QueryMap
@@ -18,6 +20,39 @@ interface SupabaseApi {
 
     @GET("rest/v1/v_annonces_liste")
     suspend fun annonces(@QueryMap filtres: Map<String, String>): List<Annonce>
+
+    /** Annonces dans un rayon (fonction SQL) ; les mêmes filtres s'appliquent au résultat. */
+    @POST("rest/v1/rpc/annonces_dans_rayon")
+    suspend fun annoncesDansRayon(
+        @Body arguments: Map<String, Double>,
+        @QueryMap filtres: Map<String, String>,
+    ): List<Annonce>
+
+    @GET("rest/v1/communes")
+    suspend fun communes(
+        @Query("select") select: String = "nom,codes,latitude,longitude",
+        @Query("order") ordre: String = "nom.asc",
+    ): List<Commune>
+
+    @GET("rest/v1/recherches_sauvegardees")
+    suspend fun recherches(
+        @Query("select") select: String = "*",
+        @Query("order") ordre: String = "cree_le.desc",
+    ): List<RechercheSauvegardee>
+
+    @Headers("Prefer: return=representation")
+    @POST("rest/v1/recherches_sauvegardees")
+    suspend fun creerRecherche(@Body recherche: RechercheSauvegardee): List<RechercheSauvegardee>
+
+    @Headers("Prefer: return=minimal")
+    @PATCH("rest/v1/recherches_sauvegardees")
+    suspend fun modifierRecherche(
+        @Query("id") id: String,
+        @Body champs: Map<String, Boolean>,
+    ): Response<Unit>
+
+    @DELETE("rest/v1/recherches_sauvegardees")
+    suspend fun supprimerRecherche(@Query("id") id: String): Response<Unit>
 
     @GET("rest/v1/historique_prix")
     suspend fun historiquePrix(

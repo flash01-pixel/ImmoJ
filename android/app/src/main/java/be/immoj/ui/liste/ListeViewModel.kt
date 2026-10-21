@@ -3,7 +3,9 @@ package be.immoj.ui.liste
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import be.immoj.data.Annonce
+import be.immoj.data.Commune
 import be.immoj.data.Depot
+import be.immoj.data.Filtres
 import be.immoj.data.Preferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +17,9 @@ import kotlinx.coroutines.launch
 data class ListeEtat(
     val transaction: String = "location",
     val tri: String = "recent",
+    val filtres: Filtres = Filtres(),
     val annonces: List<Annonce> = emptyList(),
+    val communes: List<Commune> = emptyList(),
     val chargement: Boolean = false,
     val erreur: String? = null,
 )
@@ -27,8 +31,9 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
     init {
         viewModelScope.launch {
             val r = preferences.lire()
-            _etat.update { it.copy(transaction = r.transaction, tri = r.tri) }
+            _etat.update { it.copy(transaction = r.transaction, tri = r.tri, filtres = r.filtres) }
             charger()
+            runCatching { depot.communes() }.onSuccess { c -> _etat.update { it.copy(communes = c) } }
         }
     }
 
@@ -36,7 +41,8 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         viewModelScope.launch {
             _etat.update { it.copy(chargement = true, erreur = null) }
             try {
-                val liste = depot.listerAnnonces(_etat.value.transaction, _etat.value.tri)
+                val e = _etat.value
+                val liste = depot.listerAnnonces(e.transaction, e.tri, e.filtres)
                 _etat.update { it.copy(annonces = liste, chargement = false) }
             } catch (e: Exception) {
                 _etat.update { it.copy(chargement = false, erreur = messageErreur(e)) }
@@ -49,6 +55,18 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         _etat.update { it.copy(transaction = transaction) }
         viewModelScope.launch { preferences.enregistrerTransaction(transaction) }
         charger()
+    }
+
+    fun changerFiltres(filtres: Filtres) {
+        _etat.update { it.copy(filtres = filtres) }
+        viewModelScope.launch { preferences.enregistrerFiltres(filtres) }
+        charger()
+    }
+
+    /** Définit le centre du rayon (depuis la carte) sans changer le reste. */
+    fun definirCentre(lat: Double, lon: Double) {
+        val f = _etat.value.filtres
+        changerFiltres(f.copy(centreLat = lat, centreLon = lon, rayonKm = f.rayonKm ?: 15.0))
     }
 
     fun changerTri(tri: String) {
