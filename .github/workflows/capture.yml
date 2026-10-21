@@ -18,8 +18,11 @@ on:
         description: "Une ligne par page : URL | source/fichier.html"
         required: true
         type: string
-  # Déclenchement automatique : modifier le fichier pages_a_capturer.txt et pousser.
+  # Déclenchement automatique : modifier le fichier pages_a_capturer.txt et pousser
+  # (sur une branche de travail ; jamais sur main, pour ne pas écraser les pages
+  # de test à chaque fusion).
   push:
+    branches-ignore: ["main"]
     paths:
       - "collecteur/outils/pages_a_capturer.txt"
 

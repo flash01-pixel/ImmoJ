@@ -15,3 +15,4 @@ android/.idea/
 *.iml
 # Divers
 .DS_Store
+livrables/

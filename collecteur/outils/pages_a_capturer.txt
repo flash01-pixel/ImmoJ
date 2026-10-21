@@ -8,3 +8,10 @@ https://www.zimmo.be/fr/a-louer/luxembourg/ | zimmo/liste_location.html
 https://www.logic-immo.be/fr/location/province-luxembourg | logicimmo/liste_location.html
 https://www.realo.be/fr/a-louer/province-de-luxembourg | realo/liste_location.html
 https://www.2ememain.be/l/immo/a-louer/ | 2ememain/liste_location.html
+# --- 2e série : points d'entrée JSON (souvent moins protégés que le HTML) ---
+https://www.2ememain.be/l/immo/ | 2ememain/categorie_immo.html
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_search.json
+https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_location.json
+https://www.immoweb.be/fr/recherche/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/liste_location.html
+https://www.zimmo.be/fr/ | zimmo/accueil.html
+https://www.athome.lu/fr/location/belgique/province-de-luxembourg | athome/liste_location.html
