@@ -1,13 +1,16 @@
 """Point d'entrée du collecteur.
 
-    python -m immoj.main                 # collecte normale (toutes les sources)
+    python -m immoj.main --fichier donnees/base.json   # stockage JSON (sans Supabase)
+    python -m immoj.main                               # Supabase (variables d'environnement)
     python -m immoj.main --source immovlan --pages 6
-    python -m immoj.main --simulation    # sans Supabase ni ntfy : affiche seulement
-    python -m immoj.main --forcer        # ignore la plage horaire 7h–23h
+    python -m immoj.main --simulation                  # n'écrit rien : affiche seulement
+    python -m immoj.main --forcer                      # ignore la plage horaire 7h–23h
 
-Déroulé : vérification de l'heure → lecture des recherches sauvegardées →
-pour chaque source : collecte, intégration (géocodage, dédoublonnage, prix,
-nouveautés), notifications → journal des collectes → nettoyage.
+Deux stockages possibles, cumulables : Supabase (si SUPABASE_URL et
+SUPABASE_SERVICE_KEY sont définis) et le fichier JSON (--fichier). Chaque
+source n'est visitée qu'une fois ; ses annonces sont intégrées dans chaque
+stockage (géocodage, dédoublonnage, prix, nouveautés), puis les notifications
+ntfy partent pour le stockage Supabase.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from . import config
-from .config import Secrets, charger_secrets
+from .config import Secrets, charger_secrets, supabase_configure
 from .dedoublonnage import Candidat, trouver_doublon
 from .geocodage import Geocodeur
 from .modele import Annonce
@@ -27,6 +30,7 @@ from .notifications import Notificateur
 from .recherches import correspond
 from .sources import REGISTRE, ResultatCollecte
 from .stockage import Stockage, StockageSimulation, maintenant
+from .stockage_fichier import StockageFichier
 
 log = logging.getLogger("immoj")
 
@@ -136,24 +140,43 @@ class Integrateur:
                 self.notificateur.baisse_de_prix(a, ancien, a.prix)
 
 
+def preparer_cibles(simulation: bool, fichier: str | None, geocodeur: Geocodeur) -> list[dict]:
+    """Construit la liste des stockages à alimenter, chacun avec son intégrateur."""
+    cibles: list[dict] = []
+    if simulation:
+        secrets = Secrets(supabase_url="", supabase_cle_service="", ntfy_topic="")
+        cibles.append({"nom": "simulation", "stockage": StockageSimulation(),
+                       "notificateur": Notificateur(secrets, simulation=True)})
+    else:
+        if supabase_configure():
+            secrets = charger_secrets()
+            cibles.append({"nom": "supabase", "stockage": Stockage(secrets),
+                           "notificateur": Notificateur(secrets)})
+        if fichier:
+            sans_ntfy = Secrets(supabase_url="", supabase_cle_service="", ntfy_topic="")
+            cibles.append({"nom": f"fichier {fichier}", "stockage": StockageFichier(fichier),
+                           "notificateur": Notificateur(sans_ntfy)})
+    if not cibles:
+        raise SystemExit("Aucun stockage : définis SUPABASE_URL/SUPABASE_SERVICE_KEY "
+                         "ou passe --fichier donnees/base.json (ou --simulation).")
+    for c in cibles:
+        recherches = c["stockage"].lire_recherches()
+        log.info("[%s] %d recherche(s) sauvegardée(s) active(s)", c["nom"], len(recherches))
+        c["integrateur"] = Integrateur(c["stockage"], geocodeur, c["notificateur"], recherches)
+    return cibles
+
+
 def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool,
-             forcer: bool, transactions: tuple[str, ...] | None) -> int:
+             forcer: bool, transactions: tuple[str, ...] | None,
+             fichier: str | None = None) -> int:
     if not forcer and not dans_la_plage_horaire():
         log.info("Hors plage horaire (%dh–%dh Bruxelles) : rien à faire.",
                  config.HEURE_DEBUT, config.HEURE_FIN)
         return 0
 
-    if simulation:
-        secrets = Secrets(supabase_url="", supabase_cle_service="", ntfy_topic="")
-        stockage: Stockage = StockageSimulation()
-    else:
-        secrets = charger_secrets()
-        stockage = Stockage(secrets)
-    notificateur = Notificateur(secrets, simulation=simulation)
     geocodeur = Geocodeur()
-    recherches = stockage.lire_recherches()
-    log.info("%d recherche(s) sauvegardée(s) active(s)", len(recherches))
-    integrateur = Integrateur(stockage, geocodeur, notificateur, recherches)
+    cibles = preparer_cibles(simulation, fichier, geocodeur)
+    log.info("Stockages : %s", ", ".join(c["nom"] for c in cibles))
 
     noms = noms_sources or list(REGISTRE)
     code_sortie = 0
@@ -173,30 +196,36 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
         debut = maintenant()
         source = REGISTRE[nom](pages_max=pages)
         resultat = source.executer(transactions)
-        nouvelles = 0
-        try:
-            nouvelles = integrateur.integrer(resultat)
-        except Exception as e:  # noqa: BLE001
-            log.exception("[%s] erreur pendant l'intégration", nom)
-            resultat.ok = False
-            resultat.erreur = f"intégration : {type(e).__name__}: {e}"
-        stockage.enregistrer_collecte(nom, debut, resultat.ok, len(resultat.annonces), nouvelles,
-                                      resultat.erreur, resultat.bloque, resultat.duree_s)
-        if resultat.ok:
-            log.info("[%s] OK : %d annonces vues, %d nouvelles, %d requêtes, %.0f s",
-                     nom, len(resultat.annonces), nouvelles, resultat.nb_requetes,
-                     resultat.duree_s)
-        else:
-            echecs = stockage.echecs_consecutifs(nom)
-            log.error("[%s] ÉCHEC (%d consécutif(s)) : %s", nom, echecs, resultat.erreur)
-            if echecs == config.ECHECS_AVANT_ALERTE:
-                notificateur.source_en_panne(nom, resultat.erreur, echecs)
+        for c in cibles:
+            stockage, notificateur = c["stockage"], c["notificateur"]
+            ok, erreur, nouvelles = resultat.ok, resultat.erreur, 0
+            try:
+                nouvelles = c["integrateur"].integrer(resultat)
+            except Exception as e:  # noqa: BLE001
+                log.exception("[%s] erreur pendant l'intégration (%s)", nom, c["nom"])
+                ok, erreur = False, f"intégration : {type(e).__name__}: {e}"
+            stockage.enregistrer_collecte(nom, debut, ok, len(resultat.annonces), nouvelles,
+                                          erreur, resultat.bloque, resultat.duree_s)
+            if ok:
+                log.info("[%s] OK (%s) : %d annonces vues, %d nouvelles, %d requêtes, %.0f s",
+                         nom, c["nom"], len(resultat.annonces), nouvelles,
+                         resultat.nb_requetes, resultat.duree_s)
+            else:
+                echecs = stockage.echecs_consecutifs(nom)
+                log.error("[%s] ÉCHEC (%d consécutif(s)) : %s", nom, echecs, erreur)
+                if echecs == config.ECHECS_AVANT_ALERTE:
+                    notificateur.source_en_panne(nom, erreur, echecs)
 
-    nb = stockage.desactiver_anciennes(config.JOURS_AVANT_DESACTIVATION)
-    if nb:
-        log.info("%d annonce(s) désactivée(s) (plus vues depuis %d jours)",
-                 nb, config.JOURS_AVANT_DESACTIVATION)
-    log.info("Terminé. %d notification(s) envoyée(s).", notificateur.nb_envoyees)
+    for c in cibles:
+        nb = c["stockage"].desactiver_anciennes(config.JOURS_AVANT_DESACTIVATION)
+        if nb:
+            log.info("[%s] %d annonce(s) désactivée(s) (plus vues depuis %d jours)",
+                     c["nom"], nb, config.JOURS_AVANT_DESACTIVATION)
+        if isinstance(c["stockage"], StockageFichier):
+            c["stockage"].sauvegarder()
+            n = c["stockage"].exporter(c["stockage"].chemin.with_name("annonces.json"), geocodeur)
+            log.info("[%s] export annonces.json : %d annonces actives", c["nom"], n)
+        log.info("[%s] %d notification(s) envoyée(s).", c["nom"], c["notificateur"].nb_envoyees)
     return code_sortie
 
 
@@ -208,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
                          help=f"pages de résultats par source (défaut {config.PAGES_MAX})")
     parseur.add_argument("--transaction", choices=("location", "achat"), action="append",
                          help="limiter à location ou achat (répétable)")
+    parseur.add_argument("--fichier", default=None,
+                         help="stockage JSON (ex. donnees/base.json), cumulable avec Supabase")
     parseur.add_argument("--simulation", action="store_true",
                          help="n'écrit rien dans Supabase, n'envoie rien à ntfy")
     parseur.add_argument("--forcer", action="store_true",
@@ -218,7 +249,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.DEBUG if args.verbeux else logging.INFO,
                         format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
     return executer(args.sources, args.pages, args.simulation, args.forcer,
-                    tuple(args.transaction) if args.transaction else None)
+                    tuple(args.transaction) if args.transaction else None, args.fichier)
 
 
 if __name__ == "__main__":

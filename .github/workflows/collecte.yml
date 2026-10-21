@@ -6,7 +6,15 @@
 #
 # Quota (dépôt privé) : ~17 exécutions/jour × 30 jours ≈ 510 par mois. Avec
 # un timeout de 5 minutes on reste sous les 2 000 minutes gratuites.
+#
+# Deux stockages, cumulables :
+#  * fichier JSON sur la branche « donnees » du dépôt (toujours) : lu par l'appli
+#    en mode « sans compte » ;
+#  * Supabase, si SUPABASE_ACCESS_TOKEN (ou SUPABASE_URL + SUPABASE_SERVICE_KEY) existe.
 name: Collecte des annonces
+
+permissions:
+  contents: write
 
 on:
   schedule:
@@ -46,6 +54,18 @@ jobs:
           cache-dependency-path: collecteur/requirements.txt
       - run: pip install -r requirements.txt
 
+      # Base JSON précédente (branche « donnees »), s'il y en a une.
+      - name: Récupérer la base JSON
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p donnees
+          if git fetch --depth=1 origin donnees 2>/dev/null; then
+            git show origin/donnees:base.json > donnees/base.json || true
+            echo "Base JSON récupérée ($(wc -c < donnees/base.json) octets)."
+          else
+            echo "Pas encore de branche donnees : première collecte."
+          fi
+
       # Zéro configuration : avec le seul secret SUPABASE_ACCESS_TOKEN, l'URL, la
       # clé service et le topic ntfy sont retrouvés automatiquement.
       - name: Résoudre les accès Supabase
@@ -72,12 +92,29 @@ jobs:
           # Tant que Supabase n'est pas configuré, on s'arrête sans erreur
           # (sinon GitHub enverrait un e-mail d'échec à chaque heure).
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "Supabase non configuré : rien à faire (voir docs/00-demarrage-rapide.md)."
-            exit 0
+            echo "Supabase non configuré : stockage JSON seulement (mode sans compte)."
           fi
-          ARGS=""
+          ARGS="--fichier ../donnees/base.json"
           if [ -n "$SOURCE" ]; then ARGS="$ARGS --source $SOURCE"; fi
           if [ -n "$PAGES" ]; then ARGS="$ARGS --pages $PAGES"; fi
           # Un lancement manuel ignore la plage horaire.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then ARGS="$ARGS --forcer"; fi
           python -m immoj.main $ARGS
+
+      # Publie base.json + annonces.json sur la branche « donnees » (un seul
+      # commit, écrasé à chaque fois : le dépôt ne grossit pas).
+      - name: Publier la base JSON
+        working-directory: ${{ github.workspace }}
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -s donnees/annonces.json ]; then echo "Pas d'export à publier."; exit 0; fi
+          rm -rf /tmp/branche-donnees && mkdir /tmp/branche-donnees && cd /tmp/branche-donnees
+          git init -q -b donnees
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp "$GITHUB_WORKSPACE/donnees/base.json" "$GITHUB_WORKSPACE/donnees/annonces.json" .
+          printf '# Données ImmoJ\n\nMis à jour par le workflow de collecte. `annonces.json` est lu par l application.\n' > README.md
+          git add . && git commit -q -m "Collecte du $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:donnees
+          echo "Branche donnees mise à jour."
