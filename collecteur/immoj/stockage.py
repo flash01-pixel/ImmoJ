@@ -30,6 +30,12 @@ def maintenant() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def fusionner_photos(existantes: list[str], nouvelles: list[str]) -> list[str]:
+    """Union ordonnée : les photos déjà connues d'abord, puis les nouvelles."""
+    vues = set(existantes)
+    return list(existantes) + [p for p in nouvelles if p not in vues and not vues.add(p)]
+
+
 class Stockage:
     def __init__(self, secrets: Secrets) -> None:
         self.base = f"{secrets.supabase_url}/rest/v1"
@@ -110,7 +116,7 @@ class Stockage:
             "chambres": a.chambres, "surface": a.surface, "peb": a.peb,
             "jardin": a.jardin, "terrasse": a.terrasse, "animaux": a.animaux, "meuble": a.meuble,
             "date_publication": a.date_publication.isoformat() if a.date_publication else None,
-            "photos": a.photos, "description": a.description,
+            "photos": a.photos, "description": a.description, "details": a.details,
             "agence": a.agence, "telephone": a.telephone,
             "premiere_detection": maintenant(), "derniere_vue": maintenant(), "actif": True,
         }
@@ -131,13 +137,18 @@ class Stockage:
     def completer_annonce(self, annonce_id: str, a: Annonce) -> None:
         """Quand un doublon apporte des infos manquantes (photos, PEB...), on complète."""
         existante = self._lire("annonces", id=f"eq.{annonce_id}",
-                               select="photos,peb,surface,chambres,telephone,agence,description")
+                               select="photos,peb,surface,chambres,telephone,agence,description,"
+                                      "details")
         if not existante:
             return
         e = existante[0]
         maj: dict[str, Any] = {}
-        if not e.get("photos") and a.photos:
-            maj["photos"] = a.photos
+        photos = fusionner_photos(e.get("photos") or [], a.photos)
+        if photos != (e.get("photos") or []):
+            maj["photos"] = photos
+        details = {**a.details, **(e.get("details") or {})}   # l'existant prime
+        if details != (e.get("details") or {}):
+            maj["details"] = details
         for champ in ("peb", "surface", "chambres", "telephone", "agence"):
             if e.get(champ) in (None, "") and getattr(a, champ) not in (None, ""):
                 maj[champ] = getattr(a, champ)

@@ -55,10 +55,56 @@ class Source(ABC):
     def __init__(self, pages_max: int | None = None) -> None:
         self.client = ClientHttp(self.nom, respecter_robots=self.respecter_robots)
         self.pages_max = pages_max
+        #: annonces déjà en base pour cette source (id_externe → champs), remplies par
+        #: main.py ; permet d'éviter de relire des fiches déjà connues.
+        self.connues: dict[str, dict] = {}
 
     @abstractmethod
     def collecter(self, transaction: str) -> list[Annonce]:
         """Visite le site et renvoie les annonces d'une transaction donnée."""
+
+    # --- lecture des fiches (toutes les photos, détails) ---------------------
+    #: fiches lues au maximum par exécution (les autres attendront la suivante)
+    fiches_max: int = 20
+    #: False pour les sources dont la fiche n'apporte rien (ou est interdite)
+    lire_fiches: bool = True
+
+    def enrichir(self, a: Annonce) -> None:
+        """Complète une annonce avec sa fiche : toutes les photos et le maximum
+        d'informations (salles de bain, garage, terrain...). Par défaut, lecture
+        générique de la page ; une source peut la remplacer."""
+        from ..fiche import enrichir_depuis_html
+        r = self.client.get(a.url)
+        enrichir_depuis_html(a, r.text, r.url)
+
+    def _enrichir_nouvelles(self, annonces: list[Annonce]) -> None:
+        """Lit la fiche des annonces encore inconnues (au plus `fiches_max`)."""
+        if not self.lire_fiches:
+            return
+        lues = 0
+        for a in annonces:
+            if lues >= self.fiches_max:
+                log.info("[%s] %d fiches lues, les suivantes attendront le prochain passage",
+                         self.nom, lues)
+                break
+            connue = self.connues.get(a.id_externe)
+            if connue is not None:
+                # Déjà en base : on garde ce qu'on en sait (photos, détails) sans relire.
+                if len(connue.get("photos") or []) > len(a.photos):
+                    a.photos = list(connue["photos"])
+                for cle, valeur in (connue.get("details") or {}).items():
+                    a.details.setdefault(cle, valeur)
+                continue
+            lues += 1
+            try:
+                self.enrichir(a)
+            except Blocage as e:
+                log.warning("[%s] fiches bloquées (%s) : on garde les données de la liste",
+                            self.nom, e)
+                self.lire_fiches = False
+                return
+            except Exception as e:  # noqa: BLE001 - une fiche illisible n'est pas grave
+                log.warning("[%s] fiche illisible %s : %s", self.nom, a.url, e)
 
     def executer(self, transactions: tuple[str, ...] | None = None) -> ResultatCollecte:
         """Collecte toutes les transactions demandées sans jamais lever d'exception."""
@@ -70,6 +116,7 @@ class Source(ABC):
             try:
                 trouvees = self.collecter(transaction)
                 log.info("[%s] %s : %d annonces", self.nom, transaction, len(trouvees))
+                self._enrichir_nouvelles(trouvees)
                 annonces.extend(trouvees)
             except Blocage as e:
                 log.error("[%s] BLOQUÉ : %s", self.nom, e)

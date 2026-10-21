@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit
  * les ViewModels la transforment en message.
  */
 interface Depot {
+    /** Force une vraie mise à jour (nouveau téléchargement / nouvelle requête). */
+    suspend fun rafraichir() {}
     suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce>
     suspend fun annonce(id: String): Annonce?
     suspend fun historiquePrix(id: String): List<PrixHistorique>
@@ -37,6 +39,7 @@ class DepotRouteur(
 ) : Depot {
     private suspend fun actif(): Depot = if (preferences.lire().configure) supabase else local
 
+    override suspend fun rafraichir() = actif().rafraichir()
     override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres) =
         actif().listerAnnonces(transaction, tri, filtres)
     override suspend fun annonce(id: String) = actif().annonce(id)

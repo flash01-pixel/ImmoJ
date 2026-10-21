@@ -1,5 +1,9 @@
 package be.immoj.ui.principal
 
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -48,6 +52,8 @@ fun PrincipalEcran(
     ouvrirSources: () -> Unit,
 ) {
     val etat by vm.etat.collectAsState()
+    val portee = rememberCoroutineScope()
+    val contexte = LocalContext.current
     var onglet by rememberSaveable { mutableStateOf(ongletInitial) }
     var menuOuvert by rememberSaveable { mutableStateOf(false) }
 
@@ -63,13 +69,20 @@ fun PrincipalEcran(
                             Icon(Icons.Default.FilterList, contentDescription = "Filtres")
                         }
                     }
-                    IconButton(onClick = { vm.charger() }) {
+                    IconButton(onClick = { vm.charger(forcer = true) }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Actualiser")
                     }
                     IconButton(onClick = { menuOuvert = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menu")
                     }
                     DropdownMenu(expanded = menuOuvert, onDismissRequest = { menuOuvert = false }) {
+                        DropdownMenuItem(text = { Text("Lancer une collecte maintenant") },
+                            onClick = {
+                                menuOuvert = false
+                                portee.launch {
+                                    Toast.makeText(contexte, vm.collecterMaintenant(), Toast.LENGTH_LONG).show()
+                                }
+                            })
                         DropdownMenuItem(text = { Text("État des sources") },
                             onClick = { menuOuvert = false; ouvrirSources() })
                         DropdownMenuItem(text = { Text("Paramètres") },
@@ -93,10 +106,13 @@ fun PrincipalEcran(
             when (onglet) {
                 "carte" -> CarteEcran(
                     annonces = etat.annonces,
+                    communes = etat.communes,
                     centreLat = etat.filtres.centreLat,
                     centreLon = etat.filtres.centreLon,
                     rayonKm = etat.filtres.rayonKm,
                     onPointChoisi = { lat, lon -> vm.definirCentre(lat, lon) },
+                    onRayonChange = { km -> vm.definirRayon(km) },
+                    onRetirerRayon = { vm.retirerRayon() },
                     ouvrirDetail = ouvrirDetail,
                 )
                 "recherches" -> RecherchesEcran(app = app, appliquer = { r ->

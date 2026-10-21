@@ -7,7 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-/** Thème Material 3 : vert forêt, clair ou sombre selon le système. */
+/** Thème Material 3 : vert forêt, clair ou sombre (réglage « Apparence » ou système). */
 private val Vert = Color(0xFF1B5E20)
 private val VertClair = Color(0xFF81C784)
 private val Ambre = Color(0xFFFF8F00)
@@ -24,9 +24,14 @@ private val SchemaSombre = darkColorScheme(
 )
 
 @Composable
-fun ImmoJTheme(content: @Composable () -> Unit) {
+fun ImmoJTheme(mode: String = "systeme", content: @Composable () -> Unit) {
+    val sombre = when (mode) {
+        "clair" -> false
+        "sombre" -> true
+        else -> isSystemInDarkTheme()
+    }
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) SchemaSombre else SchemaClair,
+        colorScheme = if (sombre) SchemaSombre else SchemaClair,
         content = content,
     )
 }

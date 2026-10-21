@@ -23,6 +23,18 @@ from . import config
 log = logging.getLogger(__name__)
 
 
+def corriger_encodage(r: requests.Response) -> None:
+    """Sans charset dans l'en-tête, requests décode en latin-1 : « € » devient « â¬ ».
+    Si le contenu est de l'UTF-8 valide, on le lit comme tel."""
+    if "charset" in r.headers.get("Content-Type", "").lower():
+        return
+    try:
+        r.content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    r.encoding = "utf-8"
+
+
 class Blocage(Exception):
     """Le site refuse de nous servir (anti-bot, interdiction robots.txt...)."""
 
@@ -72,6 +84,13 @@ class ClientHttp:
 
     def get(self, url: str, **kwargs) -> requests.Response:
         """GET avec délai, tentatives et détection de blocage."""
+        return self._requete("GET", url, **kwargs)
+
+    def post(self, url: str, **kwargs) -> requests.Response:
+        """POST (formulaires « ajax » de certains sites d'agences), mêmes garde-fous."""
+        return self._requete("POST", url, **kwargs)
+
+    def _requete(self, methode: str, url: str, **kwargs) -> requests.Response:
         if not self._autorise(url):
             raise Blocage(f"robots.txt interdit {url}")
         derniere_erreur: Exception | None = None
@@ -79,7 +98,7 @@ class ClientHttp:
             self._attendre()
             self.nb_requetes += 1
             try:
-                r = self.session.get(url, timeout=config.TIMEOUT_S, **kwargs)
+                r = self.session.request(methode, url, timeout=config.TIMEOUT_S, **kwargs)
             except requests.RequestException as e:
                 derniere_erreur = e
                 log.warning("[%s] erreur réseau (%d/%d) sur %s : %s",
@@ -91,6 +110,7 @@ class ClientHttp:
                 derniere_erreur = RuntimeError(f"HTTP {r.status_code} sur {url}")
                 log.warning("[%s] %s", self.nom_source, derniere_erreur)
                 continue
+            corriger_encodage(r)
             return r
         raise RuntimeError(f"échec après {config.NB_TENTATIVES} tentatives : {derniere_erreur}")
 

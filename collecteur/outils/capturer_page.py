@@ -4,6 +4,8 @@ Utilisation locale :
     python collecteur/outils/capturer_page.py "https://site.be/page | immovlan/liste.html"
 
 Chaque argument (ou chaque ligne de --lignes) a la forme « URL | source/fichier.html ».
+Champs optionnels : « | {"En-tête": "valeur"} » (en-têtes) puis « | POST champ=val&champ2=val »
+(requête POST avec un formulaire) ou « | POST-JSON {...} » (corps JSON).
 La page est téléchargée avec des en-têtes de navigateur classiques, puis écrite
 telle quelle. Le code HTTP et le début du contenu sont affichés pour vérifier
 qu'on n'a pas reçu une page de blocage (captcha, 403...).
@@ -16,6 +18,17 @@ import sys
 from pathlib import Path
 
 import requests
+
+
+def corriger_encodage(r):
+    """Sans charset dans l'en-tête, lire l'UTF-8 comme tel (sinon « € » → « â¬ »)."""
+    if "charset" in r.headers.get("Content-Type", "").lower():
+        return
+    try:
+        r.content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    r.encoding = "utf-8"
 
 DOSSIER_FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "html"
 
@@ -44,6 +57,15 @@ def capturer(ligne: str) -> None:
             entetes.update(json.loads(champs[2]))
         except json.JSONDecodeError:
             print(f"   en-têtes illisibles, ignorés : {champs[2]}")
+    methode, donnees, corps_json = "GET", None, None
+    if len(champs) > 3 and champs[3]:
+        spec = champs[3]
+        if spec.startswith("POST-JSON "):
+            import json
+            methode, corps_json = "POST", json.loads(spec[len("POST-JSON "):])
+        elif spec.startswith("POST "):
+            from urllib.parse import parse_qsl
+            methode, donnees = "POST", parse_qsl(spec[len("POST "):], keep_blank_values=True)
     if not url or not chemin:
         print(f"Ligne ignorée : {ligne}")
         return
@@ -52,7 +74,11 @@ def capturer(ligne: str) -> None:
 
     print(f"→ {url}")
     try:
-        reponse = requests.get(url, headers=entetes, timeout=30)
+        if methode == "POST":
+            reponse = requests.post(url, headers=entetes, data=donnees, json=corps_json, timeout=30)
+            corriger_encodage(reponse)
+        else:
+            reponse = requests.get(url, headers=entetes, timeout=30)
     except requests.RequestException as erreur:
         print(f"   ERREUR réseau : {erreur}")
         return

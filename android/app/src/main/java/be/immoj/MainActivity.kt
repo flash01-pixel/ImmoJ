@@ -1,5 +1,7 @@
 package be.immoj
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
@@ -24,7 +26,8 @@ class MainActivity : ComponentActivity() {
         }
         val app = application as ImmoJApp
         setContent {
-            ImmoJTheme {
+            val reglages by app.preferences.flux.collectAsState(initial = null)
+            ImmoJTheme(mode = reglages?.theme ?: "systeme") {
                 AppNavigation(app)
             }
         }

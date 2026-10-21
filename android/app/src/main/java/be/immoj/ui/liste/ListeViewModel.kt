@@ -6,6 +6,7 @@ import be.immoj.data.Annonce
 import be.immoj.data.Commune
 import be.immoj.data.Depot
 import be.immoj.data.Filtres
+import be.immoj.data.GitHubActions
 import be.immoj.data.Preferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ data class ListeEtat(
     val communes: List<Commune> = emptyList(),
     val chargement: Boolean = false,
     val erreur: String? = null,
+    val photosEnListe: Boolean = true,
 )
 
 class ListeViewModel(private val depot: Depot, private val preferences: Preferences) : ViewModel() {
@@ -35,18 +37,44 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
             charger()
             runCatching { depot.communes() }.onSuccess { c -> _etat.update { it.copy(communes = c) } }
         }
+        // Les réglages d'affichage suivent les paramètres en direct.
+        viewModelScope.launch {
+            preferences.flux.collect { r -> _etat.update { it.copy(photosEnListe = r.photosEnListe) } }
+        }
     }
 
-    fun charger() {
+    /**
+     * Recharge la liste. Avec `forcer`, l'appli retélécharge vraiment les données
+     * (mode sans compte : nouveau fichier ; Supabase : nouvelle requête) au lieu
+     * de réutiliser le cache de quelques minutes.
+     */
+    fun charger(forcer: Boolean = false) {
         viewModelScope.launch {
             _etat.update { it.copy(chargement = true, erreur = null) }
             try {
                 val e = _etat.value
+                if (forcer) depot.rafraichir()
                 val liste = depot.listerAnnonces(e.transaction, e.tri, e.filtres)
                 _etat.update { it.copy(annonces = liste, chargement = false) }
             } catch (e: Exception) {
                 _etat.update { it.copy(chargement = false, erreur = messageErreur(e)) }
             }
+        }
+    }
+
+    /**
+     * Demande à GitHub de lancer une collecte tout de suite (jeton GitHub dans les
+     * paramètres), puis recharge. Renvoie un message pour l'utilisateur.
+     */
+    suspend fun collecterMaintenant(): String {
+        val jeton = preferences.lire().githubToken
+        if (jeton.isBlank()) return "Ajoute un jeton GitHub dans les paramètres pour lancer une collecte."
+        return try {
+            GitHubActions.lancerCollecte(jeton)
+            "Collecte lancée sur GitHub : les nouvelles annonces arrivent dans 3 à 5 minutes " +
+                "(tire la liste vers le bas pour actualiser)."
+        } catch (e: Exception) {
+            "Impossible de lancer la collecte : ${e.message}"
         }
     }
 
@@ -61,6 +89,18 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         _etat.update { it.copy(filtres = filtres) }
         viewModelScope.launch { preferences.enregistrerFiltres(filtres) }
         charger()
+    }
+
+    /** Change le rayon (km) autour du centre déjà choisi (curseur ou poignée sur la carte). */
+    fun definirRayon(km: Double) {
+        val f = _etat.value.filtres
+        if (f.centreLat == null) return
+        changerFiltres(f.copy(rayonKm = km.coerceIn(0.5, 60.0)))
+    }
+
+    /** Supprime le cercle de recherche (retour à toute la province / aux communes cochées). */
+    fun retirerRayon() {
+        changerFiltres(_etat.value.filtres.copy(centreLat = null, centreLon = null, rayonKm = null))
     }
 
     /** Définit le centre du rayon (depuis la carte) sans changer le reste. */
