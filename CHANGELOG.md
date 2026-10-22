@@ -1,5 +1,23 @@
 # Journal des modifications
 
+## 1.2.0-lot5 — Les annonces de particuliers, d'où qu'elles viennent
+
+### Collecteur
+- Immoweb : la rubrique « kot » est lue en plus de « maison et appartement » (9 kots dans la
+  province le 22/10, dont 6 de particuliers, tous absents jusque-là).
+- Évaluation de PAP, Trovit, Rentola, athome.lu, immotop.lu, Vivastreet, sites de kots, Zimmo et
+  Logic-immo (captures dans `collecteur/tests/fixtures/html/lot5/`) : tableau de décision dans
+  `docs/08-particuliers-ailleurs.md`. Aucune autre source n'est accessible sans connexion ni
+  contournement (Cloudflare, DataDome, domaines morts) ; Trovit et Rentola ne sont que des
+  agrégateurs. Les alertes e-mail Zimmo/Logic-immo restent optionnelles (guide 07).
+
+### Appli
+- « Partager vers ImmoJ » depuis n'importe quelle appli (Facebook, Messenger, navigateur…) : texte
+  et/ou image → écran « Ajouter une annonce » pré-rempli (lien, prix, titre).
+- Bouton « + » dans la liste et entrée de menu « + Ajouter une annonce ».
+- Les fiches manuelles (source « Ajoutée à la main ») vivent sur le téléphone dans la même liste :
+  statuts, favoris, carte, compteurs, filtre par source et par annonceur.
+
 ## 1.2.0-lot4 — Collecteur : particuliers, couverture, qualité
 
 ### Collecteur

@@ -37,6 +37,10 @@ vérifie les nouveautés en arrière-plan (fréquence réglable).
   commune ; une annonce dont le site ne donne pas la localité reste sans
   position plutôt que placée chez l'agence.
 
+- **Partager vers ImmoJ** : depuis Facebook, Messenger ou un navigateur, « Partager » →
+  ImmoJ crée une fiche manuelle (lien, prix, commune, note, photo) dans la même liste.
+  Bouton « + » pour saisir une annonce à la main. Voir docs/08.
+
 ### Ce que proposait déjà la 1.1.0
 
 - **Actualiser** : le bouton en haut, ou la liste tirée vers le bas,
