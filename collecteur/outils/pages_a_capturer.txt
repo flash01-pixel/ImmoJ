@@ -1,13 +1,7 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# Lot 5, 4e tour : athome.lu (identifiant de la Belgique / d'Arlon), Zimmo et Logic-immo (gain des alertes e-mail ?).
-https://www.athome.lu/srp/?tr=rent&loc=C1-belgique | lot5/athome_srp_c1.html
-https://www.athome.lu/srp/?tr=rent&loc=C2-belgique | lot5/athome_srp_c2.html
-https://www.athome.lu/srp/?tr=rent&loc=L9-arlon | lot5/athome_srp_arlon.html
-https://www.athome.lu/srp/?tr=rent&loc=L2-arlon | lot5/athome_srp_arlon_l2.html
-https://www.athome.lu/location/belgique | lot5/athome_location_belgique.html
-https://www.athome.lu/en/rent/belgium | lot5/athome_rent_belgium.html
-https://www.zimmo.be/robots.txt | lot5/zimmo_robots.txt
-https://www.zimmo.be/fr/province-de-luxembourg/a-louer/ | lot5/zimmo_louer_luxembourg.html
-https://www.logic-immo.be/robots.txt | lot5/logicimmo_robots.txt
-https://www.logic-immo.be/fr/location/luxembourg-province | lot5/logicimmo_louer_luxembourg.html
+# Lot 5, 5e tour : athome.lu — identifiants de lieux belges via son service de complétion.
+https://www.athome.lu/rest/country/be/city?v=20170604234200013&format=jqselect2&page_limit=10&q=arlon | lot5/athome_rest_arlon.json | {"Accept": "application/json"}
+https://www.athome.lu/rest/country/be/city?v=20170604234200013&format=jqselect2&page_limit=10&q=bastogne | lot5/athome_rest_bastogne.json | {"Accept": "application/json"}
+https://www.athome.lu/rest/country/lu/city?v=20170604234200013&format=jqselect2&page_limit=10&q=arlon | lot5/athome_rest_lu_arlon.json | {"Accept": "application/json"}
+https://www.athome.lu/rest/country/be/city?v=20170604234200013&format=jqselect2&page_limit=10&q=luxembourg | lot5/athome_rest_province.json | {"Accept": "application/json"}
