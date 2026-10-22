@@ -58,7 +58,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -315,7 +314,7 @@ private fun Ligne(
                         vm.retablir(a, ancien)
                     }
                 }
-                true
+                false   // la carte revient en place ; la liste la retire (ou la garde si « afficher refusées »)
             }
             SwipeToDismissBoxValue.StartToEnd -> {
                 val deja = a.statut == StatutPerso.INTERESSE.code
