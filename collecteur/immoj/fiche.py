@@ -77,6 +77,14 @@ def enrichir_depuis_html(a: Annonce, html: str, url_page: str | None = None) -> 
     a.photos = fusionner(a.photos, photos_de_la_page(soup, base, a))
     for cle, valeur in details_de_la_page(soup).items():
         a.details.setdefault(cle, valeur)
+    # C8 : localité absente de la liste → « 6850 Paliseul » lu sur la fiche.
+    if not a.commune:
+        texte = soup.get_text(" ", strip=True)[:20000]
+        m = re.search(r"\b(6[6-9]\d{2})\s+([A-ZÀ-Ý][A-Za-zÀ-ÿ' -]{2,30}?)(?=[,.()<\d]|\s{2}|$| - )",
+                      texte)
+        if m:
+            a.code_postal = a.code_postal or m.group(1)
+            a.commune = m.group(2).strip()
     if not a.description or len(a.description) < 200:
         meta = soup.select_one("meta[property='og:description'], meta[name='description']")
         texte = (meta.get("content") or "").strip() if meta else ""

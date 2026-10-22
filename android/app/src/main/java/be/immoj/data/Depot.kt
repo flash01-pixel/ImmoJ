@@ -90,8 +90,8 @@ class DepotSupabase(private val preferences: Preferences, private val cacheDir: 
         "id", "type", "transaction", "titre", "prix", "prix_precedent", "prix_baisse_le", "charges",
         "commune", "localite", "code_postal", "latitude", "longitude", "chambres", "surface", "peb",
         "jardin", "terrasse", "animaux", "meuble", "date_publication", "premiere_detection",
-        "derniere_vue", "photo", "agence", "actif", "statut", "note", "badge_nouveau",
-        "badge_prix_baisse", "sources",
+        "derniere_vue", "photo", "agence", "annonceur", "precision_position", "actif", "statut", "note",
+        "badge_nouveau", "badge_prix_baisse", "sources",
     ).joinToString(",")
     private val verrouIndex = Mutex()
     private var indexMemoire: List<Annonce> = emptyList()

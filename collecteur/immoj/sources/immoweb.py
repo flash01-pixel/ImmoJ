@@ -18,8 +18,7 @@ import re
 from datetime import datetime
 from urllib.parse import urlencode
 
-from .. import config
-from ..modele import Annonce, deviner_type
+from ..modele import Annonce, deviner_annonceur, deviner_type
 from .base import Source
 
 BASE = "https://www.immoweb.be"
@@ -64,18 +63,20 @@ class Immoweb(Source):
     def collecter(self, transaction: str) -> list[Annonce]:
         annonces: list[Annonce] = []
         vues: set[str] = set()
-        pages_max = self.pages_max or min(config.PAGES_MAX, self.pages_defaut)
+        pages_max = self.pages_a_lire(self.pages_defaut)
         for page in range(1, pages_max + 1):
             reponse = self.client.get(self.url_api(transaction, page),
                                       headers={"Accept": "application/json"})
             donnees = reponse.json()
             trouvees = analyser_json(donnees, transaction)
+            total = donnees.get("totalItems") or 0
+            if total and page == 1:
+                self.disponibles[transaction] = int(total)
             nouvelles = [a for a in trouvees if a.id_externe not in vues]
             if not nouvelles:
                 break
             annonces.extend(nouvelles)
             vues.update(a.id_externe for a in nouvelles)
-            total = donnees.get("totalItems") or 0
             if page * 30 >= total:
                 break
         return annonces
@@ -188,6 +189,8 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
         photos=photos,
         description=str(argumentaire or ""),
         agence=r.get("customerName") or None,
+        annonceur=deviner_annonceur(Immoweb.nom, r.get("customerName") or None),
+        reference=str(identifiant),
         details=details_immoweb(prop, trans),
     )
 

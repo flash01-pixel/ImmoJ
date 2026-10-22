@@ -45,9 +45,11 @@ class FiltresLot3Test {
         statut: String = "nouveau", agence: String? = null, sources: List<String> = listOf("immoweb"),
         titre: String? = "Appartement lumineux", description: String? = null, photo: String? = "p.jpg",
         details: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(), baisse: Boolean = false,
+        annonceur: String = "inconnu", precision: String? = null,
     ) = Annonce(id = id, prix = prix, charges = charges, chambres = chambres, surface = surface, statut = statut,
         agence = agence, sources = sources, titre = titre, description = description, photo = photo,
-        details = details, badgePrixBaisse = baisse, commune = "Arlon")
+        details = details, badgePrixBaisse = baisse, commune = "Arlon", annonceur = annonceur,
+        precisionPosition = precision)
 
     @Test
     fun rechercheTexteMultiMots() {
@@ -59,9 +61,17 @@ class FiltresLot3Test {
 
     @Test
     fun annonceurEtCharges() {
+        // Champ du collecteur (lot 4) prioritaire, règle de secours pour les anciennes données.
         assertEquals("particulier", a("1", agence = "PRIVATE").typeAnnonceur)
+        assertEquals("particulier", a("1", annonceur = "particulier").typeAnnonceur)
+        assertEquals("agence", a("1", annonceur = "agence", agence = "PRIVATE").typeAnnonceur)
         assertEquals("notaire", a("2", sources = listOf("notaire")).typeAnnonceur)
         assertEquals("agence", a("3", agence = "Honesty").typeAnnonceur)
+        assertEquals("inconnu", a("5", sources = listOf("immovlan")).typeAnnonceur)
+        assertEquals("Particulier", a("1", annonceur = "particulier").annonceurLibelle)
+        assertEquals("Honesty", a("3", annonceur = "agence", agence = "Honesty").annonceurLibelle)
+        assertTrue(a("6", precision = "commune").positionApproximative)
+        assertFalse(a("7", precision = "exacte").positionApproximative)
         assertTrue(Filtres(annonceur = setOf("particulier")).correspond(a("1", agence = "PRIVATE")))
         assertFalse(Filtres(annonceur = setOf("particulier")).correspond(a("3", agence = "Honesty")))
         assertTrue(Filtres(chargesComprisesMax = 900).correspond(a("4", prix = 800, charges = 100)))

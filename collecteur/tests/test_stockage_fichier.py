@@ -20,11 +20,11 @@ def annonce(source="immovlan", ide="A1", prix=800, **kw) -> Annonce:
     return Annonce(**base)
 
 
-def integrer(st, resultat):
+def integrer(st, resultat, profond=False):
     notif = Notificateur(Secrets("", "", ""), simulation=True)
     n = Integrateur(st, Geocodeur(), notif, []).integrer(resultat)
     st.enregistrer_collecte(resultat.source, "2026-10-21T10:00:00+00:00", True,
-                            len(resultat.annonces), n, "", False, 1.0)
+                            len(resultat.annonces), n, "", False, 1.0, profond=profond)
     return n
 
 
@@ -46,7 +46,8 @@ def test_cycle_complet(tmp_path):
     assert len(st2.annonces) == 2 and st2.a_deja_reussi("immovlan") and not st2.a_deja_reussi("x")
     assert st2.echecs_consecutifs("immovlan") == 0
 
-    # Export pour l'appli
+    # Export pour l'appli (une seule fois par passage, C9)
+    st2.exporter(tmp_path / "annonces.json")
     export = json.loads((tmp_path / "annonces.json").read_text(encoding="utf-8"))
     assert len(export["communes"]) == 44
     assert {s["source"] for s in export["sources"]} == {"immovlan", "zimmo"}
@@ -57,13 +58,18 @@ def test_cycle_complet(tmp_path):
     assert exp["commune"] == "Bastogne" and exp["latitude"]
 
 
-def test_desactivation(tmp_path):
+def test_desactivation_seulement_apres_passage_profond(tmp_path):
     st = StockageFichier(tmp_path / "base.json")
     integrer(st, ResultatCollecte("immovlan", True, [annonce()]))
     for a in st.annonces.values():
         a["derniere_vue"] = "2020-01-01T00:00:00+00:00"
+    # Seuls des passages légers depuis : le bien a pu reculer au-delà de la page 3.
+    assert st.desactiver_anciennes(7) == 0
+    # Un passage profond réussi ne l'a pas revue : désactivée.
+    resultat = ResultatCollecte("immovlan", True, [annonce(ide="A9")], profond=True)
+    integrer(st, resultat, profond=True)
     assert st.desactiver_anciennes(7) == 1
-    assert st.exporter(tmp_path / "annonces.json") == 0
+    assert st.exporter(tmp_path / "annonces.json") == 1
 
 
 def test_hors_province_desactivees(tmp_path):

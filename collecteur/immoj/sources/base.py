@@ -28,6 +28,18 @@ class ResultatCollecte:
     bloque: bool = False
     duree_s: float = 0.0
     nb_requetes: int = 0
+    #: passage « profond » (toutes les pages) : sert à la désactivation et aux notifications
+    profond: bool = False
+    #: annonces disponibles sur le site par transaction (« totalItems »…), si le site le dit
+    disponibles: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def nb_disponibles(self) -> int | None:
+        return sum(self.disponibles.values()) if self.disponibles else None
+
+    @property
+    def nb_particuliers(self) -> int:
+        return sum(a.annonceur == "particulier" for a in self.annonces)
 
 
 class Source(ABC):
@@ -52,9 +64,16 @@ class Source(ABC):
         """Décide si la source tourne à cette heure (cadence réduite pour certaines)."""
         return heure % cls.frequence_heures == 0
 
-    def __init__(self, pages_max: int | None = None) -> None:
+    #: True quand la source lit toujours tout son catalogue (sites d'agences, e-mails) :
+    #: chacun de ses passages vaut un passage profond
+    toujours_complet: bool = False
+
+    def __init__(self, pages_max: int | None = None, profond: bool = False) -> None:
         self.client = ClientHttp(self.nom, respecter_robots=self.respecter_robots)
+        self.profond = profond
         self.pages_max = pages_max
+        #: total d'annonces annoncé par le site, par transaction (rempli par collecter)
+        self.disponibles: dict[str, int] = {}
         #: annonces déjà en base pour cette source (id_externe → champs), remplies par
         #: main.py ; permet d'éviter de relire des fiches déjà connues.
         self.connues: dict[str, dict] = {}
@@ -87,7 +106,10 @@ class Source(ABC):
         if not self.lire_fiches:
             return
         lues = 0
-        for a in annonces:
+        # Les fiches des locations et des particuliers d'abord (budget limité).
+        ordre = sorted(annonces, key=lambda a: (a.transaction != "location",
+                                                a.annonceur != "particulier"))
+        for a in ordre:
             if lues >= self.fiches_max or (
                     Source.budget_fiches_s is not None
                     and Source.temps_fiches_s >= Source.budget_fiches_s):
@@ -116,10 +138,20 @@ class Source(ABC):
             finally:
                 Source.temps_fiches_s += time.monotonic() - debut
 
+    def pages_a_lire(self, pages_defaut: int | None = None) -> int:
+        """Nombre de pages à parcourir : --pages, sinon profond/léger."""
+        from .. import config
+        if self.pages_max:
+            return self.pages_max
+        if self.profond:
+            return config.PAGES_PROFOND
+        return min(config.PAGES_MAX, pages_defaut) if pages_defaut else config.PAGES_MAX
+
     def executer(self, transactions: tuple[str, ...] | None = None) -> ResultatCollecte:
         """Collecte toutes les transactions demandées sans jamais lever d'exception."""
         debut = time.monotonic()
         annonces: list[Annonce] = []
+        profond = self.profond or self.toujours_complet
         for transaction in transactions or self.transactions:
             if transaction not in self.transactions:
                 continue
@@ -132,13 +164,16 @@ class Source(ABC):
                 log.error("[%s] BLOQUÉ : %s", self.nom, e)
                 return ResultatCollecte(self.nom, ok=False, annonces=annonces, erreur=str(e),
                                         bloque=True, duree_s=time.monotonic() - debut,
-                                        nb_requetes=self.client.nb_requetes)
+                                        nb_requetes=self.client.nb_requetes, profond=profond,
+                                        disponibles=dict(self.disponibles))
             except Exception as e:  # noqa: BLE001 - on veut tout attraper ici
                 log.exception("[%s] erreur pendant la collecte %s", self.nom, transaction)
                 return ResultatCollecte(self.nom, ok=False, annonces=annonces,
                                         erreur=f"{type(e).__name__}: {e}",
                                         duree_s=time.monotonic() - debut,
-                                        nb_requetes=self.client.nb_requetes)
+                                        nb_requetes=self.client.nb_requetes, profond=profond,
+                                        disponibles=dict(self.disponibles))
         return ResultatCollecte(self.nom, ok=True, annonces=annonces,
                                 duree_s=time.monotonic() - debut,
-                                nb_requetes=self.client.nb_requetes)
+                                nb_requetes=self.client.nb_requetes, profond=profond,
+                                disponibles=dict(self.disponibles))

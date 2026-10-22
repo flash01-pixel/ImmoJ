@@ -23,7 +23,8 @@ create table if not exists communes (
 -- ---------------------------------------------------------------------------
 create table if not exists annonces (
     id                  uuid primary key default gen_random_uuid(),
-    type                text not null check (type in ('appartement','maison','studio','kot','terrain','autre')),
+    type                text not null check (type in ('appartement','maison','studio','kot','chambre','terrain',
+                                                      'immeuble','commerce','garage','autre')),
     transaction         text not null check (transaction in ('location','achat')),
     titre               text,
     prix                integer,                 -- loyer mensuel ou prix de vente, en euros
@@ -50,10 +51,15 @@ create table if not exists annonces (
     details             jsonb not null default '{}'::jsonb,  -- infos complémentaires (libellé → valeur)
     agence              text,
     telephone           text,
+    annonceur           text not null default 'inconnu'
+                        check (annonceur in ('particulier','agence','notaire','inconnu')),
+    precision_position  text,                    -- 'exacte' (GPS de la source) ou 'commune' (centre)
     actif               boolean not null default true
 );
--- Projets créés avant l'ajout de la colonne « details » :
+-- Projets créés avant l'ajout de colonnes (voir aussi supabase/migrations/) :
 alter table annonces add column if not exists details jsonb not null default '{}'::jsonb;
+alter table annonces add column if not exists annonceur text not null default 'inconnu';
+alter table annonces add column if not exists precision_position text;
 create index if not exists annonces_actif_transaction_idx on annonces (actif, transaction);
 create index if not exists annonces_commune_idx on annonces (commune);
 create index if not exists annonces_premiere_detection_idx on annonces (premiere_detection desc);
@@ -71,10 +77,12 @@ create table if not exists annonce_sources (
     prix_affiche  integer,
     agence        text,
     telephone     text,
+    date_publication date,                       -- date de publication sur CETTE source (C7)
     premiere_vue  timestamptz not null default now(),
     derniere_vue  timestamptz not null default now(),
     unique (source, id_externe)
 );
+alter table annonce_sources add column if not exists date_publication date;
 create index if not exists annonce_sources_annonce_idx on annonce_sources (annonce_id);
 
 -- ---------------------------------------------------------------------------
@@ -155,8 +163,14 @@ create table if not exists collectes (
     nb_trouvees   integer not null default 0,
     nb_nouvelles  integer not null default 0,
     duree_s       real,
-    erreur        text
+    erreur        text,
+    profond       boolean not null default false,  -- passage profond (toutes les pages)
+    nb_disponibles integer,                        -- annonces annoncées par le site
+    nb_particuliers integer not null default 0
 );
+alter table collectes add column if not exists profond boolean not null default false;
+alter table collectes add column if not exists nb_disponibles integer;
+alter table collectes add column if not exists nb_particuliers integer not null default 0;
 create index if not exists collectes_source_debut_idx on collectes (source, debut desc);
 
 -- ============================================================================
@@ -188,13 +202,18 @@ left join lateral (
 ) src on true;
 
 -- État des sources : dernière collecte réussie, dernière erreur, nb d'annonces actives.
-create or replace view v_etat_sources as
+drop view if exists v_etat_sources;
+create view v_etat_sources as
 with derniere as (
-    select distinct on (source) source, debut, fin, ok, bloque, erreur, nb_trouvees, nb_nouvelles
+    select distinct on (source) source, debut, fin, ok, bloque, erreur, nb_trouvees, nb_nouvelles,
+           profond, nb_disponibles, nb_particuliers
     from collectes order by source, debut desc
 ),
 derniere_ok as (
     select source, max(fin) as derniere_reussite from collectes where ok group by source
+),
+derniere_profonde as (
+    select source, max(fin) as derniere_profonde from collectes where ok and profond group by source
 ),
 actives as (
     select x.source, count(distinct x.annonce_id) as nb_actives
@@ -209,9 +228,14 @@ select d.source,
        d.nb_trouvees,
        d.nb_nouvelles,
        o.derniere_reussite,
-       coalesce(ac.nb_actives, 0) as nb_actives
+       coalesce(ac.nb_actives, 0) as nb_actives,
+       d.profond,
+       d.nb_disponibles,
+       d.nb_particuliers,
+       p.derniere_profonde
 from derniere d
 left join derniere_ok o on o.source = d.source
+left join derniere_profonde p on p.source = d.source
 left join actives ac on ac.source = d.source;
 
 -- Distance à vol d'oiseau en km (haversine), sans extension PostGIS.

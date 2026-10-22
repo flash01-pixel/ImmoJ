@@ -43,7 +43,7 @@ class StockageMemoire:
         self.annonces[i] = {"transaction": a.transaction, "commune": commune,
                             "code_postal": a.code_postal, "prix": a.prix, "chambres": a.chambres,
                             "surface": a.surface, "titre": a.titre, "description": a.description,
-                            "lat": lat, "lon": lon}
+                            "lat": lat, "lon": lon, "annonceur": a.annonceur}
         return i
 
     def ajouter_source(self, annonce_id, a):
@@ -78,11 +78,12 @@ class NotificateurEspion(Notificateur):
         return True
 
 
-def annonce(source="immovlan", ide="A1", prix=800, **kw) -> Annonce:
+def annonce(source="immovlan", ide="A1", prix=800, lat=None, lon=None, **kw) -> Annonce:
     base = dict(source=source, id_externe=ide, url=f"https://{source}/{ide}",
                 titre="Appartement à louer", transaction="location", type="appartement",
                 prix=prix, chambres=2, surface=85, commune="Bastogne", code_postal="6600",
-                description="Bel appartement lumineux au centre de Bastogne avec terrasse.")
+                description="Bel appartement lumineux au centre de Bastogne avec terrasse.",
+                latitude=lat, longitude=lon)
     base.update(kw)
     return Annonce(**base)
 
@@ -155,3 +156,44 @@ def test_baisse_de_prix():
     # Une hausse est enregistrée mais pas notifiée.
     integrateur(st, nt).integrer(ResultatCollecte("immovlan", True, [annonce(prix=900)]))
     assert st.prix[-1] == ("id1", 900) and len(nt.envoyees) == 2
+
+
+# --- Lot 4 ---------------------------------------------------------------------
+
+def test_identifiant_repete_dans_un_passage_ne_cree_pas_de_jumelle():
+    """C4 : une page de résultats répétée (pagination ignorée) renvoie deux fois A1."""
+    st, nt = StockageMemoire(), NotificateurEspion()
+    st.reussites.add("agences:generique")
+    resultat = ResultatCollecte("agences:generique", True, [
+        annonce(source="agences:generique", ide="A1"),
+        annonce(source="agences:generique", ide="A1"),
+    ])
+    assert integrateur(st, nt).integrer(resultat) == 1
+    assert len(st.annonces) == 1 and len(st.sources) == 1
+
+
+def test_coordonnees_hors_contour_ignorees():
+    """Une localité homonyme hors province, trahie par ses coordonnées (Namur)."""
+    st, nt = StockageMemoire(), NotificateurEspion()
+    st.reussites.add("immoweb")
+    resultat = ResultatCollecte("immoweb", True, [
+        annonce(source="immoweb", ide="N1", commune="Mont", code_postal=None,
+                lat=50.467, lon=4.867),
+        annonce(source="immoweb", ide="B1", commune="Inconnue", code_postal=None,
+                lat=50.0, lon=5.717),
+    ])
+    assert integrateur(st, nt).integrer(resultat) == 1
+    seule = next(iter(st.annonces.values()))
+    assert seule["commune"] == "Bastogne", "commune déduite des coordonnées"
+
+
+def test_passage_profond_ne_notifie_pas_les_vieilles_annonces():
+    from datetime import date, timedelta
+    st, nt = StockageMemoire(), NotificateurEspion()
+    st.reussites.add("immoweb")
+    vieille = annonce(source="immoweb", ide="V1",
+                      date_publication=date.today() - timedelta(days=10))
+    fraiche = annonce(source="immoweb", ide="F1", date_publication=date.today())
+    resultat = ResultatCollecte("immoweb", True, [vieille, fraiche], profond=True)
+    assert integrateur(st, nt).integrer(resultat) == 2
+    assert nt.envoyees == ["Nouveau : 6600 Bastogne"], "une seule notification : la fraîche"

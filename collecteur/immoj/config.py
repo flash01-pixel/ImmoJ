@@ -34,8 +34,16 @@ TIMEOUT_S = 30         # délai de lecture
 NB_TENTATIVES = 2
 
 # Nombre maximum de pages de résultats parcourues par source et par transaction.
-# Les listes sont triées « plus récent d'abord » ; 3 pages suffisent toutes les heures.
+# Les listes sont triées « plus récent d'abord » ; 3 pages suffisent toutes les heures
+# (passage « léger »). Le passage « profond » (une fois par jour, et au premier passage
+# d'une source) lit toutes les pages, dans la limite de PAGES_PROFOND.
 PAGES_MAX = 3
+PAGES_PROFOND = 80
+#: heure (Bruxelles) du passage profond quotidien quand le collecteur tourne sans --profond
+HEURE_PASSAGE_PROFOND = 7
+#: une annonce importée par un passage profond n'est pas notifiée si elle est publiée
+#: depuis plus de ce nombre d'heures (elle n'est pas « nouvelle », juste pas encore lue)
+HEURES_NOTIF_PROFOND = 48
 
 # Une annonce plus vue sur aucune source depuis ce nombre de jours est désactivée.
 JOURS_AVANT_DESACTIVATION = 7
@@ -54,6 +62,7 @@ USER_AGENT = (
 # --- Dédoublonnage --------------------------------------------------------
 TOLERANCE_PRIX = 0.03        # ± 3 %
 TOLERANCE_SURFACE = 0.10     # ± 10 %
+TOLERANCE_SURFACE_FORTE = 0.05   # ± 5 % : prix et chambres identiques → les titres peuvent différer
 SEUIL_SIMILARITE_TEXTE = 70  # sur 100 (rapidfuzz)
 
 

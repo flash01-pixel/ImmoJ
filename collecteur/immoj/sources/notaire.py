@@ -15,7 +15,6 @@ from urllib.parse import urlencode, urljoin
 
 from bs4 import BeautifulSoup
 
-from .. import config
 from ..modele import Annonce, deviner_type, nombre
 from .base import Source
 
@@ -38,7 +37,7 @@ class Notaire(Source):
     def collecter(self, transaction: str) -> list[Annonce]:
         annonces: list[Annonce] = []
         vues: set[str] = set()
-        for page in range(1, (self.pages_max or config.PAGES_MAX) + 1):
+        for page in range(1, self.pages_a_lire() + 1):
             trouvees = analyser_liste(self.client.get(self.url_liste(page)).text)
             nouvelles = [a for a in trouvees if a.id_externe not in vues]
             if not nouvelles:
@@ -84,7 +83,8 @@ def analyser_liste(html: str) -> list[Annonce]:
             url=urljoin(BASE, lien["href"]),
             titre=(f"[{type_vente}] {titre}" if encheres else titre)[:150],
             transaction="achat",
-            type=deviner_type(_texte(carte, ".property__item--property-type") + " " + titre),
+            type=deviner_type(_texte(carte, ".property__item--property-type") + " " + titre,
+                              urljoin(BASE, lien["href"])),
             prix=nombre(_texte(carte, ".property__item--price")),
             commune=localite,
             code_postal=code_postal,
@@ -93,6 +93,7 @@ def analyser_liste(html: str) -> list[Annonce]:
             photos=[img["src"]] if img and img.get("src", "").startswith("http") else [],
             description=f"{type_vente}. {adresse}".strip(". "),
             agence="Notaire",
+            annonceur="notaire",
         ))
     return annonces
 

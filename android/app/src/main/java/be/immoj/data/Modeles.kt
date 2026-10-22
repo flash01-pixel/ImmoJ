@@ -42,6 +42,10 @@ data class Annonce(
     val details: Map<String, JsonElement> = emptyMap(),
     val agence: String? = null,
     val telephone: String? = null,
+    /** particulier / agence / notaire / inconnu (lot 4 ; « inconnu » pour les bases anciennes). */
+    val annonceur: String = "inconnu",
+    /** « exacte » (GPS de la source) ou « commune » (centre de la commune), null si sans position. */
+    @SerialName("precision_position") val precisionPosition: String? = null,
     val actif: Boolean = true,
     val statut: String = "nouveau",
     val note: String? = null,
@@ -57,23 +61,30 @@ data class Annonce(
     /** Première photo, quelle que soit la façon dont l'annonce a été chargée. */
     val vignette: String? get() = photo ?: photos.firstOrNull()
 
-    /** Particulier ? (provisoire : Immoweb marque « PRIVATE » ; le champ annonceur arrive au lot 4). */
-    val particulier: Boolean get() = agence == "PRIVATE"
+    /** Particulier ? D'après le champ `annonceur` du collecteur (secours : « PRIVATE »). */
+    val particulier: Boolean get() = typeAnnonceur == "particulier"
 
-    /** « particulier », « notaire » ou « agence » (règle provisoire, affinée au lot 4). */
+    /** « particulier », « notaire » ou « agence » : champ du collecteur, sinon règle de secours
+     *  pour les données écrites avant le lot 4. */
     val typeAnnonceur: String
         get() = when {
-            particulier -> "particulier"
+            annonceur in setOf("particulier", "agence", "notaire") -> annonceur
+            agence == "PRIVATE" -> "particulier"
             sources.any { it == "notaire" } -> "notaire"
-            else -> "agence"
+            agence != null || sources.any { it.startsWith("agences:") } -> "agence"
+            else -> "inconnu"
         }
+
+    /** Position au centre de la commune (et non à l'adresse du bien) ? */
+    val positionApproximative: Boolean get() = precisionPosition == "commune"
 
     /** Libellé de l'annonceur : « Particulier », « Notaire », ou le nom de l'agence. */
     val annonceurLibelle: String
         get() = when (typeAnnonceur) {
             "particulier" -> "Particulier"
-            "notaire" -> "Notaire" + (agence?.takeIf { it != "PRIVATE" }?.let { " · $it" } ?: "")
-            else -> agence ?: "Agence"
+            "notaire" -> "Notaire" + (agence?.takeIf { it != "PRIVATE" && it != "Notaire" }?.let { " · $it" } ?: "")
+            "inconnu" -> agence?.takeIf { it != "PRIVATE" } ?: "Annonceur inconnu"
+            else -> agence?.takeIf { it != "PRIVATE" } ?: "Agence"
         }
 
     /** Garage ou parking mentionné dans les détails de la fiche. */
@@ -127,6 +138,11 @@ data class EtatSource(
     @SerialName("nb_nouvelles") val nbNouvelles: Int = 0,
     @SerialName("derniere_reussite") val derniereReussite: String? = null,
     @SerialName("nb_actives") val nbActives: Int = 0,
+    /** Lot 4 : rapport de couverture du dernier passage. */
+    val profond: Boolean = false,
+    @SerialName("nb_disponibles") val nbDisponibles: Int? = null,
+    @SerialName("nb_particuliers") val nbParticuliers: Int = 0,
+    @SerialName("derniere_profonde") val derniereProfonde: String? = null,
 )
 
 /** Statuts personnels possibles, avec leur libellé en français. */

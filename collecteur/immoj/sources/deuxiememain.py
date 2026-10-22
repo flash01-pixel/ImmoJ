@@ -1,12 +1,15 @@
 """Source 2ememain (2ememain.be), rubrique Immo.
 
 Le site a une API JSON publique (`/lrp/api/search`) utilisée par sa propre page
-de résultats. On interroge toute la rubrique Immo autour du centre de la
-province (code postal 6840 Neufchâteau, rayon 60 km), triée des plus récentes
-aux plus anciennes, puis on trie côté collecteur : catégorie (maison/appartement
-à louer, à vendre, terrain) et commune dans la province (géocodeur). Le filtre
-de catégorie de l'API (`l2CategoryId`) est ignoré par le serveur, d'où ce choix.
-Une seule série de requêtes sert aux deux transactions (mise en cache).
+de résultats. Le filtre de catégorie de l'API (`l2CategoryId`) est ignoré par le
+serveur (vérifié par capture le 22/10/2026 : mêmes 185 résultats avec 2143, 2771,
+2142 ou 1055) : on interroge donc toute la rubrique Immo autour de PLUSIEURS
+centres (Arlon, Bastogne, Libramont, Marche, Vielsalm ; rayon 30 km) pour couvrir
+toute la province sans trop déborder, triée des plus récentes aux plus anciennes,
+puis on trie côté collecteur : catégorie (maison/appartement à louer, à vendre,
+terrain) et commune dans la province (géocodeur). Une seule série de requêtes
+sert aux deux transactions (mise en cache). Passage léger : la première page de
+chaque centre ; passage profond : toutes les pages.
 
 Les annonces sont souvent des particuliers : moins d'informations structurées
 que sur les portails, d'où plusieurs heuristiques sur le titre/description.
@@ -20,7 +23,7 @@ from urllib.parse import urlencode
 
 from .. import config
 from ..geocodage import Geocodeur
-from ..modele import Annonce, deviner_type, nombre
+from ..modele import Annonce, deviner_annonceur, deviner_type, nombre
 from .base import Source
 
 BASE = "https://www.2ememain.be"
@@ -36,8 +39,12 @@ CATEGORIES = {
 # Catégories « recherche » (demandes de particuliers) : à exclure si rencontrées
 CATEGORIES_EXCLUES = {2145, 2146, 1030, 1041, 1643, 860, 1081, 2147}
 
-CODE_POSTAL_CENTRE = "6840"   # Neufchâteau, au centre de la province
-RAYON_M = 60000
+#: centres de recherche (code postal → libellé) et rayon : 5 cercles de 30 km couvrent
+#: la province (capture du 22/10 : 40 + 40 + 104 + 65 résultats, contre 185 pour un
+#: seul cercle de 60 km qui déborde largement sur Namur, Liège et le Grand-Duché)
+CENTRES = {"6700": "Arlon", "6600": "Bastogne", "6800": "Libramont", "6900": "Marche",
+           "6690": "Vielsalm"}
+RAYON_M = 30000
 LIMITE = 30
 
 
@@ -50,10 +57,10 @@ class DeuxiemeMain(Source):
         super().__init__(pages_max)
         self.geocodeur = Geocodeur()
 
-    def url_api(self, offset: int = 0) -> str:
+    def url_api(self, offset: int = 0, postcode: str = "6700") -> str:
         params = {
             "l1CategoryId": L1_IMMO,
-            "postcode": CODE_POSTAL_CENTRE, "distanceMeters": RAYON_M,
+            "postcode": postcode, "distanceMeters": RAYON_M,
             "limit": LIMITE, "offset": offset,
             "sortBy": "SORT_INDEX", "sortOrder": "DECREASING",   # plus récentes d'abord
         }
@@ -64,15 +71,24 @@ class DeuxiemeMain(Source):
         if getattr(self, "_cache", None) is not None:
             return self._cache
         annonces: list[Annonce] = []
-        pages_max = self.pages_max or config.PAGES_MAX
-        for page in range(pages_max):
-            reponse = self.client.get(self.url_api(offset=page * LIMITE),
-                                      headers={"Accept": "application/json"})
-            donnees = reponse.json()
-            annonces.extend(analyser_json(donnees, geocodeur=self.geocodeur))
-            total = donnees.get("totalResultCount") or 0
-            if (page + 1) * LIMITE >= total or not donnees.get("listings"):
-                break
+        vus: set[str] = set()
+        # Léger : 1 page par centre (les plus récentes) ; profond : toutes les pages.
+        pages_max = self.pages_max or (config.PAGES_PROFOND if self.profond else 1)
+        for postcode in CENTRES:
+            for page in range(pages_max):
+                reponse = self.client.get(self.url_api(offset=page * LIMITE, postcode=postcode),
+                                          headers={"Accept": "application/json"})
+                donnees = reponse.json()
+                for a in analyser_json(donnees, geocodeur=self.geocodeur):
+                    if a.id_externe not in vus:      # les cercles se recouvrent
+                        vus.add(a.id_externe)
+                        annonces.append(a)
+                total = donnees.get("totalResultCount") or 0
+                if (page + 1) * LIMITE >= total or not donnees.get("listings"):
+                    break
+        # Le total par transaction n'est pas connu (rubrique mixte) : on note ce qu'on a lu.
+        for a in annonces:
+            self.disponibles[a.transaction] = self.disponibles.get(a.transaction, 0) + 1
         self._cache = annonces
         return annonces
 
@@ -81,6 +97,23 @@ class DeuxiemeMain(Source):
 
 
 # ---------------------------------------------------------------------------
+
+_AGENCES_CONNUES: frozenset[str] | None = None
+
+
+def agences_connues() -> frozenset[str]:
+    """Noms (normalisés) des agences d'agences.yaml : un vendeur 2ememain qui porte
+    l'un de ces noms est une agence, pas un particulier."""
+    global _AGENCES_CONNUES
+    if _AGENCES_CONNUES is None:
+        try:
+            from ..modele import normaliser_agence
+            from .agences import charger_agences
+            _AGENCES_CONNUES = frozenset(normaliser_agence(a["nom"]) for a in charger_agences())
+        except Exception:  # noqa: BLE001 - sans YAML, on se contente des mots-clés
+            _AGENCES_CONNUES = frozenset()
+    return _AGENCES_CONNUES
+
 
 def analyser_json(donnees: dict, geocodeur: Geocodeur | None = None) -> list[Annonce]:
     """Transforme une réponse de l'API en annonces (province de Luxembourg seulement).
@@ -142,7 +175,9 @@ def _analyser_listing(brut: dict, transaction: str, type_defaut: str,
 
     loc = brut.get("location") or {}
     attrs = _attributs(brut)
-    commune = geocodeur.trouver(loc.get("cityName"))
+    lat = loc.get("latitude") if isinstance(loc.get("latitude"), float) else None
+    lon = loc.get("longitude") if isinstance(loc.get("longitude"), float) else None
+    commune = geocodeur.trouver(loc.get("cityName"), None, lat, lon)
     if commune is None:
         return None   # hors province (le rayon de 60 km déborde sur Namur, Liège, le Grand-Duché)
 
@@ -174,6 +209,12 @@ def _analyser_listing(brut: dict, transaction: str, type_defaut: str,
     surface = nombre(attrs.get("livingArea"))
 
     vendeur = (brut.get("sellerInformation") or {}).get("sellerName")
+    # Particulier sauf indice pro : nom d'agence connue, « immo », « srl »…, ou
+    # mots d'agence dans la description (« notre agence », « honoraires »).
+    annonceur = deviner_annonceur(DeuxiemeMain.nom, vendeur, agences_connues())
+    if annonceur == "particulier" and re.search(
+            r"notre agence|nos honoraires|frais d.agence|agence immobili", texte):
+        annonceur = "agence"
     return Annonce(
         source=DeuxiemeMain.nom,
         id_externe=str(identifiant),
@@ -184,8 +225,8 @@ def _analyser_listing(brut: dict, transaction: str, type_defaut: str,
         prix=prix,
         commune=loc.get("cityName") or commune.nom,
         code_postal=commune.codes[0] if loc.get("cityName") else None,
-        latitude=loc.get("latitude") if isinstance(loc.get("latitude"), float) else None,
-        longitude=loc.get("longitude") if isinstance(loc.get("longitude"), float) else None,
+        latitude=lat,
+        longitude=lon,
         chambres=chambres,
         surface=surface,
         jardin=True if "jardin" in texte else None,
@@ -196,4 +237,6 @@ def _analyser_listing(brut: dict, transaction: str, type_defaut: str,
         photos=photos,
         description=description,
         agence=vendeur,
+        annonceur=annonceur,
+        reference=str(identifiant),
     )

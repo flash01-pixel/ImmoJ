@@ -4,12 +4,14 @@
 # (UTC+2) comme hiver (UTC+1) ; le collecteur vérifie lui-même l'heure locale
 # et s'arrête immédiatement en dehors de 7h–23h (coût : ~20 s).
 #
-# Quota (dépôt privé) : ~17 exécutions/jour × 30 jours ≈ 510 par mois. Une
-# exécution dure 2 à 5 minutes (portails toutes les heures, agences une heure
-# sur deux, temps des fiches plafonné par BUDGET_FICHES_S, délais de politesse
-# comptés site par site) ; seule une première collecte après l'ajout de
-# nombreuses sources dépasse 10 minutes. Le timeout de 15 minutes n'est qu'une
-# sécurité.
+# Coût : ~17 exécutions/jour × 30 jours ≈ 510 par mois. Un passage LÉGER dure
+# 2 à 5 minutes (portails toutes les heures, 3 pages ; agences une heure sur
+# deux ; temps des fiches plafonné par BUDGET_FICHES_S ; délais de politesse
+# comptés site par site). Le passage PROFOND quotidien (7 h, Bruxelles : toutes
+# les pages des portails, puis réparation de la base) dure 8 à 15 minutes, soit
+# ≈ 300 minutes par mois de plus. Le dépôt est public : les minutes GitHub
+# Actions sont gratuites (un dépôt privé aurait 2 000 min/mois, pour ≈ 1 800
+# consommées). Le timeout de 30 minutes n'est qu'une sécurité.
 #
 # Deux stockages, cumulables :
 #  * fichier JSON sur la branche « donnees » du dépôt (toujours) : lu par l'appli
@@ -33,6 +35,16 @@ on:
         description: "Pages de résultats par source (vide = défaut)"
         required: false
         default: ""
+      profond:
+        description: "Passage profond (toutes les pages des portails)"
+        required: false
+        type: boolean
+        default: false
+      reparer:
+        description: "Réparer la base (orphelines, doublons, annonceur, types)"
+        required: false
+        type: boolean
+        default: false
 
 # Une seule collecte à la fois : si la précédente dure encore, la nouvelle attend.
 concurrency:
@@ -42,7 +54,7 @@ concurrency:
 jobs:
   collecter:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: collecteur
@@ -90,6 +102,8 @@ jobs:
           GMAIL_MOT_DE_PASSE: ${{ secrets.GMAIL_MOT_DE_PASSE }}
           SOURCE: ${{ inputs.source }}
           PAGES: ${{ inputs.pages }}
+          PROFOND: ${{ inputs.profond }}
+          REPARER: ${{ inputs.reparer }}
         run: |
           export SUPABASE_URL="${SUPABASE_URL:-$SUPABASE_URL_SECRET}"
           export SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY:-$SUPABASE_SERVICE_KEY_SECRET}"
@@ -102,8 +116,12 @@ jobs:
           ARGS="--fichier ../donnees/base.json"
           if [ -n "$SOURCE" ]; then ARGS="$ARGS --source $SOURCE"; fi
           if [ -n "$PAGES" ]; then ARGS="$ARGS --pages $PAGES"; fi
-          # Un lancement manuel ignore la plage horaire.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then ARGS="$ARGS --forcer"; fi
+          # Un lancement manuel ignore la plage horaire (et reste léger sauf demande).
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ARGS="$ARGS --forcer"
+            if [ "$PROFOND" = "true" ]; then ARGS="$ARGS --profond"; else ARGS="$ARGS --leger"; fi
+            if [ "$REPARER" = "true" ]; then ARGS="$ARGS --reparer"; fi
+          fi
           python -m immoj.main $ARGS
 
       # Publie base.json + annonces.json sur la branche « donnees » (un seul

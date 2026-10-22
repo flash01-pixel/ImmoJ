@@ -138,6 +138,7 @@ class Generique(SourceAgences):
         if not url_liste:
             return []
         annonces: list[Annonce] = []
+        vus: set[str] = set()
         # Certains sites « maison » n'ont qu'un formulaire de recherche (POST).
         donnees = options.get(f"donnees_{transaction}")
         for page in range(1, int(options.get("pages", 1)) + 1):
@@ -148,10 +149,31 @@ class Generique(SourceAgences):
             else:
                 reponse = self.client.get(url)
             trouvees = analyser_liste(reponse.text, url_liste, agence, transaction)
-            if not trouvees:
+            # C4 : une page qui répète la précédente (pagination ignorée par le site)
+            # n'apporte rien ; on s'arrête, et on ne garde jamais deux fois le même id.
+            nouvelles = [a for a in trouvees if a.id_externe not in vus]
+            if not nouvelles:
                 break
-            annonces.extend(trouvees)
+            vus.update(a.id_externe for a in nouvelles)
+            annonces.extend(nouvelles)
         return annonces
+
+
+def localite_du_titre(titre: str) -> str | None:
+    """« PALISEUL : jolie maison », « Maison à Bertrix », « HABAY (HABAY-LA-NEUVE) » → localité."""
+    if not titre:
+        return None
+    m = re.match(r"\s*([A-ZÀ-Ý][A-ZÀ-Ý' -]{2,30}?)\s*(?:\(([A-ZÀ-Ýa-zà-ÿ' -]{2,30})\))?\s*[:\-–]",
+                 titre)
+    if m:
+        return (m.group(2) or m.group(1)).strip().title()
+    m = re.match(r"\s*([A-ZÀ-Ý][A-ZÀ-Ý' -]{2,30}?)\s*\(([A-ZÀ-Ýa-zà-ÿ' -]{2,30})\)\s*$", titre)
+    if m:
+        return m.group(2).strip().title()
+    m = re.search(r"\b(?:à|a|in|te|sur|de)\s+([A-ZÀ-Ý][\wà-ÿ' -]{2,30}?)\s*(?:[,.!(]|$)", titre)
+    if m:
+        return m.group(1).strip().title()
+    return None
 
 
 def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) -> list[Annonce]:
@@ -202,6 +224,8 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
             m = re.search(options["lieu_url"], url)
             if m:
                 localite = m.group(1).replace("-", " ").title()
+        if not localite:                                  # « PALISEUL : jolie maison… »
+            code_postal, localite = code_postal or None, localite_du_titre(titre)
         if not code_postal and extra.get("postal_code"):
             code_postal = str(extra["postal_code"])
         img = carte.select_one(options.get("photo", "img"))
@@ -235,7 +259,9 @@ def analyser_liste(html: str, url_liste: str, agence: dict, transaction: str) ->
             transaction=transaction,
             type=deviner_type(f"{type_texte} {titre} {texte_carte[:200]}"),
             prix=prix,
-            commune=localite or agence.get("commune"),
+            # Sans localité lisible, on ne place PAS le bien chez l'agence (C8) : il
+            # restera sans position tant que sa fiche ne l'a pas donnée.
+            commune=localite,
             code_postal=code_postal,
             chambres=chambres,
             surface=surface,

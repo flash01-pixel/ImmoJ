@@ -25,7 +25,19 @@ statuts, notes et critères restent sur ton téléphone.
 Les annonces se mettent à jour toutes les heures (collecte GitHub), et l'appli
 vérifie les nouveautés en arrière-plan (fréquence réglable).
 
-### Ce que propose l'appli (1.1.0)
+### Ce que propose l'appli (1.2)
+
+- **Annonceur** : chaque annonce porte « Particulier », « Agence » (avec son
+  nom) ou « Notaire » ; filtre rapide « Particuliers », compteurs dans Filtres et
+  dans État des sources. Plus jamais « PRIVATE » ni un prénom affiché comme agence.
+- **Types** : appartement, maison, studio, kot, chambre/colocation, terrain,
+  immeuble, commerce/bureau, garage/parking. Moins de 1 % des annonces restent
+  « Bien » (type inconnu).
+- **Position** : la fiche indique si la position est exacte ou au centre de la
+  commune ; une annonce dont le site ne donne pas la localité reste sans
+  position plutôt que placée chez l'agence.
+
+### Ce que proposait déjà la 1.1.0
 
 - **Actualiser** : le bouton en haut, ou la liste tirée vers le bas,
   retélécharge vraiment les données. Le menu ⋮ → « Lancer une collecte

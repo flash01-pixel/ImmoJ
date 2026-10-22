@@ -117,9 +117,21 @@ private fun CarteSource(s: EtatSource, nbActives: Int, nbParticuliers: Int) {
                 Text(Format.source(s.source), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Text("Annonces actives : $nbActives" + (if (nbParticuliers > 0) " · $nbParticuliers de particuliers" else ""))
-            Text("Dernière collecte : ${Format.depuis(s.derniereCollecte)} " +
-                "(${s.nbTrouvees} vues, ${s.nbNouvelles} nouvelles)")
-            Text("Dernière réussite : ${Format.depuis(s.derniereReussite)}")
+            // Rapport de couverture du dernier passage : lues / disponibles sur le site.
+            val couverture = buildString {
+                append("Dernier passage${if (s.profond) " (profond)" else ""} : ${s.nbTrouvees} lues")
+                s.nbDisponibles?.let { dispo ->
+                    append(" / ${Format.nombre(dispo)} disponibles")
+                    if (dispo > 0) append(" (${(100 * s.nbTrouvees / dispo).coerceAtMost(100)} %)")
+                }
+                if (s.nbParticuliers > 0) append(" · ${s.nbParticuliers} de particuliers")
+                append(" · ${s.nbNouvelles} nouvelles")
+            }
+            Text(couverture, style = MaterialTheme.typography.bodySmall)
+            Text("Dernière collecte : ${Format.depuis(s.derniereCollecte)} · dernière réussite : " +
+                Format.depuis(s.derniereReussite), style = MaterialTheme.typography.bodySmall)
+            Text("Dernier passage profond : ${Format.depuis(s.derniereProfonde)}",
+                style = MaterialTheme.typography.bodySmall)
             if (!s.derniereOk) {
                 Text(
                     (if (s.bloque) "Bloquée par le site. " else "Erreur : ") + (s.erreur ?: ""),

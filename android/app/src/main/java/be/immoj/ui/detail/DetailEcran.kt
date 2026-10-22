@@ -207,8 +207,11 @@ private fun FicheAnnonce(
                     HorizontalDivider()
                     Text("Situation", style = MaterialTheme.typography.titleSmall)
                     MiniCarte(a.latitude, a.longitude) { itineraire(contexte, a) }
-                    Text("Appuie sur la carte pour l'itinéraire.", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        (if (a.positionApproximative) "Position approximative (centre de la commune). "
+                        else "Position donnée par l'annonce. ") + "Appuie sur la carte pour l'itinéraire.",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 // Historique des prix

@@ -19,8 +19,8 @@ from typing import Any
 from . import config
 from .dedoublonnage import Candidat
 from .geocodage import Geocodeur
-from .modele import Annonce
-from .stockage import fusionner_photos, maintenant
+from .modele import Annonce, deviner_annonceur
+from .stockage import a_ete_revue_en_profondeur, complements_connus, fusionner_photos, maintenant
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +42,31 @@ class StockageFichier:
         self.annonces: dict[str, dict] = self.base["annonces"]
         # clé "source:id_externe" → {annonce_id, prix_affiche, url, ...}
         self.sources: dict[str, dict] = self.base["sources"]
+        self._migrer()
+
+    def _migrer(self) -> None:
+        """Bases écrites avant le lot 4 : champs annonceur / précision absents."""
+        par_annonce: dict[str, list[dict]] = {}
+        for src in self.sources.values():
+            par_annonce.setdefault(src["annonce_id"], []).append(src)
+        for aid, a in self.annonces.items():
+            if "annonceur" not in a:
+                avis = {deviner_annonceur(x["source"], x.get("agence"))
+                        for x in par_annonce.get(aid, [])}
+                if (a.get("agence") or "").upper() == "PRIVATE":
+                    avis.add("particulier")
+                a["annonceur"] = ("notaire" if "notaire" in avis else "agence" if "agence" in avis
+                                  else "particulier" if "particulier" in avis else "inconnu")
+            if a.get("annonceur") == "particulier" or (a.get("agence") or "").upper() == "PRIVATE":
+                a["agence"] = None
+            a.setdefault("precision_position", None)
+
+    def _par_annonce(self) -> dict[str, list[dict]]:
+        """Index annonce_id → publications (C9 : calculé une fois, pas par annonce)."""
+        index: dict[str, list[dict]] = {}
+        for src in self.sources.values():
+            index.setdefault(src["annonce_id"], []).append(src)
+        return index
 
     # --- persistance -----------------------------------------------------
     def sauvegarder(self) -> None:
@@ -56,12 +81,15 @@ class StockageFichier:
         """Écrit l'export lu par l'appli : annonces actives, communes, état des sources."""
         geocodeur = geocodeur or Geocodeur()
         actives = []
+        par_annonce = self._par_annonce()
+        historiques: dict[str, list[dict]] = {}
+        for h in self.base["historique_prix"]:
+            historiques.setdefault(h["annonce_id"], []).append(h)
         for aid, a in self.annonces.items():
             if not a.get("actif", True):
                 continue
-            pubs = [s for s in self.sources.values() if s["annonce_id"] == aid]
-            pubs.sort(key=lambda s: s["premiere_vue"])
-            historique = [h for h in self.base["historique_prix"] if h["annonce_id"] == aid]
+            pubs = sorted(par_annonce.get(aid, []), key=lambda s: s["premiere_vue"])
+            historique = historiques.get(aid, [])
             actives.append({
                 **a, "id": aid,
                 "photo": (a.get("photos") or [None])[0],
@@ -90,9 +118,14 @@ class StockageFichier:
                                       {"source": c["source"], "derniere_reussite": None})
             e.update({"derniere_collecte": c["fin"], "derniere_ok": c["ok"], "bloque": c["bloque"],
                       "erreur": c["erreur"], "nb_trouvees": c["nb_trouvees"],
-                      "nb_nouvelles": c["nb_nouvelles"]})
+                      "nb_nouvelles": c["nb_nouvelles"],
+                      "nb_disponibles": c.get("nb_disponibles"),
+                      "nb_particuliers": c.get("nb_particuliers", 0),
+                      "profond": c.get("profond", False)})
             if c["ok"]:
                 e["derniere_reussite"] = c["fin"]
+                if c.get("profond"):
+                    e["derniere_profonde"] = c["fin"]
         actives: dict[str, set] = {}
         for s in self.sources.values():
             if self.annonces.get(s["annonce_id"], {}).get("actif", True):
@@ -106,7 +139,18 @@ class StockageFichier:
         return []   # les recherches sauvegardées vivent dans l'appli
 
     def sources_connues(self, source: str) -> dict[str, dict]:
-        return {s["id_externe"]: s for s in self.sources.values() if s["source"] == source}
+        connues = {}
+        for s in self.sources.values():
+            if s["source"] == source:
+                # « annonce » pointe sur la fiche elle-même : l'intégrateur y lit (et y
+                # écrit via modifier_annonce) type, date de publication, annonceur…
+                connues[s["id_externe"]] = {**s, "annonce": self.annonces.get(s["annonce_id"])}
+        return connues
+
+    def modifier_annonce(self, annonce_id: str, maj: dict) -> None:
+        a = self.annonces.get(annonce_id)
+        if a:
+            a.update(maj)
 
     def annonces_connues(self, source: str) -> dict[str, dict]:
         """id_externe → champs de l'annonce (prix, chambres...) déjà en base pour une source."""
@@ -120,7 +164,8 @@ class StockageFichier:
             Candidat(id=aid, transaction=a["transaction"], commune=a["commune"],
                      code_postal=a["code_postal"], prix=a["prix"], chambres=a["chambres"],
                      surface=a["surface"], titre=a["titre"] or "",
-                     description=a["description"] or "")
+                     description=a["description"] or "", agence=a.get("agence"),
+                     reference=(a.get("details") or {}).get("Référence"))
             for aid, a in self.annonces.items()
             if a.get("actif", True) and a["transaction"] == transaction
             and ((commune and a["commune"] == commune)
@@ -139,7 +184,9 @@ class StockageFichier:
             "jardin": a.jardin, "terrasse": a.terrasse, "animaux": a.animaux, "meuble": a.meuble,
             "date_publication": a.date_publication.isoformat() if a.date_publication else None,
             "photos": a.photos, "description": a.description, "details": dict(a.details),
-            "agence": a.agence, "telephone": a.telephone,
+            "agence": a.agence, "telephone": a.telephone, "annonceur": a.annonceur,
+            "precision_position": ("exacte" if a.latitude is not None
+                                   else "commune" if latitude is not None else None),
             "premiere_detection": maintenant(), "derniere_vue": maintenant(), "actif": True,
         }
         if a.prix is not None:
@@ -154,6 +201,7 @@ class StockageFichier:
             "annonce_id": annonce_id, "source": a.source, "id_externe": a.id_externe,
             "url": a.url, "titre": a.titre, "prix_affiche": a.prix,
             "agence": a.agence, "telephone": a.telephone,
+            "date_publication": a.date_publication.isoformat() if a.date_publication else None,
             "premiere_vue": existante["premiere_vue"] if existante else maintenant(),
             "derniere_vue": maintenant(),
         }
@@ -169,6 +217,7 @@ class StockageFichier:
                 e[champ] = getattr(a, champ)
         if len(a.description) > len(e.get("description") or "") + 100:
             e["description"] = a.description
+        e.update(complements_connus(e, a))
 
     def changer_prix(self, annonce_id: str, source: str, id_externe: str,
                      ancien: int | None, nouveau: int) -> None:
@@ -190,14 +239,60 @@ class StockageFichier:
                 self.annonces[aid]["derniere_vue"] = maintenant()
                 self.annonces[aid]["actif"] = True
 
+    def dernieres_profondes(self) -> dict[str, str]:
+        """source → fin du dernier passage profond réussi."""
+        dernieres: dict[str, str] = {}
+        for c in self.base["collectes"]:
+            if c["ok"] and c.get("profond"):
+                dernieres[c["source"]] = max(dernieres.get(c["source"], ""), c["fin"])
+        return dernieres
+
     def desactiver_anciennes(self, jours: int) -> int:
         limite = (datetime.now(UTC) - timedelta(days=jours)).isoformat()
+        profondes = self.dernieres_profondes()
+        par_annonce = self._par_annonce()
         n = 0
-        for a in self.annonces.values():
-            if a.get("actif", True) and a["derniere_vue"] < limite:
+        for aid, a in self.annonces.items():
+            if not a.get("actif", True) or a["derniere_vue"] >= limite:
+                continue
+            if a_ete_revue_en_profondeur(a["derniere_vue"], par_annonce.get(aid, []), profondes):
                 a["actif"] = False
                 n += 1
         return n
+
+    def desactiver(self, ids: list[str]) -> None:
+        for aid in ids:
+            if aid in self.annonces:
+                self.annonces[aid]["actif"] = False
+
+    def annonces_actives_brutes(self) -> list[dict]:
+        par_annonce = self._par_annonce()
+        return [{**a, "id": aid, "sources": par_annonce.get(aid, [])}
+                for aid, a in self.annonces.items() if a.get("actif", True)]
+
+    def fusionner_annonces(self, cible_id: str, doublon_id: str) -> None:
+        """Le doublon disparaît : ses publications, photos, détails et historique
+        de prix passent à la cible."""
+        cible, doublon = self.annonces.get(cible_id), self.annonces.get(doublon_id)
+        if not cible or not doublon:
+            return
+        for src in self.sources.values():
+            if src["annonce_id"] == doublon_id:
+                src["annonce_id"] = cible_id
+        for h in self.base["historique_prix"]:
+            if h["annonce_id"] == doublon_id:
+                h["annonce_id"] = cible_id
+        cible["photos"] = fusionner_photos(cible.get("photos") or [], doublon.get("photos") or [])
+        cible["details"] = {**(doublon.get("details") or {}), **(cible.get("details") or {})}
+        for champ in ("peb", "surface", "chambres", "telephone", "agence", "date_publication",
+                      "charges"):
+            if cible.get(champ) in (None, "") and doublon.get(champ) not in (None, ""):
+                cible[champ] = doublon[champ]
+        if cible.get("annonceur", "inconnu") == "inconnu":
+            cible["annonceur"] = doublon.get("annonceur", "inconnu")
+        if len(doublon.get("description") or "") > len(cible.get("description") or "") + 100:
+            cible["description"] = doublon["description"]
+        doublon["actif"] = False
 
     def desactiver_hors_province(self) -> int:
         n = 0
@@ -225,16 +320,17 @@ class StockageFichier:
         return n
 
     def enregistrer_collecte(self, source: str, debut: str, ok: bool, nb_trouvees: int,
-                             nb_nouvelles: int, erreur: str, bloque: bool, duree_s: float) -> None:
+                             nb_nouvelles: int, erreur: str, bloque: bool, duree_s: float,
+                             profond: bool = False, nb_disponibles: int | None = None,
+                             nb_particuliers: int = 0) -> None:
         self.base["collectes"].append({
             "source": source, "debut": debut, "fin": maintenant(), "ok": ok,
             "nb_trouvees": nb_trouvees, "nb_nouvelles": nb_nouvelles,
             "erreur": erreur[:1000] if erreur else None, "bloque": bloque,
-            "duree_s": round(duree_s, 1),
+            "duree_s": round(duree_s, 1), "profond": profond,
+            "nb_disponibles": nb_disponibles, "nb_particuliers": nb_particuliers,
         })
-        self.sauvegarder()
-        if ok:
-            self.exporter(self.chemin.with_name("annonces.json"))
+        self.sauvegarder()   # l'export (annonces.json) n'a lieu qu'une fois, en fin de passage
 
 
 __all__ = ["StockageFichier", "config"]

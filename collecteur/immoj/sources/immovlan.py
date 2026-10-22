@@ -21,8 +21,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from .. import config
-from ..modele import Annonce, deviner_type, nombre
+from ..modele import Annonce, deviner_annonceur, deviner_type, nombre
 from .base import Source
 
 BASE = "https://immovlan.be"
@@ -50,10 +49,14 @@ class Immovlan(Source):
     def collecter(self, transaction: str) -> list[Annonce]:
         annonces: list[Annonce] = []
         vues: set[str] = set()
-        pages_max = self.pages_max or config.PAGES_MAX
+        pages_max = self.pages_a_lire()
         for page in range(1, pages_max + 1):
             reponse = self.client.get(self.url_liste(transaction, page))
             trouvees = analyser_liste(reponse.text, transaction)
+            if page == 1:
+                total = total_resultats(reponse.text)
+                if total:
+                    self.disponibles[transaction] = total
             nouvelles = [a for a in trouvees if a.id_externe not in vues]
             if not nouvelles:
                 break  # plus de résultats (ou page identique) : on s'arrête
@@ -67,6 +70,19 @@ class Immovlan(Source):
 # ---------------------------------------------------------------------------
 # Analyse du HTML (fonctions pures, testées sur des pages enregistrées)
 # ---------------------------------------------------------------------------
+
+def total_resultats(html: str) -> int | None:
+    """Ordre de grandeur du nombre d'annonces : « 412 résultats » si la page le dit,
+    sinon dernière page de la pagination × 20 (Immovlan n'affiche pas le total)."""
+    m = re.search(r"(\d[\d .\u202f\u00a0]{0,6})\s*(?:résultats?|resultaten|annonces? trouvées?)",
+                  html, re.I)
+    if m:
+        n = nombre(m.group(1))
+        if n and n < 100_000:
+            return n
+    pages = [int(p) for p in re.findall(r"[?&]page=(\d{1,3})\b", html)]
+    return max(pages) * 20 if pages else None
+
 
 def analyser_liste(html: str, transaction: str) -> list[Annonce]:
     """Transforme une page de résultats Immovlan en liste d'annonces."""
@@ -119,7 +135,7 @@ def _analyser_carte(carte, url: str, transaction: str, ld: dict) -> Annonce | No
     m = re.search(r"/detail/([^/]+)/", url)
     segment_type = m.group(1).replace("-", " ") if m else ""
     sous_type = _propriete_ld(ld, "propertySubType")
-    type_bien = deviner_type(f"{segment_type} {sous_type}")
+    type_bien = deviner_type(f"{segment_type} {sous_type}", url)
 
     titre = _texte(carte, ".v3-search-card-title") or ld.get("name") or segment_type.title()
     prix = nombre(_texte(carte, ".v3-search-card-price"))
@@ -220,6 +236,9 @@ def _analyser_carte(carte, url: str, transaction: str, ld: dict) -> Annonce | No
         description=description,
         agence=agence,
         telephone=telephone,
+        # Sans logo d'agence ni vendeur pro dans le JSON-LD : un particulier.
+        annonceur=deviner_annonceur(Immovlan.nom, agence),
+        reference=id_externe,
     )
 
 

@@ -138,9 +138,11 @@ def commande_installer(admin: Admin) -> int:
     ref = p["id"]
     print(f"Projet : {ref} (https://{ref}.supabase.co)")
     admin.attendre_pret(ref)
-    for nom in ("schema.sql", "policies.sql"):
-        print(f"Exécution de {nom}…")
-        admin.executer_sql(ref, (DOSSIER_SQL / nom).read_text(encoding="utf-8"))
+    # Migrations numérotées d'abord (colonnes ajoutées après coup), puis schéma et règles.
+    migrations = sorted((DOSSIER_SQL / "migrations").glob("*.sql"))
+    for fichier in [*migrations, DOSSIER_SQL / "schema.sql", DOSSIER_SQL / "policies.sql"]:
+        print(f"Exécution de {fichier.name}…")
+        admin.executer_sql(ref, fichier.read_text(encoding="utf-8"))
     cles = admin.cles(ref)
     print("Base installée. Clés récupérées : anon", "OK" if cles["anon"] else "absente",
           "; service", "OK" if cles["service"] else "absente")

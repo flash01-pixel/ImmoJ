@@ -1,5 +1,52 @@
 # Journal des modifications
 
+## 1.2.0-lot4 — Collecteur : particuliers, couverture, qualité
+
+### Collecteur
+- Champ `annonceur` (particulier / agence / notaire / inconnu) de bout en bout : modèle, base JSON,
+  export, Supabase (`supabase/migrations/2026-10-22-001-…sql`, vue `v_annonces_liste`), appli.
+  Règles : Immoweb « PRIVATE » → particulier ; 2ememain → particulier sauf indice pro (nom d'agence
+  connue, « immo », « srl », « notre agence »…) ; sites d'agences → agence ; notaires → notaire ;
+  Immovlan → particulier sans logo d'agence. Plus jamais « PRIVATE » ni un prénom comme agence.
+- Rapport de couverture à chaque passage (journal et écran État des sources) : annonces lues /
+  disponibles sur le site, nombre de particuliers, passage profond ou léger.
+- Passage profond quotidien (7 h Bruxelles) : toutes les pages des portails (jusqu'à 80), puis
+  réparation de la base ; passage profond automatique au premier passage d'une source ;
+  passages horaires légers (3 pages). Désactivation après 7 jours seulement pour les annonces
+  absentes d'un passage profond réussi. Pas de notification pour une annonce déterrée par un
+  passage profond si elle est publiée depuis plus de 48 h. Coût ≈ 300 min/mois (dépôt public :
+  gratuit).
+- 2ememain : le filtre par catégorie de l'API est ignoré par le serveur (capture du 22/10) ;
+  5 centres (Arlon, Bastogne, Libramont, Marche, Vielsalm) à 30 km, toutes les pages en profond.
+- Géocodage (C3) : commune citée en tête (« Hotton + Partie De Soy » → Hotton, « Somme-Leuze + … »
+  → hors province), puis correspondance la plus longue ; 180 localités ajoutées (Vaux-lez-Rosières,
+  Sibret, Longchamps…) ; contour simplifié de la province pour les annonces avec coordonnées
+  (commune la plus proche déduite). Tests sur les 4 cas de C3 et « Bastogne + Partie De Longchamps
+  Et Sibret ».
+- C4 : identifiants dédoublonnés dans un passage, `connues` mis à jour au fil de l'eau, pagination
+  arrêtée quand une page n'apporte rien ; 64 orphelines existantes désactivées (test de
+  non-régression).
+- C5 : correspondance structurée forte (même commune, prix identique, mêmes chambres, surfaces
+  connues à ±5 %) ou même référence ; prix identique + chambres + même agence (noms normalisés)
+  quand une surface manque. 55 doublons existants fusionnés (sources, photos, détails, historique
+  des prix rattachés à la plus ancienne). Tests sur les cas réels de C5.
+- C6 : `deviner_type` sur titre, sous-type et URL ; nouveaux types chambre/colocation, immeuble,
+  commerce/bureau, garage/parking. Sur les données réelles : 152 « autre » → 10 (0,6 %).
+- C7 : date de publication conservée par source (`annonce_sources.date_publication`) et la plus
+  ancienne reportée sur la fiche. C8 : localité lue dans le titre ou la fiche, jamais la commune de
+  l'agence par défaut ; précision de la position (exacte / centre de commune) stockée et affichée.
+  C9 : index par `annonce_id`, un seul export par passage.
+- Fiches lues en priorité pour les locations et les particuliers.
+- Nouvelles options : `--profond`, `--leger`, `--reparer` (et cases à cocher dans le workflow).
+
+### Appli
+- Badge et rubrique « Annonceur » d'après le champ du collecteur (règle de secours pour les
+  anciennes données) ; filtres et compteurs par annonceur.
+- Nouveaux types dans les filtres et les libellés.
+- Fiche : « Position approximative (centre de la commune) » ou « Position donnée par l'annonce ».
+- État des sources : « Dernier passage (profond) : N lues / M disponibles (x %) · P de
+  particuliers · nouvelles », dernier passage profond, noms de sources lisibles.
+
 ## 1.2.0-lot3b — Fiche d'annonce
 
 ### Appli

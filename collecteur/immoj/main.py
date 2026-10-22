@@ -63,6 +63,22 @@ class Integrateur:
         self.recherches = recherches
         self.recherches_notif = [r for r in recherches if r.get("notifier", True)]
 
+    def _situer(self, a: Annonce) -> tuple[bool, str | None, float | None, float | None]:
+        """(en province ?, commune officielle, latitude, longitude)."""
+        commune = self.geocodeur.trouver(a.commune, a.code_postal, a.latitude, a.longitude)
+        if commune is None and hors_province(a.code_postal):
+            return False, None, None, None
+        if a.latitude is not None and a.longitude is not None \
+                and not self.geocodeur.dans_le_contour(a.latitude, a.longitude):
+            # Coordonnées hors du contour de la province : une localité homonyme ailleurs.
+            return False, None, None, None
+        nom = commune.nom if commune else None
+        if a.latitude is not None and a.longitude is not None:
+            return True, nom, a.latitude, a.longitude
+        if commune:
+            return True, nom, commune.lat, commune.lon
+        return True, nom, None, None
+
     def integrer(self, resultat: ResultatCollecte) -> int:
         """Renvoie le nombre d'annonces réellement nouvelles (jamais vues nulle part)."""
         source = resultat.source
@@ -75,18 +91,20 @@ class Integrateur:
         import_initial = not self.stockage.a_deja_reussi(source)
         vues_ids_externes: list[str] = []
         vues_annonce_ids: list[str] = []
+        vus_ce_passage: set[str] = set()
         nouvelles = 0
 
         for a in resultat.annonces:
-            commune = self.geocodeur.trouver(a.commune, a.code_postal)
-            if commune is None and hors_province(a.code_postal):
-                # Les agences publient aussi hors province (Liège, Namur, Grand-Duché…).
+            # C4 : un identifiant répété dans le même passage (page de résultats
+            # identique) ne doit jamais créer une annonce jumelle.
+            if a.id_externe in vus_ce_passage:
+                continue
+            vus_ce_passage.add(a.id_externe)
+            en_province, nom_commune, lat, lon = self._situer(a)
+            if not en_province:
                 log.debug("[%s] %s ignorée : %s %s hors province", source, a.id_externe,
                           a.code_postal, a.commune)
                 continue
-            nom_commune = commune.nom if commune else None
-            lat, lon = (a.latitude, a.longitude) if a.latitude is not None else (
-                (commune.lat, commune.lon) if commune else (None, None))
 
             connue = connues.get(a.id_externe)
             if connue:
@@ -97,15 +115,18 @@ class Integrateur:
                     log.info("[%s] prix modifié %s : %s → %s", source, a.id_externe, ancien, a.prix)
                     self.stockage.changer_prix(connue["annonce_id"], source, a.id_externe,
                                                ancien, a.prix)
+                    connue["prix_affiche"] = a.prix
                     if ancien is not None and a.prix < ancien and not import_initial:
                         self._notifier_baisse(connue["annonce_id"], a, ancien, nom_commune,
                                               lat, lon)
+                self._completer_connue(connue, a)
                 continue
 
             # Jamais vue sur cette source : est-ce un bien déjà connu ailleurs ?
             candidat = Candidat(id="", transaction=a.transaction, commune=nom_commune,
                                 code_postal=a.code_postal, prix=a.prix, chambres=a.chambres,
-                                surface=a.surface, titre=a.titre, description=a.description)
+                                surface=a.surface, titre=a.titre, description=a.description,
+                                agence=a.agence, reference=a.reference)
             candidats = [c for c in self.stockage.candidats_doublon(a.transaction, nom_commune,
                                                                      a.code_postal)
                          if c.id not in deja_sur_cette_source]
@@ -119,9 +140,13 @@ class Integrateur:
                 annonce_id = self.stockage.creer_annonce(a, nom_commune, lat, lon)
                 self.stockage.ajouter_source(annonce_id, a)
                 nouvelles += 1
-                if not import_initial:
+                if not import_initial and not self._trop_ancienne_pour_notifier(resultat, a):
                     self._notifier_nouvelle(annonce_id, a, nom_commune, lat, lon)
             deja_sur_cette_source.add(annonce_id)
+            # `connues` suit au fil de l'eau : une 2e occurrence plus loin dans le
+            # passage est traitée comme connue, jamais comme une nouvelle fiche.
+            connues[a.id_externe] = {"annonce_id": annonce_id, "prix_affiche": a.prix,
+                                     "url": a.url}
             vues_ids_externes.append(a.id_externe)
             vues_annonce_ids.append(annonce_id)
 
@@ -129,6 +154,39 @@ class Integrateur:
         if import_initial and resultat.annonces:
             self.notificateur.import_initial(source, len(resultat.annonces))
         return nouvelles
+
+    def _completer_connue(self, connue: dict, a: Annonce) -> None:
+        """Annonce déjà connue : on récupère ce qui manquait (date de publication
+        de cette source, type enfin deviné, annonceur, position exacte)."""
+        fiche = connue.get("annonce")
+        modifier = getattr(self.stockage, "modifier_annonce", None)
+        if not isinstance(fiche, dict) or modifier is None:
+            return
+        maj: dict = {}
+        if a.date_publication and (not fiche.get("date_publication")
+                                   or a.date_publication.isoformat() < fiche["date_publication"]):
+            maj["date_publication"] = a.date_publication.isoformat()
+        if a.type != "autre" and fiche.get("type") == "autre":
+            maj["type"] = a.type
+        if a.annonceur != "inconnu" and fiche.get("annonceur", "inconnu") == "inconnu":
+            maj["annonceur"] = a.annonceur
+            if a.annonceur == "particulier":
+                maj["agence"] = None
+        if a.latitude is not None and fiche.get("precision_position") != "exacte":
+            maj.update({"latitude": a.latitude, "longitude": a.longitude,
+                        "precision_position": "exacte"})
+        if maj:
+            modifier(connue["annonce_id"], maj)
+            fiche.update(maj)
+
+    @staticmethod
+    def _trop_ancienne_pour_notifier(resultat: ResultatCollecte, a: Annonce) -> bool:
+        """Un passage profond déterre des annonces publiées depuis longtemps : pas de
+        notification pour celles publiées depuis plus de HEURES_NOTIF_PROFOND."""
+        if not resultat.profond or not a.date_publication:
+            return False
+        age = datetime.now(ZoneInfo(config.FUSEAU)).date() - a.date_publication
+        return age.total_seconds() > config.HEURES_NOTIF_PROFOND * 3600
 
     def _recherches_correspondantes(self, a: Annonce, commune: str | None,
                                     lat: float | None, lon: float | None) -> list[dict | None]:
@@ -178,13 +236,25 @@ def preparer_cibles(simulation: bool, fichier: str | None, geocodeur: Geocodeur)
     return cibles
 
 
+def heure_du_passage_profond(instant: datetime | None = None) -> bool:
+    """Le passage profond quotidien a lieu à HEURE_PASSAGE_PROFOND (Bruxelles)."""
+    local = (instant or datetime.now(ZoneInfo(config.FUSEAU))).astimezone(ZoneInfo(config.FUSEAU))
+    return local.hour == config.HEURE_PASSAGE_PROFOND
+
+
 def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool,
              forcer: bool, transactions: tuple[str, ...] | None,
-             fichier: str | None = None) -> int:
+             fichier: str | None = None, profond: bool | None = None,
+             reparer: bool = False) -> int:
     if not forcer and not dans_la_plage_horaire():
         log.info("Hors plage horaire (%dh–%dh Bruxelles) : rien à faire.",
                  config.HEURE_DEBUT, config.HEURE_FIN)
         return 0
+    if profond is None:
+        profond = heure_du_passage_profond()
+    if profond:
+        log.info("Passage PROFOND : toutes les pages (jusqu'à %d) de chaque portail.",
+                 config.PAGES_PROFOND)
 
     geocodeur = Geocodeur()
     cibles = preparer_cibles(simulation, fichier, geocodeur)
@@ -210,11 +280,17 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
                      REGISTRE[nom].frequence_heures)
             continue
         debut = maintenant()
-        source = REGISTRE[nom](pages_max=pages)
+        # Premier passage d'une source (jamais réussi nulle part) : profond d'office.
+        premier = any(not c["stockage"].a_deja_reussi(nom) for c in cibles)
+        source = REGISTRE[nom](pages_max=pages, profond=profond or premier)
         for c in cibles:   # ce qu'on sait déjà de cette source (évite de relire des fiches)
             if isinstance(c["stockage"], StockageFichier):
                 source.connues = c["stockage"].annonces_connues(nom)
         resultat = source.executer(transactions)
+        log.info("[%s] couverture : %d lue(s) / %s disponible(s), %d de particuliers%s", nom,
+                 len(resultat.annonces),
+                 resultat.nb_disponibles if resultat.nb_disponibles is not None else "?",
+                 resultat.nb_particuliers, " (passage profond)" if resultat.profond else "")
         for c in cibles:
             stockage, notificateur = c["stockage"], c["notificateur"]
             ok, erreur, nouvelles = resultat.ok, resultat.erreur, 0
@@ -224,7 +300,10 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
                 log.exception("[%s] erreur pendant l'intégration (%s)", nom, c["nom"])
                 ok, erreur = False, f"intégration : {type(e).__name__}: {e}"
             stockage.enregistrer_collecte(nom, debut, ok, len(resultat.annonces), nouvelles,
-                                          erreur, resultat.bloque, resultat.duree_s)
+                                          erreur, resultat.bloque, resultat.duree_s,
+                                          profond=resultat.profond,
+                                          nb_disponibles=resultat.nb_disponibles,
+                                          nb_particuliers=resultat.nb_particuliers)
             if isinstance(stockage, StockageFichier):
                 stockage.sauvegarder()   # un arrêt brutal (timeout) ne perd pas l'acquis
             if ok:
@@ -241,12 +320,19 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
         nb_hors = c["stockage"].desactiver_hors_province()
         if nb_hors:
             log.info("[%s] %d annonce(s) hors province désactivée(s)", c["nom"], nb_hors)
+        # Une annonce n'est désactivée que si un passage PROFOND réussi de chacune de ses
+        # sources a eu lieu depuis qu'on l'a vue : un passage léger (3 pages) ne voit pas tout.
         nb = c["stockage"].desactiver_anciennes(config.JOURS_AVANT_DESACTIVATION)
         if nb:
             log.info("[%s] %d annonce(s) désactivée(s) (plus vues depuis %d jours)",
                      c["nom"], nb, config.JOURS_AVANT_DESACTIVATION)
+        if reparer or profond:
+            from .reparation import reparer_stockage
+            bilan = reparer_stockage(c["stockage"], geocodeur)
+            log.info("[%s] réparation : %s", c["nom"], bilan)
         if isinstance(c["stockage"], StockageFichier):
             c["stockage"].sauvegarder()
+            # C9 : un seul export par passage (et non après chaque source).
             n = c["stockage"].exporter(c["stockage"].chemin.with_name("annonces.json"), geocodeur)
             log.info("[%s] export annonces.json : %d annonces actives", c["nom"], n)
         c["notificateur"].clore()
@@ -268,13 +354,21 @@ def main(argv: list[str] | None = None) -> int:
                          help="n'écrit rien dans Supabase, n'envoie rien à ntfy")
     parseur.add_argument("--forcer", action="store_true",
                          help="ignorer la plage horaire 7h–23h")
+    parseur.add_argument("--profond", action="store_true",
+                         help="passage profond : toutes les pages des portails")
+    parseur.add_argument("--leger", action="store_true",
+                         help="passage léger même à l'heure du passage profond")
+    parseur.add_argument("--reparer", action="store_true",
+                         help="nettoyer la base : orphelines, doublons, annonceur, types")
     parseur.add_argument("--verbeux", action="store_true")
     args = parseur.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if args.verbeux else logging.INFO,
                         format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
+    profond = True if args.profond else (False if args.leger else None)
     return executer(args.sources, args.pages, args.simulation, args.forcer,
-                    tuple(args.transaction) if args.transaction else None, args.fichier)
+                    tuple(args.transaction) if args.transaction else None, args.fichier,
+                    profond=profond, reparer=args.reparer)
 
 
 if __name__ == "__main__":

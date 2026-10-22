@@ -93,7 +93,8 @@ data class Filtres(
     companion object {
         val PERIODES = listOf("24h" to "24 h", "3j" to "3 jours", "7j" to "7 jours", "tout" to "Tout")
         val TYPES = listOf("appartement" to "Appartement", "maison" to "Maison", "studio" to "Studio",
-            "kot" to "Kot", "terrain" to "Terrain", "autre" to "Autre")
+            "kot" to "Kot", "chambre" to "Chambre / coloc", "terrain" to "Terrain", "immeuble" to "Immeuble",
+            "commerce" to "Commerce / bureau", "garage" to "Garage / parking", "autre" to "Autre")
         val PEB = listOf("A", "B", "C", "D", "E", "F")
         /** Sources telles que le collecteur les nomme (voir docs/05 pour les agences). */
         val SOURCES = listOf("immovlan" to "Immovlan", "immoweb" to "Immoweb", "2ememain" to "2ememain",

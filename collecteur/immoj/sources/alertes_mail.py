@@ -28,7 +28,7 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 
 from ..config import charger_secrets
-from ..modele import Annonce, deviner_transaction, deviner_type, nombre
+from ..modele import Annonce, deviner_annonceur, deviner_transaction, deviner_type, nombre
 from .base import Source
 
 log = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ PORTAILS = {
 
 class AlertesMail(Source):
     nom = "alertes_mail"
+    toujours_complet = True
     libelle = "Alertes e-mail"
     respecter_robots = False
 
@@ -218,6 +219,7 @@ def analyser_html(html: str, portail: str, sujet: str = "") -> list[Annonce]:
             surface=_surface(texte),
             photos=photos,
             description=texte[:1000],
+            annonceur=deviner_annonceur(portail, None),
         )
     return list(vus.values())
 

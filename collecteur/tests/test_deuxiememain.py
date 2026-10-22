@@ -68,6 +68,45 @@ def test_dates():
 
 def test_url_api():
     src = DeuxiemeMain.__new__(DeuxiemeMain)
-    url = src.url_api(offset=30)
-    assert "l1CategoryId=1032" in url and "postcode=6840" in url and "distanceMeters=60000" in url
+    url = src.url_api(offset=30, postcode="6600")
+    assert "l1CategoryId=1032" in url and "postcode=6600" in url and "distanceMeters=30000" in url
     assert "offset=30" in url
+
+
+def test_filtre_categorie_ignore_par_le_serveur(lire_json):
+    """Capture du 22/10 : l2CategoryId=2771 renvoie les mêmes 185 résultats que sans filtre."""
+    avec = lire_json("2ememain/api_cat_2771.json")
+    assert avec["totalResultCount"] == 185
+    assert {x["categoryId"] for x in avec["listings"]} != {2771}
+
+
+def test_centres_multiples_couvrent_la_province(lire_json):
+    """Les 4 centres à 30 km lisent des communes que le cercle unique ne listait pas en tête,
+    et le géocodeur en garde la commune citée en tête (« Arlon + Partie De Wolkrange »)."""
+    annonces = []
+    for centre in ("arlon", "bastogne", "libramont", "marche"):
+        annonces += analyser_json(lire_json(f"2ememain/api_centre_{centre}_30km.json"))
+    communes = {a.commune for a in annonces}
+    assert any(c.startswith("Arlon") for c in communes)
+    assert any("Vaux" in c for c in communes)          # « Vaux-Lez-Rosieres » retrouvée
+    assert all(a.code_postal for a in annonces)
+    particuliers = [a for a in annonces if a.annonceur == "particulier"]
+    agences = [a for a in annonces if a.annonceur == "agence"]
+    assert particuliers and agences
+    assert all(a.agence is None for a in particuliers), "jamais un prénom affiché comme agence"
+
+
+def test_annonceur_2ememain():
+    def brut(nom, titre="Maison à louer", description=""):
+        return {"listings": [{
+            "itemId": "x", "title": titre, "description": description, "categoryId": 2143,
+            "location": {"cityName": "Arlon"},
+            "priceInfo": {"priceCents": 80000, "priceType": "FIXED"},
+            "sellerInformation": {"sellerName": nom},
+        }]}
+    assert analyser_json(brut("Pauline"))[0].annonceur == "particulier"
+    assert analyser_json(brut("Ard'Immo & Conseils"))[0].annonceur == "agence"
+    assert analyser_json(brut("CVA GERCA"))[0].annonceur == "agence"
+    pro = analyser_json(brut("Marc", description="Contactez notre agence"))[0]
+    assert pro.annonceur == "agence"
+    assert analyser_json(brut("Marc"))[0].agence is None

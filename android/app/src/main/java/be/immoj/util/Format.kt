@@ -22,7 +22,11 @@ object Format {
         "maison" -> "Maison"
         "studio" -> "Studio"
         "kot" -> "Kot"
+        "chambre" -> "Chambre"
         "terrain" -> "Terrain"
+        "immeuble" -> "Immeuble"
+        "commerce" -> "Commerce / bureau"
+        "garage" -> "Garage / parking"
         else -> "Bien"
     }
 
@@ -34,6 +38,14 @@ object Format {
         "2ememain" -> "2ememain"
         "immoweb" -> "Immoweb"
         "immoweb_mail" -> "Immoweb (e-mail)"
+        "notaire" -> "Notaires"
+        "alertes_mail" -> "Alertes e-mail"
+        "agences:generique" -> "Sites d'agences (maison)"
+        "agences:whise" -> "Agences Whise"
+        "agences:whise_webulous" -> "Agences Whise (Honesty…)"
+        "agences:era" -> "Agences ERA"
+        "agences:omnicasa_gatsby", "agences:omnicasa_api" -> "Agences Omnicasa"
+        "agences:wordpress" -> "Agences WordPress"
         else -> if (code.startsWith("agences:")) "Agence" else code.replaceFirstChar { it.uppercase() }
     }
 
