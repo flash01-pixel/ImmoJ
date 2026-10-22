@@ -42,3 +42,15 @@ Au premier lancement, l'écran **Paramètres** s'affiche :
 
 Pour mettre à jour l'appli : télécharge le nouvel APK et installe-le par-dessus
 (les réglages sont conservés).
+
+
+## Mises à jour (depuis la 1.2)
+
+- Chaque APK est signé avec la même clé de développement : il s'installe par-dessus le précédent,
+  en gardant tes réglages. **Une seule exception** : pour passer de la 1.1.0 (ou plus ancienne) à la
+  première 1.2.0, désinstalle d'abord ImmoJ (Android refuse de remplacer une appli signée avec une
+  autre clé). En mode Supabase, tes statuts, notes et recherches sont dans la base : rien n'est perdu.
+- Numéro de version : Paramètres → À propos affiche version, build, commit, branche et date de
+  compilation. Compare le build avec celui de la page GitHub de l'APK.
+- Deux branches : `apk` = version de `main` ; `apk-test` = version en cours de test d'une branche de
+  travail (https://github.com/flash01-pixel/ImmoJ/blob/apk-test/ImmoJ.apk).
