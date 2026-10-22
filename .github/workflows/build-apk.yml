@@ -100,7 +100,12 @@ jobs:
           cp "$GITHUB_WORKSPACE/android/ImmoJ.apk" .
           printf '# APK ImmoJ\n\nBuild %s, compilé depuis `%s` (%s) le %s.\n\nTélécharger : cliquer sur ImmoJ.apk puis « Download raw file ».\n' "$GITHUB_RUN_NUMBER" "$GITHUB_REF_NAME" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%MZ)" > README.md
           git add . && git commit -q -m "APK build $GITHUB_RUN_NUMBER depuis $GITHUB_REF_NAME ($GITHUB_SHA)"
-          git push -q -f "https://x-access-token:${TOKEN}@github.com/${DEPOT}" "HEAD:$BRANCHE"
+          # Le jeton passe par un en-tête HTTP (et non dans l'URL) : un caractère
+          # inattendu dans le secret ne casse pas l'adresse.
+          TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
+          AUTH="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" \
+            push -q -f "https://github.com/${DEPOT}" "HEAD:$BRANCHE"
           echo "APK publié : https://github.com/$DEPOT/blob/$BRANCHE/ImmoJ.apk"
 
       - name: Publier dans Releases (tags v* uniquement)
