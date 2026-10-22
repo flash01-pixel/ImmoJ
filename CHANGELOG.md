@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## 1.2.0-lot3b — Fiche d'annonce
+
+### Appli
+- Barre d'actions fixe en bas de la fiche : Appeler · Ouvrir · Itinéraire · Partager · ★ Favori.
+- Badge « Particulier » à côté du prix ; rubrique « Annonceur » (particulier, notaire ou nom de l'agence).
+- Prix au m² (ou loyer au m² par mois) et ligne « Loyer + charges = total ».
+- Mini-carte OpenStreetMap centrée sur le bien ; un appui lance l'itinéraire.
+- « Publiée il y a X j · détectée il y a Y h » et distance au centre de la zone de recherche.
+- « Annonces similaires » : même type, prix à ±25 %, chambres à ±1, les plus proches d'abord (test JVM).
+- Glisser vers la gauche ou la droite passe à l'annonce suivante ou précédente de la liste courante ;
+  le titre indique la position (« 3/27 »).
+- Date de disponibilité affichée dans les caractéristiques quand la fiche la donne.
+
 ## 1.2.0-lot3a — Modes d'affichage et ergonomie (liste)
 
 ### Appli

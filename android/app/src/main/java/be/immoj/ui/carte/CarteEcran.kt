@@ -309,7 +309,8 @@ private fun maPosition(contexte: Context): GeoPoint? {
     }
 }
 
-private fun configurerOsmdroid(contexte: Context) {
+/** Configuration osmdroid commune (carte principale et mini-carte de la fiche). */
+internal fun configurerOsmdroid(contexte: Context) {
     val conf = Configuration.getInstance()
     conf.load(contexte, contexte.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
     // OpenStreetMap demande un User-Agent identifiant l'application.

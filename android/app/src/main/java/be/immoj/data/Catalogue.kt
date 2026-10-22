@@ -122,6 +122,24 @@ object Catalogue {
     }
 
     /** Nombre d'annonces et de nouveautés depuis une visite pour une recherche sauvegardée. */
+    /**
+     * Annonces semblables à `a` : même transaction et type, prix à ±25 %, chambres à ±1,
+     * actives, ni refusées ni `a` elle-même ; les plus proches d'abord (distance, puis écart de prix).
+     */
+    fun similaires(index: List<Annonce>, a: Annonce, max: Int = 6): List<Annonce> {
+        val prix = a.prix
+        return index.asSequence()
+            .filter { it.id != a.id && it.actif && it.transaction == a.transaction && it.type == a.type }
+            .filter { it.statut != StatutPerso.REFUSE.code }
+            .filter { prix == null || it.prix == null || (it.prix >= prix * 0.75 && it.prix <= prix * 1.25) }
+            .filter { a.chambres == null || it.chambres == null || kotlin.math.abs(it.chambres - a.chambres) <= 1 }
+            .sortedWith(compareBy<Annonce> { b ->
+                if (a.latitude != null && a.longitude != null && b.latitude != null && b.longitude != null)
+                    distanceKm(a.latitude, a.longitude, b.latitude, b.longitude) else 999.0
+            }.thenBy { b -> if (prix != null && b.prix != null) kotlin.math.abs(b.prix - prix) else Int.MAX_VALUE })
+            .take(max).toList()
+    }
+
     fun bilanRecherche(index: List<Annonce>, r: RechercheSauvegardee, derniereVisite: String?,
                        maintenant: Instant = Instant.now()): Pair<Int, Int> {
         val f = r.versFiltres()

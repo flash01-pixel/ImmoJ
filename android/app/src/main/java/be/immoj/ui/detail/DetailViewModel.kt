@@ -23,7 +23,7 @@ data class DetailEtat(
 
 class DetailViewModel(
     private val depot: Depot, private val id: String,
-    private val onStatutChange: (StatutPerso, String?) -> Unit = { _, _ -> },
+    private val onStatutChange: (String, StatutPerso, String?) -> Unit = { _, _, _ -> },
 ) : ViewModel() {
     private val _etat = MutableStateFlow(DetailEtat())
     val etat: StateFlow<DetailEtat> = _etat.asStateFlow()
@@ -39,7 +39,7 @@ class DetailViewModel(
                 // Ouvrir une annonce « Nouveau » la marque « Vu » (la pastille de l'onglet suit).
                 val a = if (chargee != null && chargee.statut == StatutPerso.NOUVEAU.code &&
                     runCatching { depot.changerStatut(id, StatutPerso.VU, chargee.note) }.isSuccess) {
-                    onStatutChange(StatutPerso.VU, chargee.note)
+                    onStatutChange(id, StatutPerso.VU, chargee.note)
                     chargee.copy(statut = StatutPerso.VU.code, badgeNouveau = false)
                 } else chargee
                 _etat.update { it.copy(annonce = a, historique = h, chargement = false,
@@ -54,7 +54,7 @@ class DetailViewModel(
         viewModelScope.launch {
             try {
                 depot.changerStatut(id, statut, note)
-                onStatutChange(statut, note)
+                onStatutChange(id, statut, note)
                 _etat.update { it.copy(message = "Statut enregistré : ${statut.libelle}",
                     annonce = it.annonce?.copy(statut = statut.code, note = note)) }
             } catch (e: Exception) {

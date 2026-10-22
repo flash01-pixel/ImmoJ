@@ -116,4 +116,21 @@ class CatalogueTest {
         assertEquals(2, nouvelles)
         assertEquals(0, Catalogue.bilanRecherche(index, r, "2026-10-22T11:00:00Z", maintenant).second)
     }
+
+    @Test
+    fun similairesMemeTypePrixProcheSansRefusees() {
+        val base = a("1")   // appartement 800 €, 2 ch., Arlon
+        val index = listOf(
+            base,
+            a("2", prix = 900, lat = 49.69, lon = 5.82),                // proche, même type : oui
+            a("3", prix = 650, commune = "Bastogne", lat = 50.0, lon = 5.72),   // dans ±25 %, plus loin
+            a("4", prix = 820, statut = "refuse"),                    // refusée : non
+            a("5", type = "maison", prix = 800),                      // autre type : non
+            a("6", prix = 1500),                                      // trop cher : non
+            a("7", chambres = 4, prix = 800),                         // 2 chambres d'écart : non
+            a("8", transaction = "achat", prix = 800),                // autre transaction : non
+        )
+        assertEquals(listOf("2", "3"), Catalogue.similaires(index, base).map { it.id })
+        assertEquals(listOf("2"), Catalogue.similaires(index, base, max = 1).map { it.id })
+    }
 }

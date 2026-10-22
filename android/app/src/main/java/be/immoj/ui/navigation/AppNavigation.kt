@@ -58,8 +58,15 @@ fun AppNavigation(app: ImmoJApp) {
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
         ) { entree ->
             val id = entree.arguments?.getString("id") ?: return@composable
-            DetailEcran(app = app, id = id, retour = { nav.popBackStack() },
-                onStatutChange = { s, n -> vm.appliquerStatut(id, s, n) })
+            val etat by vm.etat.collectAsState()
+            DetailEcran(
+                app = app, id = id, retour = { nav.popBackStack() },
+                onStatutChange = { idA, s, n -> vm.appliquerStatut(idA, s, n) },
+                voisins = etat.annonces.map { it.id },
+                index = etat.index,
+                centreLat = etat.filtres.centreLat, centreLon = etat.filtres.centreLon,
+                ouvrirAnnonce = { autre -> nav.navigate(Routes.detail(autre)) },
+            )
         }
         composable(Routes.PARAMETRES) {
             ParametresEcran(
