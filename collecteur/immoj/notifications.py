@@ -24,11 +24,17 @@ def _prix(valeur: int | None, transaction: str) -> str:
     return texte + "/mois" if transaction == "location" else texte
 
 
+#: au-delà, les nouveautés d'un même passage sont regroupées en une seule
+#: notification (évite une rafale, et le « 429 Too Many Requests » de ntfy)
+MAX_PAR_PASSAGE = 12
+
+
 class Notificateur:
     def __init__(self, secrets: Secrets, simulation: bool = False) -> None:
         self.secrets = secrets
         self.simulation = simulation
         self.nb_envoyees = 0
+        self.nb_regroupees = 0
 
     def _publier(self, titre: str, message: str, *, clic: str | None = None,
                  tags: list[str] | None = None, priorite: int = 3,
@@ -47,6 +53,9 @@ class Notificateur:
         if self.simulation:
             log.info("[simulation] notification : %s — %s", titre, message)
             return True
+        if self.nb_envoyees >= MAX_PAR_PASSAGE and priorite <= 3:
+            self.nb_regroupees += 1           # envoyée en résumé par `clore()`
+            return False
         try:
             r = requests.post(self.secrets.ntfy_serveur, json=corps, timeout=15)
             r.raise_for_status()
@@ -55,6 +64,16 @@ class Notificateur:
             return False
         self.nb_envoyees += 1
         return True
+
+    def clore(self) -> None:
+        """Fin de passage : une seule notification pour tout ce qui a dépassé le plafond."""
+        if self.nb_regroupees:
+            nb, self.nb_regroupees = self.nb_regroupees, 0
+            envoyees = self.nb_envoyees
+            self.nb_envoyees = 0              # laisse passer le résumé
+            self._publier("ImmoJ", f"{nb} autre(s) nouveauté(s) ce passage : ouvre l'appli.",
+                          tags=["house"], priorite=3)
+            self.nb_envoyees += envoyees
 
     def nouvelle_annonce(self, annonce: Annonce, nom_recherche: str | None = None) -> bool:
         lieu = " ".join(x for x in (annonce.code_postal, annonce.commune) if x)

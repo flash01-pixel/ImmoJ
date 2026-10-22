@@ -32,3 +32,20 @@ def test_corriger_encodage():
              encoding="x")
     corriger_encodage(r)
     assert r.encoding == "x"
+
+
+def test_plafond_notifications(monkeypatch):
+    from immoj.config import Secrets
+    from immoj.notifications import MAX_PAR_PASSAGE, Notificateur
+
+    envois = []
+    monkeypatch.setattr("immoj.notifications.requests.post",
+                        lambda *a, **k: envois.append(k["json"]) or type("R", (), {
+                            "raise_for_status": lambda self: None})())
+    n = Notificateur(Secrets(supabase_url="", supabase_cle_service="", ntfy_topic="t"))
+    assert n.secrets.ntfy_actif
+    for i in range(MAX_PAR_PASSAGE + 5):
+        n._publier(f"n{i}", "m")
+    n.clore()
+    assert len(envois) == MAX_PAR_PASSAGE + 1
+    assert "5 autre(s)" in envois[-1]["message"]

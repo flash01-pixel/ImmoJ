@@ -249,6 +249,7 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             c["stockage"].sauvegarder()
             n = c["stockage"].exporter(c["stockage"].chemin.with_name("annonces.json"), geocodeur)
             log.info("[%s] export annonces.json : %d annonces actives", c["nom"], n)
+        c["notificateur"].clore()
         log.info("[%s] %d notification(s) envoyée(s).", c["nom"], c["notificateur"].nb_envoyees)
     return code_sortie
 
