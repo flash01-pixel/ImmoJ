@@ -74,7 +74,10 @@ object Catalogue {
     fun suggestions(index: List<Annonce>, transaction: String, filtres: Filtres,
                     maintenant: Instant = Instant.now()): List<Suggestion> {
         val base = index.filter { it.actif && it.transaction == transaction }
-        fun compter(f: Filtres) = base.count { f.correspond(it, maintenant) }
+        // Même règle que filtrer() : les refusées ne comptent que si on demande à les voir.
+        fun compter(f: Filtres) = base.count {
+            (f.afficherRefusees || it.statut != StatutPerso.REFUSE.code) && f.correspond(it, maintenant)
+        }
         val actuel = compter(filtres)
         val candidats = mutableListOf<Pair<String, Filtres>>()
         if (filtres.jardin) candidats += "Retirer Jardin" to filtres.copy(jardin = false)
