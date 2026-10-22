@@ -12,3 +12,8 @@ https://maison.trovit.be/ | lot5/trovit_accueil.html
 https://maison.trovit.be/robots.txt | lot5/trovit_robots.txt
 https://maison.trovit.be/index.php/cod.search_homes/type.2/what_d.luxembourg | lot5/trovit_search_luxembourg.html
 https://maison.trovit.be/location-luxembourg | lot5/trovit_location_luxembourg.html
+# 3e tour : Trovit Belgique vit sur immobilier.trovit.be (maison.trovit.be n'existe pas).
+https://immobilier.trovit.be/robots.txt | lot5/trovit_robots.txt
+https://immobilier.trovit.be/ | lot5/trovit_accueil.html
+https://immobilier.trovit.be/location-luxembourg-province | lot5/trovit_location_luxembourg.html
+https://immobilier.trovit.be/index.php/cod.search_homes/type.2/what_d.luxembourg%20province | lot5/trovit_search_luxembourg.html
