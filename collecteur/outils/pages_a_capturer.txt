@@ -1,13 +1,28 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# Lot 4 : 2ememain — filtre par catégorie (ignoré par le serveur ?) et centres multiples.
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2771&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2771.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2143&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2143.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2142&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2142.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=1055&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_1055.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6700&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_arlon_30km.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6600&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_bastogne_30km.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6800&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_libramont_30km.json | {"Accept": "application/json"}
-https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6900&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_marche_30km.json | {"Accept": "application/json"}
-https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_location_lot4.json | {"Accept": "application/json"}
-https://immovlan.be/fr/immobilier?transactiontypes=a-louer&propertytypes=maison,appartement,kot&provinces=luxembourg | immovlan/liste_location_lot4.html
+# Lot 5 : évaluation des sources de particuliers (robots.txt + une page de résultats chacune).
+https://www.pap.fr/robots.txt | lot5/pap_robots.txt
+https://www.pap.fr/annonce/location-belgique | lot5/pap_location_belgique.html
+https://www.pap.fr/annonce/locations-belgique-g43436 | lot5/pap_locations_belgique_g.html
+https://maison.trovit.be/robots.txt | lot5/trovit_robots.txt
+https://maison.trovit.be/location-province-de-luxembourg | lot5/trovit_location_luxembourg.html
+https://maison.trovit.be/index.php/cod.search_homes/type.2/what_d.province%20de%20luxembourg/order.date | lot5/trovit_search.html
+https://rentola.be/robots.txt | lot5/rentola_robots.txt
+https://rentola.be/fr/a-louer?location=luxembourg | lot5/rentola_luxembourg.html
+https://rentola.be/fr/a-louer/province-de-luxembourg | lot5/rentola_province.html
+https://www.athome.lu/robots.txt | lot5/athome_robots.txt
+https://www.athome.lu/fr/louer/belgique | lot5/athome_louer_belgique.html
+https://www.athome.lu/fr/louer/arlon | lot5/athome_louer_arlon.html
+https://www.immotop.lu/robots.txt | lot5/immotop_robots.txt
+https://www.immotop.lu/fr/louer/belgique/ | lot5/immotop_louer_belgique.html
+https://www.immotop.lu/fr/louer/arlon/ | lot5/immotop_louer_arlon.html
+https://www.vivastreet.be/robots.txt | lot5/vivastreet_robots.txt
+https://search.vivastreet.be/annonces-immobilier-location/luxembourg-prov | lot5/vivastreet_location_luxembourg.html
+https://www.vivastreet.be/immobilier/location/luxembourg | lot5/vivastreet_location_2.html
+https://www.kotplanet.be/robots.txt | lot5/kotplanet_robots.txt
+https://www.kotplanet.be/fr/kots/arlon | lot5/kotplanet_arlon.html
+https://www.kot.be/robots.txt | lot5/kot_be_robots.txt
+https://www.kot.be/fr/kots/arlon | lot5/kot_be_arlon.html
+https://www.immoweb.be/fr/search-results/kot/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | lot5/immoweb_kots_luxembourg.json | {"Accept": "application/json"}
+https://www.kotatouslesprix.be/robots.txt | lot5/kotatouslesprix_robots.txt
+https://www.henallux.be/kots | lot5/henallux_kots.html
