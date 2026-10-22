@@ -1,3 +1,13 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-https://maisons-chalets-ardennes.be/assets/js/biens-rendu.js | agences/mca_biens-rendu.js
+# Lot 4 : 2ememain — filtre par catégorie (ignoré par le serveur ?) et centres multiples.
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2771&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2771.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2143&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2143.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=2142&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_2142.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&l2CategoryId=1055&postcode=6840&distanceMeters=60000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_cat_1055.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6700&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_arlon_30km.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6600&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_bastogne_30km.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6800&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_libramont_30km.json | {"Accept": "application/json"}
+https://www.2ememain.be/lrp/api/search?l1CategoryId=1032&postcode=6900&distanceMeters=30000&limit=30&offset=0&sortBy=SORT_INDEX&sortOrder=DECREASING | 2ememain/api_centre_marche_30km.json | {"Accept": "application/json"}
+https://www.immoweb.be/fr/search-results/maison-et-appartement/a-louer/luxembourg/province?countries=BE&page=1&orderBy=newest | immoweb/api_location_lot4.json | {"Accept": "application/json"}
+https://immovlan.be/fr/immobilier?transactiontypes=a-louer&propertytypes=maison,appartement,kot&provinces=luxembourg | immovlan/liste_location_lot4.html
