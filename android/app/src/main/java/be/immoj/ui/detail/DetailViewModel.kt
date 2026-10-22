@@ -34,15 +34,14 @@ class DetailViewModel(
         viewModelScope.launch {
             _etat.update { it.copy(chargement = true, erreur = null) }
             try {
-                var a = depot.annonce(id)
+                val chargee = depot.annonce(id)
                 val h = runCatching { depot.historiquePrix(id) }.getOrDefault(emptyList())
                 // Ouvrir une annonce « Nouveau » la marque « Vu » (la pastille de l'onglet suit).
-                if (a != null && a.statut == StatutPerso.NOUVEAU.code) {
-                    runCatching { depot.changerStatut(id, StatutPerso.VU, a.note) }.onSuccess {
-                        a = a!!.copy(statut = StatutPerso.VU.code, badgeNouveau = false)
-                        onStatutChange(StatutPerso.VU, a!!.note)
-                    }
-                }
+                val a = if (chargee != null && chargee.statut == StatutPerso.NOUVEAU.code &&
+                    runCatching { depot.changerStatut(id, StatutPerso.VU, chargee.note) }.isSuccess) {
+                    onStatutChange(StatutPerso.VU, chargee.note)
+                    chargee.copy(statut = StatutPerso.VU.code, badgeNouveau = false)
+                } else chargee
                 _etat.update { it.copy(annonce = a, historique = h, chargement = false,
                     erreur = if (a == null) "Annonce introuvable." else null) }
             } catch (e: Exception) {

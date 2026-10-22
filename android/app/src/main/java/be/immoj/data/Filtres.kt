@@ -3,6 +3,7 @@ package be.immoj.data
 import be.immoj.util.Dates
 import kotlinx.serialization.Serializable
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * Critères de filtrage de la liste et de la carte. Tout est optionnel.
