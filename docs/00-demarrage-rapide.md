@@ -17,7 +17,7 @@ statuts, notes et critères restent sur ton téléphone.
 1. https://github.com/flash01-pixel/ImmoJ/settings → tout en bas, « Danger
    Zone » → **Change repository visibility** → **Make public** → confirmer.
 2. Sur le téléphone, connecté à GitHub :
-   https://github.com/flash01-pixel/ImmoJ/blob/apk/ImmoJ.apk → télécharger →
+   https://github.com/flash01-pixel/immoj-apk/blob/apk/ImmoJ.apk → télécharger →
    ouvrir → **Installer** (autoriser les sources inconnues si demandé).
 3. Ouvre ImmoJ : la liste s'affiche. Accepte les notifications quand Android
    le demande. C'est tout.

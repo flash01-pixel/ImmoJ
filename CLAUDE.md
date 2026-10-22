@@ -18,8 +18,10 @@ Lis `README.md`, `PLAN.md`, `docs/` et `CHANGELOG.md` avant de toucher au code.
   (ne pas masquer le code de sortie de pytest avec `| tail`).
 - Appli : pas de SDK Android dans le conteneur. La compilation et les tests JVM tournent sur GitHub
   (`build-apk.yml`, déclenché par tout push touchant `android/`). Logs : outil `get_job_logs`.
-- APK : `main` → branche `apk`, autres branches → `apk-test` (fichier `ImmoJ.apk`, « Download raw file »).
-  Récupération dans le conteneur : `git fetch origin apk-test && git show origin/apk-test:ImmoJ.apk > …`.
+- APK : publié dans le dépôt PRIVÉ `flash01-pixel/immoj-apk` (secret `APK_REPO_TOKEN`) : `main` → branche
+  `apk`, autres branches → `apk-test` (fichier `ImmoJ.apk`, « Download raw file »). Le dépôt `ImmoJ` est
+  public : ne jamais y publier l'APK (il contient la clé anon Supabase). Le conteneur n'a pas accès à
+  `immoj-apk` : vérifier la publication dans le journal du workflow (« APK publié : … »).
 - Pages réelles : le conteneur ne joint pas les sites immobiliers. Utiliser `capture.yml`
   (`collecteur/outils/pages_a_capturer.txt`, syntaxe `URL | source/fichier | {"En-tête": …} | POST a=b`),
   `analyse-agences.yml` et `collecte.yml` (lancement manuel = `--forcer`, toutes les sources).

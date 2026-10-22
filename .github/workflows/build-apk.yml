@@ -1,9 +1,8 @@
 # Compilation de l'APK Android par GitHub Actions (aucune installation sur ton PC).
 #
 # Déclenché à chaque modification du dossier android/, ou à la main.
-# L'APK (debug, signé avec une clé de développement) est disponible :
-#  * dans l'onglet Actions → l'exécution → « Artifacts » → ImmoJ-apk ;
-#  * et, pour un tag « v* », dans l'onglet « Releases ».
+# L'APK (debug, signé avec la clé de développement fixe android/signature/) est
+# publié dans le dépôt privé immoj-apk (branche apk pour main, apk-test sinon).
 # Installation : voir docs/04-installer-apk.md.
 name: Compiler l'APK
 
@@ -76,10 +75,8 @@ jobs:
       - name: Renommer l'APK
         run: cp app/build/outputs/apk/debug/app-debug.apk ImmoJ.apk
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ImmoJ-apk
-          path: android/ImmoJ.apk
+      # Pas d'artefact ni de Release ici : le dépôt est public et l'APK contient la
+      # clé anon Supabase. L'APK ne va que dans le dépôt privé immoj-apk (ci-dessous).
 
       # Copie l'APK sur une branche (un seul fichier, écrasée à chaque compilation) :
       # « apk » pour main, « apk-test » pour les branches de travail. Téléchargeable
@@ -112,9 +109,3 @@ jobs:
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" \
             push -q -f "https://github.com/${DEPOT}" "HEAD:$BRANCHE"
           echo "APK publié : https://github.com/$DEPOT/blob/$BRANCHE/ImmoJ.apk"
-
-      - name: Publier dans Releases (tags v* uniquement)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: android/ImmoJ.apk

@@ -8,7 +8,7 @@ rien à installer sur ton PC.
 Le plus simple, **directement depuis le téléphone** :
 
 1. Dans le navigateur du téléphone, connecté à ton compte GitHub, ouvre
-   https://github.com/flash01-pixel/ImmoJ/blob/apk/ImmoJ.apk
+   https://github.com/flash01-pixel/immoj-apk/blob/apk/ImmoJ.apk
    (c'est la branche `apk`, mise à jour à chaque compilation).
 2. Appuie sur le bouton de téléchargement (icône flèche vers le bas, ou
    « Download raw file » / « Raw »). Le fichier `ImmoJ.apk` se télécharge.
@@ -52,5 +52,5 @@ Pour mettre à jour l'appli : télécharge le nouvel APK et installe-le par-dess
   autre clé). En mode Supabase, tes statuts, notes et recherches sont dans la base : rien n'est perdu.
 - Numéro de version : Paramètres → À propos affiche version, build, commit, branche et date de
   compilation. Compare le build avec celui de la page GitHub de l'APK.
-- Deux branches : `apk` = version de `main` ; `apk-test` = version en cours de test d'une branche de
-  travail (https://github.com/flash01-pixel/ImmoJ/blob/apk-test/ImmoJ.apk).
+- L'APK vit dans le dépôt privé `immoj-apk` (le code, lui, est public). Deux branches : `apk` = version de
+  `main` ; `apk-test` = version en cours de test d'une branche de travail (https://github.com/flash01-pixel/immoj-apk/blob/apk-test/ImmoJ.apk).
