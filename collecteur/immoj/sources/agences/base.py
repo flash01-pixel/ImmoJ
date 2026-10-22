@@ -11,6 +11,9 @@ log = logging.getLogger(__name__)
 
 
 class SourceAgences(Source):
+    #: les sites d'agences changent lentement : une exécution sur deux suffit
+    #: (les portails, eux, tournent toutes les heures)
+    frequence_heures = 2
     #: identifiant du logiciel, tel qu'écrit dans agences.yaml
     logiciel: str = ""
     #: liste des agences (dicts du YAML) attribuée par charger_sources_agences()

@@ -27,9 +27,10 @@ FUSEAU = "Europe/Brussels"
 #: temps total consacré aux fiches (photos, détails) par exécution ; au-delà, les
 #: annonces restantes seront complétées lors des passages suivants
 BUDGET_FICHES_S = 90
-DELAI_MIN_S = 2.0
-DELAI_MAX_S = 5.0
-TIMEOUT_S = 30
+DELAI_MIN_S = 1.5      # délai entre deux requêtes vers un même site (politesse)
+DELAI_MAX_S = 3.5
+CONNEXION_S = 8        # délai de connexion : un site injoignable ne bloque pas 30 s
+TIMEOUT_S = 30         # délai de lecture
 NB_TENTATIVES = 2
 
 # Nombre maximum de pages de résultats parcourues par source et par transaction.
