@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  */
 class ImmoJApp : Application() {
     val preferences: Preferences by lazy { Preferences(this) }
-    val depotSupabase: DepotSupabase by lazy { DepotSupabase(preferences) }
+    val depotSupabase: DepotSupabase by lazy { DepotSupabase(preferences, filesDir) }
     val depotLocal: DepotLocal by lazy { DepotLocal(this) }
     val depot: Depot by lazy { DepotRouteur(preferences, depotSupabase, depotLocal) }
 

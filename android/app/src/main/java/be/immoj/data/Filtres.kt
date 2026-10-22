@@ -1,8 +1,8 @@
 package be.immoj.data
 
+import be.immoj.util.Dates
 import kotlinx.serialization.Serializable
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 /**
  * Critères de filtrage de la liste et de la carte. Tout est optionnel.
@@ -25,6 +25,7 @@ data class Filtres(
     val centreLat: Double? = null,
     val centreLon: Double? = null,
     val rayonKm: Double? = null,
+    val afficherRefusees: Boolean = false,        // les annonces « Refusé » sont masquées par défaut
 ) {
     val rayonDefini: Boolean get() = centreLat != null && centreLon != null && (rayonKm ?: 0.0) > 0
 
@@ -65,11 +66,7 @@ data class Filtres(
             p["or"] = "(peb.in.(${admis.joinToString(",") { "\"$it\"" }}),peb.is.null)"
         }
         if (sources.isNotEmpty()) {
-            // « agences » regroupe toutes les sources d'agences (un code par logiciel).
-            val codes = sources.flatMap {
-                if (it == "agences") listOf("agences:whise", "agences:generique") else listOf(it)
-            }
-            p["sources"] = "ov.{${codes.joinToString(",")}}"
+            p["sources"] = "ov.{${codesSources(sources).joinToString(",")}}"
         }
         return p
     }
@@ -77,25 +74,43 @@ data class Filtres(
     companion object {
         val PERIODES = listOf("24h" to "24 h", "3j" to "3 jours", "7j" to "7 jours", "tout" to "Tout")
         val TYPES = listOf("appartement" to "Appartement", "maison" to "Maison", "studio" to "Studio",
-            "kot" to "Kot", "terrain" to "Terrain")
+            "kot" to "Kot", "terrain" to "Terrain", "autre" to "Autre")
         val PEB = listOf("A", "B", "C", "D", "E", "F")
+        /** Sources telles que le collecteur les nomme (voir docs/05 pour les agences). */
         val SOURCES = listOf("immovlan" to "Immovlan", "immoweb" to "Immoweb", "2ememain" to "2ememain",
-            "zimmo" to "Zimmo", "logicimmo" to "Logic-immo", "agences" to "Sites d'agences")
+            "notaire" to "Notaires / Biddit", "agences" to "Sites d'agences",
+            "immoweb_mail" to "Alertes e-mail")
+        /** Une seule constante pour le rayon : défaut et bornes (km). */
+        const val RAYON_DEFAUT_KM = 10.0
+        const val RAYON_MIN_KM = 0.5
+        const val RAYON_MAX_KM = 60.0
+
+        /** Un code de filtre peut regrouper plusieurs sources (« agences » = tous les logiciels). */
+        fun codesSources(choisis: Set<String>): List<String> = choisis.flatMap {
+            when (it) {
+                "agences" -> listOf("agences:whise", "agences:generique", "agences:whise_webulous",
+                    "agences:era", "agences:omnicasa_gatsby", "agences:omnicasa_api", "agences:wordpress")
+                "immoweb_mail" -> listOf("immoweb_mail", "zimmo_mail", "logicimmo_mail", "zimmo", "logicimmo")
+                else -> listOf(it)
+            }
+        }
+
+        /** Vrai si une source d'annonce correspond à un code de filtre. */
+        fun sourceCorrespond(source: String, code: String): Boolean =
+            source == code || (code == "agences" && source.startsWith("agences:")) ||
+                (code == "immoweb_mail" && (source.endsWith("_mail") || source in setOf("zimmo", "logicimmo")))
     }
 }
 
-/** Même logique que [Filtres.versRequete], appliquée en mémoire (mode sans compte). */
-fun Filtres.correspond(a: Annonce): Boolean {
+/** Même logique que [Filtres.versRequete], appliquée en mémoire (les deux modes). */
+fun Filtres.correspond(a: Annonce, maintenant: Instant = Instant.now()): Boolean {
     if (prixMin != null && (a.prix == null || a.prix < prixMin)) return false
     if (prixMax != null && (a.prix == null || a.prix > prixMax)) return false
     if (types.isNotEmpty() && a.type !in types) return false
     if (chambresMin != null && (a.chambres == null || a.chambres < chambresMin)) return false
     if (surfaceMin != null && (a.surface == null || a.surface < surfaceMin)) return false
     val heures = when (periode) { "24h" -> 24L; "3j" -> 72L; "7j" -> 168L; else -> null }
-    if (heures != null) {
-        val detection = a.premiereDetection?.let { runCatching { Instant.parse(it) }.getOrNull() }
-        if (detection == null || detection.isBefore(Instant.now().minus(heures, ChronoUnit.HOURS))) return false
-    }
+    if (heures != null && !Dates.recent(a.premiereDetection, heures, maintenant)) return false
     if (jardin && a.jardin != true) return false
     if (animaux && a.animaux != true) return false
     if (meuble && a.meuble != true) return false
@@ -103,11 +118,8 @@ fun Filtres.correspond(a: Annonce): Boolean {
         val ordre = listOf("A++", "A+", "A", "B", "C", "D", "E", "F", "G")
         if (a.peb != null && ordre.indexOf(a.peb) > ordre.indexOf(max)) return false
     }
-    if (sources.isNotEmpty()) {
-        val codes = sources.flatMap {
-            if (it == "agences") listOf("agences:whise", "agences:generique") else listOf(it)
-        }
-        if (a.sources.none { it in codes }) return false
+    if (sources.isNotEmpty() && a.sources.none { s -> sources.any { Filtres.sourceCorrespond(s, it) } }) {
+        return false
     }
     val zone = communes.isNotEmpty() || rayonDefini
     if (zone) {

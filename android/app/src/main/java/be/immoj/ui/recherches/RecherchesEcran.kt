@@ -1,5 +1,9 @@
 package be.immoj.ui.recherches
 
+import be.immoj.util.Format
+import be.immoj.ui.liste.ListeViewModel
+import be.immoj.data.Catalogue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,10 +45,12 @@ import kotlinx.coroutines.launch
  * et « Appliquer » pour charger les critères dans la liste.
  */
 @Composable
-fun RecherchesEcran(app: ImmoJApp, appliquer: (RechercheSauvegardee) -> Unit) {
+fun RecherchesEcran(app: ImmoJApp, vm: ListeViewModel, appliquer: (RechercheSauvegardee) -> Unit) {
     val portee = rememberCoroutineScope()
     var recherches by remember { mutableStateOf<List<RechercheSauvegardee>?>(null) }
     var erreur by remember { mutableStateOf<String?>(null) }
+    val etat by vm.etat.collectAsState()
+    val reglages by app.preferences.flux.collectAsState(initial = null)
 
     suspend fun recharger() {
         try {
@@ -86,6 +92,16 @@ fun RecherchesEcran(app: ImmoJApp, appliquer: (RechercheSauvegardee) -> Unit) {
                             }) { Icon(Icons.Default.Delete, contentDescription = "Supprimer") }
                         }
                         Text(r.resume, style = MaterialTheme.typography.bodySmall)
+                        // « 37 annonces · 3 nouvelles depuis ta dernière visite »
+                        val (nb, nouvelles) = remember(etat.index, r, reglages) {
+                            Catalogue.bilanRecherche(etat.index, r, reglages?.visitesRecherches?.get(r.id ?: ""))
+                        }
+                        Text(
+                            "${Format.nombre(nb)} annonce${if (nb > 1) "s" else ""}" +
+                                (if (nouvelles > 0) " · $nouvelles nouvelle${if (nouvelles > 1) "s" else ""} depuis ta dernière visite" else ""),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (nouvelles > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Notifications", modifier = Modifier.weight(1f))
                             Switch(checked = r.notifier && r.actif, onCheckedChange = { actif ->
@@ -97,7 +113,10 @@ fun RecherchesEcran(app: ImmoJApp, appliquer: (RechercheSauvegardee) -> Unit) {
                                 }
                             })
                         }
-                        TextButton(onClick = { appliquer(r) }) { Text("Appliquer ces critères à la liste") }
+                        TextButton(onClick = {
+                            r.id?.let { id -> portee.launch { app.preferences.marquerRechercheVisitee(id) } }
+                            appliquer(r)
+                        }) { Text("Appliquer ces critères à la liste") }
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package be.immoj.ui.carte
 
+import be.immoj.data.Filtres
 import android.content.Context
 import android.graphics.DashPathEffect
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +63,6 @@ private val CONTOUR_PROVINCE = listOf(
     50.35 to 5.35,
 ).map { (lat, lon) -> GeoPoint(lat, lon) }
 
-private const val RAYON_DEFAUT_KM = 10.0
 
 /**
  * Carte OpenStreetMap (osmdroid, gratuit) : un marqueur par annonce et un
@@ -95,7 +95,7 @@ fun CarteEcran(
     LaunchedEffect(centreLat, centreLon) { centreLocal = null }
 
     val centre = centreLocal ?: if (centreLat != null && centreLon != null) GeoPoint(centreLat, centreLon) else null
-    val rayon = rayonLocal ?: rayonKm ?: RAYON_DEFAUT_KM
+    val rayon = rayonLocal ?: rayonKm ?: Filtres.RAYON_DEFAUT_KM
     val rayonDefini = centre != null
 
     val carte = remember {
@@ -142,9 +142,11 @@ fun CarteEcran(
         )
 
         Card(modifier = Modifier.align(Alignment.TopCenter).padding(12.dp)) {
+            val sansPosition = annonces.count { it.latitude == null || it.longitude == null }
             Text(
-                if (rayonDefini) "${annonces.count { it.latitude != null }} annonce(s) dans la zone"
-                else "${annonces.count { it.latitude != null }} annonce(s) · appui long = placer un rayon",
+                (if (rayonDefini) "${annonces.size} dans la zone" else "${annonces.size} annonce(s)") +
+                    (if (sansPosition > 0) " · $sansPosition sans position" else "") +
+                    (if (!rayonDefini) " · appui long = placer un rayon" else ""),
                 modifier = Modifier.padding(8.dp), style = MaterialTheme.typography.labelSmall,
             )
         }
@@ -178,7 +180,7 @@ fun CarteEcran(
                             value = rayon.toFloat(),
                             onValueChange = { rayonLocal = (it * 2).roundToInt() / 2.0 },
                             onValueChangeFinished = { rayonLocal?.let(onRayonChange) },
-                            valueRange = 1f..60f,
+                            valueRange = Filtres.RAYON_MIN_KM.toFloat()..Filtres.RAYON_MAX_KM.toFloat(),
                         )
                         Text(
                             if (couvertes.isEmpty()) "Aucune commune de la province dans ce rayon"
@@ -290,13 +292,15 @@ private class Calques(vue: MapView) {
         poignee.setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
             override fun onMarkerDragStart(m: Marker) {}
             override fun onMarkerDrag(m: Marker) {
-                val km = (centreGeo.distanceToAsDouble(m.position) / 1000).coerceIn(0.5, 60.0)
+                val km = (centreGeo.distanceToAsDouble(m.position) / 1000)
+                    .coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM)
                 cercle.points = Polygon.pointsAsCircle(centreGeo, km * 1000)
                 onRayonGlisse((km * 2).roundToInt() / 2.0)
                 vue.invalidate()
             }
             override fun onMarkerDragEnd(m: Marker) {
-                onRayonDepose((centreGeo.distanceToAsDouble(m.position) / 1000).coerceIn(0.5, 60.0))
+                onRayonDepose((centreGeo.distanceToAsDouble(m.position) / 1000)
+                    .coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM))
             }
         })
         // Le cercle sous les annonces, les poignées au-dessus de tout.

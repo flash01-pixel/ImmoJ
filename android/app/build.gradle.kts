@@ -19,8 +19,15 @@ android {
         applicationId = "be.immoj"
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.1.0"
+        // versionCode = numéro d'exécution GitHub (propriété Gradle), 5 en local ;
+        // versionName suit les lots de la 1.2.
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
+        versionName = "1.2.0-lot1"
+
+        // Identité de la compilation, affichée dans Paramètres → À propos.
+        buildConfigField("String", "COMMIT", "\"${propriete("commit").take(7)}\"")
+        buildConfigField("String", "BRANCHE", "\"${propriete("branche")}\"")
+        buildConfigField("String", "DATE_BUILD", "\"${propriete("dateBuild")}\"")
 
         buildConfigField("String", "SUPABASE_URL", "\"${propriete("supabaseUrl")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${propriete("supabaseAnonKey")}\"")
@@ -30,6 +37,18 @@ android {
             "https://raw.githubusercontent.com/flash01-pixel/ImmoJ/donnees/annonces.json"
         }
         buildConfigField("String", "DONNEES_URL", "\"$donneesUrl\"")
+    }
+
+    // Clé de signature de développement FIXE (android/signature/, mot de passe
+    // « immoj-debug ») : chaque APK s'installe par-dessus le précédent, quelle que
+    // soit la machine qui l'a compilé. Ce n'est pas une clé de publication Play Store.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("signature/immoj-debug.keystore")
+            storePassword = "immoj-debug"
+            keyAlias = "immoj"
+            keyPassword = "immoj-debug"
+        }
     }
 
     buildTypes {
@@ -71,4 +90,6 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.osmdroid)
     implementation(libs.androidx.work.runtime)
+    // Tests unitaires JVM (logique pure : filtres, comptages, dates, géométrie).
+    testImplementation(libs.junit)
 }

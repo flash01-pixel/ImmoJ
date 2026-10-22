@@ -1,9 +1,5 @@
 package be.immoj.util
 
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** Mise en forme des prix, dates et libellés, en français. */
@@ -41,31 +37,11 @@ object Format {
         else -> if (code.startsWith("agences:")) "Agence" else code.replaceFirstChar { it.uppercase() }
     }
 
-    /** « il y a 3 h », « hier », « il y a 5 j » à partir d'un timestamp ISO. */
-    fun depuis(iso: String?): String {
-        if (iso.isNullOrBlank()) return "—"
-        val instant = runCatching { Instant.parse(normaliserIso(iso)) }.getOrNull() ?: return "—"
-        val d = Duration.between(instant, Instant.now())
-        return when {
-            d.toMinutes() < 1 -> "à l'instant"
-            d.toMinutes() < 60 -> "il y a ${d.toMinutes()} min"
-            d.toHours() < 24 -> "il y a ${d.toHours()} h"
-            d.toDays() == 1L -> "hier"
-            d.toDays() < 30 -> "il y a ${d.toDays()} j"
-            else -> dateCourte(iso)
-        }
-    }
+    /** « il y a 3 h », « hier », « il y a 5 j » à partir d'un horodatage ISO (voir [Dates]). */
+    fun depuis(iso: String?): String = Dates.depuis(iso)
 
-    fun dateCourte(iso: String?): String {
-        if (iso.isNullOrBlank()) return "—"
-        return runCatching {
-            LocalDate.parse(iso.take(10)).format(DateTimeFormatter.ofPattern("d MMM yyyy", fr))
-        }.getOrDefault(iso.take(10))
-    }
+    fun dateCourte(iso: String?): String = Dates.dateCourte(iso)
 
-    /** Postgres renvoie « 2026-10-21T18:45:10.12345+00:00 » : Instant.parse l'accepte si on garde le fuseau. */
-    private fun normaliserIso(iso: String): String {
-        val sansFuseau = Regex("[+-]\\d\\d:\\d\\d$|Z$").containsMatchIn(iso)
-        return if (sansFuseau) iso else iso + "Z"
-    }
+    /** « 1 189 » (séparateur de milliers, espace insécable remplacée par une espace). */
+    fun nombre(valeur: Int): String = String.format(fr, "%,d", valeur).replace('\u00a0', ' ')
 }

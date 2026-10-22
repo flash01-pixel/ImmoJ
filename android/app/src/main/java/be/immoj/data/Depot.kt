@@ -1,5 +1,12 @@
 package be.immoj.data
 
+import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.Dispatchers
+import java.time.Duration
+import java.io.File
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -19,7 +26,21 @@ import java.util.concurrent.TimeUnit
 interface Depot {
     /** Force une vraie mise à jour (nouveau téléchargement / nouvelle requête). */
     suspend fun rafraichir() {}
-    suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce>
+
+    /**
+     * L'index : TOUTES les annonces actives (les deux transactions), avec les
+     * champs utiles à la liste, aux filtres et aux compteurs, mais sans
+     * description, détails ni photos complètes. Jamais tronqué. Le filtrage, le
+     * tri et les comptages se font ensuite en mémoire ([Catalogue]).
+     * `forcer` : retélécharger même si un cache récent existe.
+     */
+    suspend fun index(forcer: Boolean = false): List<Annonce>
+
+    /** Index déjà en cache sur le téléphone (démarrage instantané), ou liste vide. */
+    suspend fun indexEnCache(): List<Annonce> = emptyList()
+
+    suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> =
+        Catalogue.trier(Catalogue.filtrer(index(), transaction, filtres), tri)
     suspend fun annonce(id: String): Annonce?
     suspend fun historiquePrix(id: String): List<PrixHistorique>
     suspend fun changerStatut(id: String, statut: StatutPerso, note: String?)
@@ -40,8 +61,8 @@ class DepotRouteur(
     private suspend fun actif(): Depot = if (preferences.lire().configure) supabase else local
 
     override suspend fun rafraichir() = actif().rafraichir()
-    override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres) =
-        actif().listerAnnonces(transaction, tri, filtres)
+    override suspend fun index(forcer: Boolean) = actif().index(forcer)
+    override suspend fun indexEnCache() = actif().indexEnCache()
     override suspend fun annonce(id: String) = actif().annonce(id)
     override suspend fun historiquePrix(id: String) = actif().historiquePrix(id)
     override suspend fun changerStatut(id: String, statut: StatutPerso, note: String?) =
@@ -56,12 +77,73 @@ class DepotRouteur(
 }
 
 /** Dépôt Supabase : API REST (PostgREST), client Retrofit reconstruit si l'URL ou la clé change. */
-class DepotSupabase(private val preferences: Preferences) : Depot {
+class DepotSupabase(private val preferences: Preferences, private val cacheDir: File? = null) : Depot {
 
     private val json = Json {
         ignoreUnknownKeys = true   // une colonne ajoutée côté Supabase ne casse pas l'appli
         coerceInputValues = true   // null → valeur par défaut
         explicitNulls = false
+    }
+
+    /** Champs de l'index (tout sauf description, détails, photos complètes). */
+    private val champsIndex = listOf(
+        "id", "type", "transaction", "titre", "prix", "prix_precedent", "prix_baisse_le", "charges",
+        "commune", "localite", "code_postal", "latitude", "longitude", "chambres", "surface", "peb",
+        "jardin", "terrasse", "animaux", "meuble", "date_publication", "premiere_detection",
+        "derniere_vue", "photo", "agence", "actif", "statut", "note", "badge_nouveau",
+        "badge_prix_baisse", "sources",
+    ).joinToString(",")
+    private val verrouIndex = Mutex()
+    private var indexMemoire: List<Annonce> = emptyList()
+    private var indexCharge: Instant? = null
+    private val fichierIndex: File? get() = cacheDir?.let { File(it, "index-supabase.json") }
+
+    override suspend fun indexEnCache(): List<Annonce> {
+        if (indexMemoire.isNotEmpty()) return indexMemoire
+        val f = fichierIndex ?: return emptyList()
+        return withContext(Dispatchers.IO) {
+            if (!f.exists()) emptyList()
+            else runCatching { json.decodeFromString<List<Annonce>>(f.readText()) }.getOrDefault(emptyList())
+        }.also { if (it.isNotEmpty() && indexMemoire.isEmpty()) indexMemoire = it }
+    }
+
+    /**
+     * Télécharge l'index par pages de 1 000 lignes (PostgREST) jusqu'à la fin :
+     * aucune limite silencieuse. Réutilise la copie en mémoire pendant 10 minutes
+     * sauf `forcer`.
+     */
+    override suspend fun index(forcer: Boolean): List<Annonce> = verrouIndex.withLock {
+        val recent = indexCharge?.let { Duration.between(it, Instant.now()) < Duration.ofMinutes(10) } == true
+        if (!forcer && recent && indexMemoire.isNotEmpty()) return@withLock indexMemoire
+        if (!forcer && indexMemoire.isEmpty()) indexEnCache()
+        val a = api()
+        val tout = ArrayList<Annonce>()
+        var depart = 0
+        val page = 1000
+        while (true) {
+            val lot = a.annonces(mapOf("select" to champsIndex, "actif" to "eq.true",
+                "order" to "premiere_detection.desc,id.asc", "limit" to "$page", "offset" to "$depart"))
+            tout.addAll(lot)
+            if (lot.size < page) break
+            depart += page
+        }
+        indexMemoire = tout
+        indexCharge = Instant.now()
+        fichierIndex?.let { f ->
+            withContext(Dispatchers.IO) { runCatching { f.writeText(json.encodeToString(tout)) } }
+        }
+        tout
+    }
+
+    override suspend fun rafraichir() { index(forcer = true) }
+
+    /** Le statut change : l'index en mémoire et en cache suivent, sans retéléchargement. */
+    private suspend fun appliquerStatut(id: String, statut: StatutPerso, note: String?) {
+        if (indexMemoire.isEmpty()) return
+        indexMemoire = indexMemoire.map { if (it.id == id) it.copy(statut = statut.code, note = note) else it }
+        fichierIndex?.let { f ->
+            withContext(Dispatchers.IO) { runCatching { f.writeText(json.encodeToString(indexMemoire)) } }
+        }
     }
 
     private var apiCache: SupabaseApi? = null
@@ -100,48 +182,6 @@ class DepotSupabase(private val preferences: Preferences) : Depot {
             .create(SupabaseApi::class.java)
     }
 
-    /**
-     * Liste des annonces actives d'une transaction, filtrées et triées.
-     * Zone : communes ET/OU rayon. Si les deux sont définis, on fait deux
-     * requêtes et on fusionne (l'un ou l'autre suffit).
-     */
-    override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
-        val ordre = when (tri) {
-            "prix" -> "prix.asc.nullslast"
-            "prix_desc" -> "prix.desc.nullslast"
-            else -> "premiere_detection.desc"
-        }
-        val base = mutableMapOf(
-            "select" to "*",
-            "transaction" to "eq.$transaction",
-            "actif" to "eq.true",
-            "order" to ordre,
-            "limit" to "300",
-        )
-        base.putAll(filtres.versRequete())
-        val a = api()
-        val resultats = LinkedHashMap<String, Annonce>()
-        val zoneCommunes = filtres.communes.isNotEmpty()
-        if (zoneCommunes) {
-            val q = base + ("commune" to "in.(${filtres.communes.joinToString(",") { "\"$it\"" }})")
-            a.annonces(q).forEach { resultats[it.id] = it }
-        }
-        if (filtres.rayonDefini) {
-            val args = mapOf("lat" to filtres.centreLat!!, "lon" to filtres.centreLon!!,
-                "km" to filtres.rayonKm!!)
-            a.annoncesDansRayon(args, base).forEach { resultats[it.id] = it }
-        }
-        if (!zoneCommunes && !filtres.rayonDefini) {
-            a.annonces(base).forEach { resultats[it.id] = it }
-        }
-        // Après fusion de deux requêtes, on retrie localement.
-        return when (tri) {
-            "prix" -> resultats.values.sortedWith(compareBy(nullsLast()) { it.prix })
-            "prix_desc" -> resultats.values.sortedWith(compareByDescending(nullsFirst()) { it.prix })
-            else -> resultats.values.sortedByDescending { it.premiereDetection ?: "" }
-        }
-    }
-
     override suspend fun communes(): List<Commune> = api().communes()
 
     override suspend fun recherches(): List<RechercheSauvegardee> = api().recherches()
@@ -173,6 +213,7 @@ class DepotSupabase(private val preferences: Preferences) : Depot {
             throw IllegalStateException("Supabase a refusé l'écriture (HTTP ${reponse.code()}). " +
                 "Les règles RLS (policies.sql) sont-elles installées ?")
         }
+        appliquerStatut(id, statut, note)
     }
 
     override suspend fun etatSources(): List<EtatSource> = api().etatSources()

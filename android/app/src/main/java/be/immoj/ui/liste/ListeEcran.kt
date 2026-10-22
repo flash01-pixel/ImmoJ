@@ -1,5 +1,6 @@
 package be.immoj.ui.liste
 
+import be.immoj.util.Dates
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
@@ -57,12 +58,42 @@ fun ListeContenu(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> 
                 selected = etat.transaction == "location",
                 onClick = { vm.changerTransaction("location") },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-            ) { Text("Location") }
+            ) { Text("Location (${Format.nombre(etat.totaux["location"] ?: 0)})") }
             SegmentedButton(
                 selected = etat.transaction == "achat",
                 onClick = { vm.changerTransaction("achat") },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-            ) { Text("Achat") }
+            ) { Text("Achat (${Format.nombre(etat.totaux["achat"] ?: 0)})") }
+        }
+        // Compteur : « 37 annonces · 5 nouvelles », ou « 37 sur 397 » quand des filtres jouent.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val n = etat.annonces.size
+            val total = etat.nbTotalTransaction
+            val texte = buildString {
+                append(if (n == total) "${Format.nombre(n)} annonce${if (n > 1) "s" else ""}"
+                    else "${Format.nombre(n)} sur ${Format.nombre(total)}")
+                if (etat.nbNouvelles > 0) append(" · ${etat.nbNouvelles} nouvelle${if (etat.nbNouvelles > 1) "s" else ""}")
+            }
+            Text(texte, style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Données du ${Dates.dateHeure(etat.dateDonnees)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (etat.nbRefuseesMasquees > 0) {
+            Text(
+                "${etat.nbRefuseesMasquees} refusée${if (etat.nbRefuseesMasquees > 1) "s" else ""} masquée" +
+                    "${if (etat.nbRefuseesMasquees > 1) "s" else ""} · afficher",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp)
+                    .clickable { vm.changerFiltres(etat.filtres.copy(afficherRefusees = true)) },
+            )
         }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp).horizontalScroll(rememberScrollState()),
@@ -127,7 +158,7 @@ fun CarteAnnonce(a: Annonce, photo: Boolean = true, auClic: () -> Unit) {
         Row(modifier = Modifier.padding(12.dp)) {
             if (photo) {
                 AsyncImage(
-                    model = a.photos.firstOrNull(),
+                    model = a.vignette,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)),
@@ -160,6 +191,7 @@ fun CarteAnnonce(a: Annonce, photo: Boolean = true, auClic: () -> Unit) {
                     if (a.badgePrixBaisse) Pastille("Prix baissé", MaterialTheme.colorScheme.tertiary)
                     val statut = StatutPerso.depuisCode(a.statut)
                     if (statut != StatutPerso.NOUVEAU) Pastille(statut.libelle, MaterialTheme.colorScheme.secondary)
+                    if (a.particulier) Pastille("Particulier", MaterialTheme.colorScheme.primary)
                 }
                 Text(
                     "${a.sources.joinToString(", ") { Format.source(it) }} · ${Format.depuis(a.premiereDetection)}",

@@ -1,5 +1,6 @@
 package be.immoj.data
 
+import be.immoj.util.Dates
 import android.content.Context
 import be.immoj.BuildConfig
 import kotlinx.coroutines.Dispatchers
@@ -110,7 +111,7 @@ class DepotLocal(private val contexte: Context) : Depot {
         val rien = Nouveautes(emptyList(), emptyList())
         return verrou.withLock {
             charger()
-            val derniere = perso.derniereSynchro?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            val derniere = Dates.instant(perso.derniereSynchro)
             val recent = derniere != null && Duration.between(derniere, Instant.now()) < maxAge
             if (recent && !forcer && annonces.isNotEmpty()) return@withLock rien
 
@@ -154,33 +155,25 @@ class DepotLocal(private val contexte: Context) : Depot {
     private fun enrichir(a: Annonce): Annonce {
         val s = perso.statuts[a.id]
         val statut = s?.statut ?: "nouveau"
-        val detection = a.premiereDetection?.let { runCatching { Instant.parse(it) }.getOrNull() }
-        val baisse = a.prixBaisseLe?.let { runCatching { Instant.parse(it) }.getOrNull() }
-        val maintenant = Instant.now()
         return a.copy(
             statut = statut,
             note = s?.note,
-            badgeNouveau = statut == "nouveau" && detection != null &&
-                Duration.between(detection, maintenant) < Duration.ofHours(48),
-            badgePrixBaisse = baisse != null && Duration.between(baisse, maintenant) < Duration.ofDays(7),
+            badgeNouveau = statut == "nouveau" && Dates.recent(a.premiereDetection, 48),
+            badgePrixBaisse = Dates.recent(a.prixBaisseLe, 24 * 7),
         )
     }
 
     /** Retélécharge le fichier publié, quel que soit l'âge du cache. */
     override suspend fun rafraichir() { synchroniser(forcer = true) }
 
-    override suspend fun listerAnnonces(transaction: String, tri: String, filtres: Filtres): List<Annonce> {
-        synchroniser()
-        val liste = annonces.asSequence()
-            .filter { it.actif && it.transaction == transaction }
-            .map { enrichir(it) }
-            .filter { filtres.correspond(it) }
-            .toList()
-        return when (tri) {
-            "prix" -> liste.sortedWith(compareBy(nullsLast()) { it.prix })
-            "prix_desc" -> liste.sortedWith(compareByDescending(nullsFirst()) { it.prix })
-            else -> liste.sortedByDescending { it.premiereDetection ?: "" }
-        }
+    override suspend fun indexEnCache(): List<Annonce> {
+        charger()
+        return annonces.filter { it.actif }.map { enrichir(it) }
+    }
+
+    override suspend fun index(forcer: Boolean): List<Annonce> {
+        synchroniser(forcer = forcer)
+        return annonces.filter { it.actif }.map { enrichir(it) }
     }
 
     override suspend fun annonce(id: String): Annonce? {

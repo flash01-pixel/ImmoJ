@@ -94,7 +94,11 @@ fun PrincipalEcran(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(selected = onglet == "liste", onClick = { onglet = "liste" },
-                    icon = { Icon(Icons.Default.List, contentDescription = null) }, label = { Text("Annonces") })
+                    icon = {
+                        BadgedBox(badge = {
+                            if (etat.nbNonVues > 0) Badge { Text("${etat.nbNonVues}") }
+                        }) { Icon(Icons.Default.List, contentDescription = null) }
+                    }, label = { Text("Annonces") })
                 NavigationBarItem(selected = onglet == "carte", onClick = { onglet = "carte" },
                     icon = { Icon(Icons.Default.Map, contentDescription = null) }, label = { Text("Carte") })
                 NavigationBarItem(selected = onglet == "recherches", onClick = { onglet = "recherches" },
@@ -115,7 +119,7 @@ fun PrincipalEcran(
                     onRetirerRayon = { vm.retirerRayon() },
                     ouvrirDetail = ouvrirDetail,
                 )
-                "recherches" -> RecherchesEcran(app = app, appliquer = { r ->
+                "recherches" -> RecherchesEcran(app = app, vm = vm, appliquer = { r ->
                     r.transaction?.let { vm.changerTransaction(it) }
                     vm.changerFiltres(r.versFiltres())
                     onglet = "liste"

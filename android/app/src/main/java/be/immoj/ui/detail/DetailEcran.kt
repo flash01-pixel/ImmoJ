@@ -70,8 +70,11 @@ import coil.compose.AsyncImage
 /** Fiche détaillée d'une annonce : photos, infos, liens, agence, statut et note. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailEcran(app: ImmoJApp, id: String, retour: () -> Unit) {
-    val vm: DetailViewModel = viewModel(key = id) { DetailViewModel(app.depot, id) }
+fun DetailEcran(
+    app: ImmoJApp, id: String, retour: () -> Unit,
+    onStatutChange: (StatutPerso, String?) -> Unit = { _, _ -> },
+) {
+    val vm: DetailViewModel = viewModel(key = id) { DetailViewModel(app.depot, id, onStatutChange) }
     val etat by vm.etat.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     val contexte = LocalContext.current

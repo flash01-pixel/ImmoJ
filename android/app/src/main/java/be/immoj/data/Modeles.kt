@@ -34,6 +34,8 @@ data class Annonce(
     @SerialName("date_publication") val datePublication: String? = null,
     @SerialName("premiere_detection") val premiereDetection: String? = null,
     @SerialName("derniere_vue") val derniereVue: String? = null,
+    /** Vignette de liste (première photo) ; `photos` complet n'est chargé que pour la fiche. */
+    val photo: String? = null,
     val photos: List<String> = emptyList(),
     val description: String? = null,
     /** Informations complémentaires (libellé → valeur), variables selon la source. */
@@ -51,6 +53,12 @@ data class Annonce(
     /** « 6700 Arlon » ou la localité affichée par la source. */
     val lieu: String
         get() = listOfNotNull(codePostal, localite ?: commune).joinToString(" ")
+
+    /** Première photo, quelle que soit la façon dont l'annonce a été chargée. */
+    val vignette: String? get() = photo ?: photos.firstOrNull()
+
+    /** Particulier ? (provisoire : Immoweb marque « PRIVATE » ; le champ annonceur arrive au lot 4). */
+    val particulier: Boolean get() = agence == "PRIVATE"
 
     /** Détails lisibles : « Salles de bain » → « 2 », « Garage » → « oui ». */
     val detailsLisibles: List<Pair<String, String>>

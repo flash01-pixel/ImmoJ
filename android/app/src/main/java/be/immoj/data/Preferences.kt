@@ -30,6 +30,7 @@ data class Reglages(
     val heuresCalmes: Boolean = true,       // pas de notification entre 22 h et 7 h
     val photosEnListe: Boolean = true,      // vignette dans la liste
     val githubToken: String = "",           // jeton pour « Lancer une collecte maintenant »
+    val visitesRecherches: Map<String, String> = emptyMap(),  // id de recherche → dernière consultation
 ) {
     /** Vrai quand l'appli peut se connecter à Supabase. */
     val configure: Boolean get() = supabaseUrl.startsWith("http") && supabaseCle.length > 20
@@ -53,6 +54,7 @@ class Preferences(private val context: Context) {
         val CALMES = stringPreferencesKey("heures_calmes")
         val PHOTOS = stringPreferencesKey("photos_en_liste")
         val GITHUB = stringPreferencesKey("github_token")
+        val VISITES = stringPreferencesKey("visites_recherches")
     }
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -74,7 +76,15 @@ class Preferences(private val context: Context) {
             heuresCalmes = p[Cles.CALMES] != "non",
             photosEnListe = p[Cles.PHOTOS] != "non",
             githubToken = p[Cles.GITHUB] ?: "",
+            visitesRecherches = p[Cles.VISITES]?.let {
+                runCatching { json.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap(),
         )
+    }
+
+    /** Note qu'une recherche sauvegardée vient d'être consultée (compteur « nouvelles depuis »). */
+    suspend fun marquerRechercheVisitee(id: String) {
+        val visites = lire().visitesRecherches + (id to java.time.Instant.now().toString())
+        context.dataStore.edit { it[Cles.VISITES] = json.encodeToString(visites) }
     }
 
     /** Enregistre un réglage simple par son nom (voir [Reglages]). */

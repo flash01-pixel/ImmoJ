@@ -56,12 +56,22 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: pip install requests && python outils/supabase_admin.py env
 
+      # Tests unitaires JVM (filtres, comptages, dates, géométrie) : un échec bloque l'APK.
+      - name: Tests unitaires
+        run: gradle testDebugUnitTest --no-daemon --console=plain
+
       - name: Compiler
         env:
           ORG_GRADLE_PROJECT_supabaseUrl: ${{ env.SUPABASE_URL }}
           ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ env.SUPABASE_ANON_KEY }}
           ORG_GRADLE_PROJECT_ntfyTopic: ${{ env.NTFY_TOPIC }}
-        run: gradle assembleDebug --no-daemon --console=plain
+          # Identité de la compilation (Paramètres → À propos) et versionCode croissant.
+          ORG_GRADLE_PROJECT_versionCode: ${{ github.run_number }}
+          ORG_GRADLE_PROJECT_commit: ${{ github.sha }}
+          ORG_GRADLE_PROJECT_branche: ${{ github.ref_name }}
+        run: |
+          export ORG_GRADLE_PROJECT_dateBuild="$(date -u +%Y-%m-%dT%H:%MZ)"
+          gradle assembleDebug --no-daemon --console=plain
 
       - name: Renommer l'APK
         run: cp app/build/outputs/apk/debug/app-debug.apk ImmoJ.apk
@@ -71,21 +81,27 @@ jobs:
           name: ImmoJ-apk
           path: android/ImmoJ.apk
 
-      # Copie l'APK sur une branche « apk » (un seul fichier, écrasée à chaque
-      # compilation) : téléchargeable directement depuis GitHub, même sur
-      # téléphone, sans décompresser d'archive. Voir docs/04-installer-apk.md.
-      - name: Publier l'APK sur la branche apk
+      # Copie l'APK sur une branche (un seul fichier, écrasée à chaque compilation) :
+      # « apk » pour main, « apk-test » pour les branches de travail. Téléchargeable
+      # directement depuis GitHub, même sur téléphone. Voir docs/04-installer-apk.md.
+      # Si le secret APK_REPO_TOKEN existe, la publication va dans le dépôt privé
+      # APK_REPO (variable, défaut <proprietaire>/immoj-apk) : utile quand ce dépôt est public.
+      - name: Publier l'APK sur la branche apk / apk-test
         env:
-          TOKEN: ${{ github.token }}
+          TOKEN: ${{ secrets.APK_REPO_TOKEN || github.token }}
+          DEPOT: ${{ secrets.APK_REPO_TOKEN && (vars.APK_REPO || format('{0}/immoj-apk', github.repository_owner)) || github.repository }}
         run: |
+          BRANCHE=apk-test
+          if [ "$GITHUB_REF_NAME" = "main" ]; then BRANCHE=apk; fi
           rm -rf /tmp/branche-apk && mkdir /tmp/branche-apk && cd /tmp/branche-apk
-          git init -q -b apk
+          git init -q -b "$BRANCHE"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           cp "$GITHUB_WORKSPACE/android/ImmoJ.apk" .
-          printf '# APK ImmoJ\n\nCompilé depuis `%s` (%s).\n\nTélécharger : cliquer sur ImmoJ.apk puis « Download raw file ».\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" > README.md
-          git add . && git commit -q -m "APK compilé depuis $GITHUB_REF_NAME ($GITHUB_SHA)"
-          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:apk
+          printf '# APK ImmoJ\n\nBuild %s, compilé depuis `%s` (%s) le %s.\n\nTélécharger : cliquer sur ImmoJ.apk puis « Download raw file ».\n' "$GITHUB_RUN_NUMBER" "$GITHUB_REF_NAME" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%MZ)" > README.md
+          git add . && git commit -q -m "APK build $GITHUB_RUN_NUMBER depuis $GITHUB_REF_NAME ($GITHUB_SHA)"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${DEPOT}" "HEAD:$BRANCHE"
+          echo "APK publié : https://github.com/$DEPOT/blob/$BRANCHE/ImmoJ.apk"
 
       - name: Publier dans Releases (tags v* uniquement)
         if: startsWith(github.ref, 'refs/tags/v')

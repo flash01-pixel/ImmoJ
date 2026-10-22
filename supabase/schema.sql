@@ -170,6 +170,7 @@ drop view if exists v_annonces_liste cascade;
 create view v_annonces_liste as
 select
     a.*,
+    a.photos[1]                                                    as photo,   -- vignette de liste
     coalesce(s.statut, 'nouveau')                                  as statut,
     s.note,
     (a.premiere_detection > now() - interval '48 hours'

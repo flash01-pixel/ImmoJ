@@ -64,6 +64,7 @@ class StockageFichier:
             historique = [h for h in self.base["historique_prix"] if h["annonce_id"] == aid]
             actives.append({
                 **a, "id": aid,
+                "photo": (a.get("photos") or [None])[0],
                 "sources": [s["source"] for s in pubs],
                 "urls": [s["url"] for s in pubs],
                 "historique_prix": [{"prix": h["prix"], "date": h["date"]} for h in historique],
