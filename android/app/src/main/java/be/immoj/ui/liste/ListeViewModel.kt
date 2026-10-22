@@ -35,7 +35,13 @@ data class ListeEtat(
     val dateDonnees: String? = null,                 // horodatage de la dernière collecte vue
     /** Annonces qui passent tous les filtres sauf la zone (grisées sur la carte). */
     val annoncesHorsZone: List<Annonce> = emptyList(),
+    val modeListe: String = "cartes",
+    /** Début de la visite précédente : les annonces détectées après sont « nouvelles depuis ta dernière visite ». */
+    val derniereVisite: String? = null,
 ) {
+    /** Vrai si l'annonce est apparue depuis la visite précédente. */
+    fun nouvelleDepuisVisite(a: Annonce): Boolean =
+        derniereVisite != null && be.immoj.util.Dates.apres(a.premiereDetection, derniereVisite)
     /** « 12 km autour de Libramont » (null sans cercle). */
     fun libelleZone(): String? {
         val f = filtres
@@ -71,8 +77,37 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
             runCatching { depot.communes() }.onSuccess { c -> _etat.update { it.copy(communes = c) } }
         }
         viewModelScope.launch {
-            preferences.flux.collect { r -> _etat.update { it.copy(photosEnListe = r.photosEnListe) } }
+            val precedente = preferences.ouvrirVisiteListe()
+            _etat.update { it.copy(derniereVisite = precedente) }
         }
+        viewModelScope.launch {
+            preferences.flux.collect { r ->
+                _etat.update { it.copy(photosEnListe = r.photosEnListe, modeListe = r.modeListe) }
+            }
+        }
+    }
+
+    fun changerMode(mode: String) {
+        viewModelScope.launch { preferences.enregistrerReglage("modeListe", mode) }
+    }
+
+    /** Recherche libre (titre, description, commune, annonceur), appliquée en mémoire. */
+    fun chercher(texte: String) = changerFiltres(_etat.value.filtres.copy(texte = texte))
+
+    /**
+     * Geste sur une carte : « Pas pour moi » (refusé) ou favori ★ (intéressé).
+     * Enregistre le statut et renvoie l'ancien pour « Annuler ».
+     */
+    fun marquer(a: Annonce, statut: StatutPerso): StatutPerso {
+        val ancien = StatutPerso.depuisCode(a.statut)
+        appliquerStatut(a.id, statut, a.note)
+        viewModelScope.launch { runCatching { depot.changerStatut(a.id, statut, a.note) } }
+        return ancien
+    }
+
+    fun retablir(a: Annonce, statut: StatutPerso) {
+        appliquerStatut(a.id, statut, a.note)
+        viewModelScope.launch { runCatching { depot.changerStatut(a.id, statut, a.note) } }
     }
 
     /** Remplace l'index et recalcule la liste affichée (sans réseau). */
@@ -83,7 +118,8 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
 
     private fun recalculer() {
         _etat.update { e ->
-            val dans = Catalogue.trier(Catalogue.filtrer(e.index, e.transaction, e.filtres), e.tri)
+            val dans = Catalogue.trier(Catalogue.filtrer(e.index, e.transaction, e.filtres), e.tri,
+                e.filtres.centreLat, e.filtres.centreLon)
             val hors = if (e.filtres.rayonDefini || e.filtres.communes.isNotEmpty()) {
                 val sansZone = e.filtres.copy(centreLat = null, centreLon = null, rayonKm = null, communes = emptySet())
                 val ids = dans.map { it.id }.toSet()
@@ -183,11 +219,12 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         recalculer()
     }
 
-    /** Un statut a changé (depuis la fiche) : la liste le reflète tout de suite. */
+    /** Un statut a changé (depuis la fiche ou un geste) : la liste le reflète tout de suite. */
     fun appliquerStatut(id: String, statut: StatutPerso, note: String?) {
         _etat.update { e ->
             e.copy(index = e.index.map { a ->
-                if (a.id == id) a.copy(statut = statut.code, note = note, badgeNouveau = false) else a
+                if (a.id == id) a.copy(statut = statut.code, note = note,
+                    badgeNouveau = a.badgeNouveau && statut == StatutPerso.NOUVEAU) else a
             })
         }
         recalculer()

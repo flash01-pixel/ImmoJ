@@ -103,6 +103,9 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
                 reglages.theme,
             ) { regler("theme", it) }
             Interrupteur("Photos dans la liste", reglages.photosEnListe) { regler("photosEnListe", it) }
+            Text("Mode d'affichage de la liste", style = MaterialTheme.typography.labelLarge)
+            Choix(listOf("cartes" to "Cartes", "detaille" to "Détaillé", "compact" to "Compact", "grille" to "Grille"),
+                reglages.modeListe) { regler("modeListe", it) }
 
             HorizontalDivider()
             // ----- Alertes ----------------------------------------------------

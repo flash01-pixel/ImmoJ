@@ -60,6 +60,35 @@ data class Annonce(
     /** Particulier ? (provisoire : Immoweb marque « PRIVATE » ; le champ annonceur arrive au lot 4). */
     val particulier: Boolean get() = agence == "PRIVATE"
 
+    /** « particulier », « notaire » ou « agence » (règle provisoire, affinée au lot 4). */
+    val typeAnnonceur: String
+        get() = when {
+            particulier -> "particulier"
+            sources.any { it == "notaire" } -> "notaire"
+            else -> "agence"
+        }
+
+    /** Libellé de l'annonceur : « Particulier », « Notaire », ou le nom de l'agence. */
+    val annonceurLibelle: String
+        get() = when (typeAnnonceur) {
+            "particulier" -> "Particulier"
+            "notaire" -> "Notaire" + (agence?.takeIf { it != "PRIVATE" }?.let { " · $it" } ?: "")
+            else -> agence ?: "Agence"
+        }
+
+    /** Garage ou parking mentionné dans les détails de la fiche. */
+    val aGarage: Boolean
+        get() = details.keys.any { it.startsWith("Garage") || it.startsWith("Parking") } &&
+            detailsLisibles.any { (k, v) -> (k.startsWith("Garage") || k.startsWith("Parking")) && v != "non" && v != "0" }
+
+    /** Date de disponibilité (« 2026-12-01 ») si la fiche la donne. */
+    val disponibleLe: String?
+        get() = detailsLisibles.firstOrNull { (k, _) -> k == "Disponibilité" || k == "Libre le" }?.second
+            ?.let { Regex("\\d{4}-\\d{2}-\\d{2}").find(it)?.value }
+
+    /** Prix au m² (ou loyer mensuel au m²), null sans surface. */
+    val prixM2: Double? get() = if (prix != null && surface != null && surface > 0) prix.toDouble() / surface else null
+
     /** Détails lisibles : « Salles de bain » → « 2 », « Garage » → « oui ». */
     val detailsLisibles: List<Pair<String, String>>
         get() = details.mapNotNull { (cle, v) ->

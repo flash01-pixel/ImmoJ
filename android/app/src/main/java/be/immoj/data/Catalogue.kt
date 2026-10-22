@@ -21,10 +21,23 @@ object Catalogue {
         .filter { filtres.correspond(it, maintenant) }
         .toList()
 
-    fun trier(annonces: List<Annonce>, tri: String): List<Annonce> = when (tri) {
+    fun trier(annonces: List<Annonce>, tri: String, centreLat: Double? = null, centreLon: Double? = null,
+    ): List<Annonce> = when (tri) {
         "prix" -> annonces.sortedWith(compareBy(nullsLast()) { it.prix })
         "prix_desc" -> annonces.sortedWith(compareByDescending(nullsFirst()) { it.prix })
-        else -> annonces.sortedByDescending { Dates.instant(it.premiereDetection) ?: Instant.EPOCH }
+        "prix_m2" -> annonces.sortedWith(compareBy(nullsLast()) { it.prixM2 })
+        "surface" -> annonces.sortedWith(compareByDescending(nullsFirst()) { it.surface })
+        "chambres" -> annonces.sortedWith(compareByDescending(nullsFirst()) { it.chambres })
+        "distance" -> if (centreLat != null && centreLon != null) {
+            annonces.sortedWith(compareBy(nullsLast()) { a ->
+                if (a.latitude != null && a.longitude != null) distanceKm(centreLat, centreLon, a.latitude, a.longitude)
+                else null
+            })
+        } else annonces
+        // « Plus récentes » : date de publication si connue, sinon date de détection.
+        else -> annonces.sortedByDescending {
+            Dates.instant(it.datePublication) ?: Dates.instant(it.premiereDetection) ?: Instant.EPOCH
+        }
     }
 
     /** Nombre d'annonces actives par transaction (hors refusées, sauf demande). */

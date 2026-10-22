@@ -31,6 +31,8 @@ data class Reglages(
     val photosEnListe: Boolean = true,      // vignette dans la liste
     val githubToken: String = "",           // jeton pour « Lancer une collecte maintenant »
     val visitesRecherches: Map<String, String> = emptyMap(),  // id de recherche → dernière consultation
+    val modeListe: String = "cartes",       // "cartes", "detaille", "compact", "grille"
+    val derniereVisiteListe: String? = null, // séparateur « Nouveau depuis ta dernière visite »
 ) {
     /** Vrai quand l'appli peut se connecter à Supabase. */
     val configure: Boolean get() = supabaseUrl.startsWith("http") && supabaseCle.length > 20
@@ -55,6 +57,8 @@ class Preferences(private val context: Context) {
         val PHOTOS = stringPreferencesKey("photos_en_liste")
         val GITHUB = stringPreferencesKey("github_token")
         val VISITES = stringPreferencesKey("visites_recherches")
+        val MODE_LISTE = stringPreferencesKey("mode_liste")
+        val VISITE_LISTE = stringPreferencesKey("derniere_visite_liste")
     }
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -78,7 +82,16 @@ class Preferences(private val context: Context) {
             githubToken = p[Cles.GITHUB] ?: "",
             visitesRecherches = p[Cles.VISITES]?.let {
                 runCatching { json.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap(),
+            modeListe = p[Cles.MODE_LISTE] ?: "cartes",
+            derniereVisiteListe = p[Cles.VISITE_LISTE],
         )
+    }
+
+    /** Note le début de cette visite de la liste et renvoie la précédente (pour le séparateur). */
+    suspend fun ouvrirVisiteListe(): String? {
+        val precedente = lire().derniereVisiteListe
+        context.dataStore.edit { it[Cles.VISITE_LISTE] = java.time.Instant.now().toString() }
+        return precedente
     }
 
     /** Note qu'une recherche sauvegardée vient d'être consultée (compteur « nouvelles depuis »). */
@@ -97,6 +110,7 @@ class Preferences(private val context: Context) {
             "heuresCalmes" -> Cles.CALMES
             "photosEnListe" -> Cles.PHOTOS
             "githubToken" -> Cles.GITHUB
+            "modeListe" -> Cles.MODE_LISTE
             else -> return
         }
         context.dataStore.edit { it[cle] = valeur }

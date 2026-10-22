@@ -1,5 +1,9 @@
 package be.immoj.ui.principal
 
+import be.immoj.data.RechercheSauvegardee
+import be.immoj.ui.filtres.FiltresFeuille
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
@@ -44,6 +48,9 @@ import be.immoj.ui.liste.ListeContenu
 import be.immoj.ui.liste.ListeViewModel
 import be.immoj.ui.recherches.RecherchesEcran
 
+/** Modes d'affichage de la liste. */
+val MODES_LISTE = listOf("cartes" to "Cartes", "detaille" to "Détaillé", "compact" to "Compact", "grille" to "Grille")
+
 /** Snackbar de l'écran principal, partagé par la liste et la carte (« Zone retirée — Annuler »). */
 val LocalSnackbar = compositionLocalOf<SnackbarHostState?> { null }
 
@@ -55,7 +62,6 @@ fun PrincipalEcran(
     vm: ListeViewModel,
     ongletInitial: String,
     ouvrirDetail: (String) -> Unit,
-    ouvrirFiltres: () -> Unit,
     ouvrirParametres: () -> Unit,
     ouvrirSources: () -> Unit,
 ) {
@@ -65,6 +71,10 @@ fun PrincipalEcran(
     var onglet by rememberSaveable { mutableStateOf(ongletInitial) }
     var menuOuvert by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+    var filtresOuverts by rememberSaveable { mutableStateOf(false) }
+    var menuMode by rememberSaveable { mutableStateOf(false) }
+    // Position de défilement conservée entre les onglets et au retour d'une fiche.
+    val etatListe = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -72,11 +82,20 @@ fun PrincipalEcran(
             TopAppBar(
                 title = { Text(if (etat.transaction == "location") "ImmoJ · Location" else "ImmoJ · Achat") },
                 actions = {
-                    IconButton(onClick = ouvrirFiltres) {
+                    IconButton(onClick = { filtresOuverts = true }) {
                         BadgedBox(badge = {
                             if (etat.filtres.nbActifs > 0) Badge { Text("${etat.filtres.nbActifs}") }
                         }) {
                             Icon(Icons.Default.FilterList, contentDescription = "Filtres")
+                        }
+                    }
+                    IconButton(onClick = { menuMode = true }) {
+                        Icon(Icons.Default.ViewAgenda, contentDescription = "Mode d'affichage")
+                    }
+                    DropdownMenu(expanded = menuMode, onDismissRequest = { menuMode = false }) {
+                        MODES_LISTE.forEach { (code, libelle) ->
+                            DropdownMenuItem(text = { Text((if (etat.modeListe == code) "● " else "   ") + libelle) },
+                                onClick = { menuMode = false; vm.changerMode(code) })
                         }
                     }
                     IconButton(onClick = { vm.charger(forcer = true) }) {
@@ -125,9 +144,30 @@ fun PrincipalEcran(
                     vm.changerFiltres(r.versFiltres())
                     onglet = "liste"
                 })
-                else -> ListeContenu(etat = etat, vm = vm, ouvrirDetail = ouvrirDetail)
+                else -> ListeContenu(etat = etat, vm = vm, ouvrirDetail = ouvrirDetail, etatListe = etatListe,
+                    ouvrirFiltres = { filtresOuverts = true }, ouvrirCarte = { onglet = "carte" })
             }
             }
         }
     }
+    if (filtresOuverts) {
+        FiltresFeuille(
+            filtres = etat.filtres, index = etat.index, transaction = etat.transaction, communes = etat.communes,
+            appliquer = { vm.changerFiltres(it) },
+            enregistrerRecherche = { recherche: RechercheSauvegardee ->
+                portee.launch {
+                    val message = try {
+                        app.depot.creerRecherche(recherche)
+                        "Recherche « ${recherche.nom} » enregistrée"
+                    } catch (e: Exception) {
+                        be.immoj.ui.liste.messageErreur(e)
+                    }
+                    Toast.makeText(contexte, message, Toast.LENGTH_LONG).show()
+                }
+            },
+            ouvrirCarte = { onglet = "carte" },
+            fermer = { filtresOuverts = false },
+        )
+    }
+
 }

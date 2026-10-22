@@ -27,6 +27,18 @@ data class Filtres(
     val centreLon: Double? = null,
     val rayonKm: Double? = null,
     val afficherRefusees: Boolean = false,        // les annonces « Refusé » sont masquées par défaut
+    // --- critères ajoutés au lot 3 ---
+    val texte: String = "",                       // recherche libre : titre, description, commune, annonceur
+    val annonceur: Set<String> = emptySet(),      // "particulier", "agence", "notaire"
+    val chambresMax: Int? = null,
+    val surfaceMax: Int? = null,
+    val garage: Boolean = false,                  // garage ou parking (lu dans les détails)
+    val terrasse: Boolean = false,
+    val chargesComprisesMax: Int? = null,         // loyer + charges ≤ X
+    val disponibleAvant: String? = null,          // « 2026-12-01 » : disponible au plus tard à cette date
+    val avecPhotos: Boolean = false,
+    val masquerVues: Boolean = false,             // cache les annonces déjà ouvertes (statut « vu »)
+    val prixBaisse: Boolean = false,              // seulement les prix baissés récemment
 ) {
     val rayonDefini: Boolean get() = centreLat != null && centreLon != null && (rayonKm ?: 0.0) > 0
 
@@ -36,7 +48,13 @@ data class Filtres(
             prixMin != null, prixMax != null, types.isNotEmpty(), chambresMin != null,
             surfaceMin != null, periode != "tout", jardin, animaux, meuble, pebMax != null,
             sources.isNotEmpty(), communes.isNotEmpty(), rayonDefini,
+            texte.isNotBlank(), annonceur.isNotEmpty(), chambresMax != null, surfaceMax != null,
+            garage, terrasse, chargesComprisesMax != null, disponibleAvant != null, avecPhotos,
+            masquerVues, prixBaisse,
         ).count { it }
+
+    /** Sans la zone ni le texte : pour les suggestions et les comptages de facettes. */
+    fun sansZone(): Filtres = copy(communes = emptySet(), centreLat = null, centreLon = null, rayonKm = null)
 
     /**
      * Paramètres PostgREST correspondant aux critères (hors zone « communes »,
@@ -81,6 +99,25 @@ data class Filtres(
         val SOURCES = listOf("immovlan" to "Immovlan", "immoweb" to "Immoweb", "2ememain" to "2ememain",
             "notaire" to "Notaires / Biddit", "agences" to "Sites d'agences",
             "immoweb_mail" to "Alertes e-mail")
+        /** Tris proposés (code → libellé). */
+        val TRIS = listOf("recent" to "Plus récentes", "prix" to "Prix croissant", "prix_desc" to "Prix décroissant",
+            "prix_m2" to "Prix au m²", "surface" to "Surface", "distance" to "Distance au centre",
+            "chambres" to "Chambres")
+        /** Préréglages de prix max (location / achat). */
+        val PRIX_LOCATION = listOf(500, 650, 800, 1000, 1200, 1500)
+        val PRIX_ACHAT = listOf(150000, 200000, 250000, 300000, 400000, 500000)
+        /** Les 44 communes par arrondissement (ordre alphabétique dans chaque groupe). */
+        val ARRONDISSEMENTS: Map<String, List<String>> = mapOf(
+            "Arlon" to listOf("Arlon", "Attert", "Aubange", "Martelange", "Messancy"),
+            "Bastogne" to listOf("Bastogne", "Bertogne", "Fauvillers", "Gouvy", "Houffalize", "Sainte-Ode",
+                "Vaux-sur-Sûre", "Vielsalm"),
+            "Marche-en-Famenne" to listOf("Durbuy", "Érezée", "Hotton", "La Roche-en-Ardenne", "Manhay",
+                "Marche-en-Famenne", "Nassogne", "Rendeux", "Tenneville"),
+            "Neufchâteau" to listOf("Bertrix", "Bouillon", "Daverdisse", "Herbeumont", "Léglise", "Libin",
+                "Libramont-Chevigny", "Neufchâteau", "Paliseul", "Saint-Hubert", "Tellin", "Wellin"),
+            "Virton" to listOf("Chiny", "Étalle", "Florenville", "Habay", "Meix-devant-Virton", "Musson",
+                "Rouvroy", "Saint-Léger", "Tintigny", "Virton"),
+        )
         /** Une seule constante pour le rayon : défaut et bornes (km). */
         const val RAYON_DEFAUT_KM = 10.0
         const val RAYON_MIN_KM = 0.5
@@ -121,6 +158,26 @@ fun Filtres.correspond(a: Annonce, maintenant: Instant = Instant.now()): Boolean
     }
     if (sources.isNotEmpty() && a.sources.none { s -> sources.any { Filtres.sourceCorrespond(s, it) } }) {
         return false
+    }
+    // --- critères du lot 3 ---
+    if (chambresMax != null && (a.chambres ?: 0) > chambresMax) return false
+    if (surfaceMax != null && (a.surface ?: 0) > surfaceMax) return false
+    if (garage && !a.aGarage) return false
+    if (terrasse && a.terrasse != true) return false
+    if (chargesComprisesMax != null && (a.prix == null || a.prix + (a.charges ?: 0) > chargesComprisesMax)) return false
+    if (disponibleAvant != null) {
+        val dispo = a.disponibleLe ?: return false
+        if (dispo > disponibleAvant) return false
+    }
+    if (avecPhotos && a.vignette == null) return false
+    if (masquerVues && a.statut == StatutPerso.VU.code) return false
+    if (prixBaisse && !a.badgePrixBaisse) return false
+    if (annonceur.isNotEmpty() && a.typeAnnonceur !in annonceur) return false
+    if (texte.isNotBlank()) {
+        val mots = texte.lowercase().split(" ").filter { it.isNotBlank() }
+        val corpus = listOfNotNull(a.titre, a.description, a.commune, a.localite, a.codePostal, a.agence)
+            .joinToString(" ").lowercase()
+        if (!mots.all { it in corpus }) return false
     }
     val zone = communes.isNotEmpty() || rayonDefini
     if (zone) {

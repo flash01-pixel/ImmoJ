@@ -1,5 +1,23 @@
 # Journal des modifications
 
+## 1.2.0-lot3a — Modes d'affichage et ergonomie (liste)
+
+### Appli
+- Quatre modes d'affichage de la liste : Cartes, Détaillé (grande photo), Compact (une ligne), Grille (2 colonnes).
+  Icône dans la barre du haut ; mode par défaut dans Paramètres › Apparence.
+- Ligne de filtres rapides au-dessus de la liste : Prix max (préréglages), Chambres, Type, Zone, Particuliers,
+  Jardin, Animaux, Nouveautés 24 h ; chaque puce active porte un ✕ ; bouton « Tout effacer ».
+- Recherche texte (loupe) sur titre, description, commune, localité, code postal et annonceur.
+- Tri : plus récentes, prix croissant/décroissant, prix au m², surface, distance au centre de la zone, chambres.
+- Gestes : glisser une annonce vers la gauche = « Pas pour moi » (annulable), vers la droite = favori ★ (annulable).
+- Point « non lu » devant les annonces jamais ouvertes ; séparateur « Nouveau depuis ta dernière visite ».
+- Les filtres s'ouvrent en feuille du bas, sections repliables (Zone, Prix, Type et annonceur, Taille, Options,
+  PEB, Détectées depuis, Sources, Mes statuts), curseurs à deux poignées pour le prix et la surface avec champs
+  et préréglages, communes groupées par arrondissement avec recherche et compteurs.
+- Nouveaux critères : annonceur (particulier / agence / notaire), chambres max, surface max, garage, terrasse,
+  loyer charges comprises max, disponible avant, avec photos, masquer les annonces déjà vues, prix baissé.
+- La position de défilement de la liste est conservée au retour d'une fiche et entre les onglets.
+
 ## 1.2.0-lot2 (22 octobre 2026) — Carte : poser et retirer le cercle facilement
 
 - Pose : appui maintenu n'importe où → vibration, viseur et aperçu du cercle 70 dp au-dessus du doigt ; la carte ne défile plus, le centre suit le doigt avec la commune la plus proche et le nombre d'annonces en direct ; relâcher = poser. Sortir de la carte ou ✕ annule. Un simple appui ou un appui sur un marqueur ne déplace jamais le cercle.
