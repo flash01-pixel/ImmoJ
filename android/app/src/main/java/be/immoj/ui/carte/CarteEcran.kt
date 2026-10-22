@@ -1,8 +1,12 @@
 package be.immoj.ui.carte
 
-import be.immoj.data.Filtres
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.DashPathEffect
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,50 +14,64 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import be.immoj.data.Annonce
-import be.immoj.data.Commune
-import be.immoj.data.distanceKm
+import be.immoj.data.Filtres
+import be.immoj.ui.liste.ListeEtat
+import be.immoj.ui.liste.ListeViewModel
+import be.immoj.ui.principal.LocalSnackbar
 import be.immoj.util.Format
+import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.FolderOverlay
 import org.osmdroid.views.overlay.MapEventsOverlay
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polygon
 import org.osmdroid.views.overlay.Polyline
 import java.io.File
-import kotlin.math.roundToInt
 
 /** Centre de la province de Luxembourg (Neufchâteau). */
 private val CENTRE_PROVINCE = GeoPoint(49.85, 5.43)
 
 /**
  * Contour approximatif de la province de Luxembourg (repère visuel : la
- * recherche ne porte de toute façon que sur les annonces de la province, le
- * collecteur écarte tout ce qui est au-delà de la frontière ou dans une autre
- * province).
+ * recherche ne porte de toute façon que sur les annonces de la province).
  */
 private val CONTOUR_PROVINCE = listOf(
     50.37 to 5.40, 50.40 to 5.55, 50.36 to 5.70, 50.33 to 5.85, 50.30 to 6.00, 50.17 to 6.03,
@@ -62,95 +80,160 @@ private val CONTOUR_PROVINCE = listOf(
     49.88 to 4.98, 49.97 to 5.05, 50.05 to 5.10, 50.12 to 5.22, 50.20 to 5.22, 50.28 to 5.30,
     50.35 to 5.35,
 ).map { (lat, lon) -> GeoPoint(lat, lon) }
-
+private val CADRE_PROVINCE = BoundingBox(50.42, 6.05, 49.50, 4.96)
 
 /**
- * Carte OpenStreetMap (osmdroid, gratuit) : un marqueur par annonce et un
- * cercle de recherche que l'on manipule directement sur la carte :
- *  - appui long : place (ou déplace) le centre ;
- *  - le marqueur du centre se fait glisser ;
- *  - la poignée sur le bord du cercle se fait glisser pour changer le rayon ;
- *  - le curseur du panneau du bas règle aussi le rayon ;
- *  - « Retirer » supprime le cercle.
- * Les communes couvertes et le nombre d'annonces s'actualisent en direct.
+ * Carte OpenStreetMap (osmdroid) : annonces regroupées, cercle de recherche
+ * posé d'un appui maintenu (viseur au-dessus du doigt), déplaçable par son
+ * point central, rayon par la poignée, les puces ou le curseur ; « Retirer »
+ * en un appui (annulable). Voir [CalqueCercle] et [CalqueAnnonces].
  */
 @Composable
-fun CarteEcran(
-    annonces: List<Annonce>,
-    communes: List<Commune>,
-    centreLat: Double?,
-    centreLon: Double?,
-    rayonKm: Double?,
-    onPointChoisi: (Double, Double) -> Unit,
-    onRayonChange: (Double) -> Unit,
-    onRetirerRayon: () -> Unit,
-    ouvrirDetail: (String) -> Unit,
-) {
+fun CarteEcran(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> Unit) {
     val contexte = LocalContext.current
+    val densite = LocalDensity.current.density
+    val portee = rememberCoroutineScope()
+    val snackbar = LocalSnackbar.current
     var selection by remember { mutableStateOf<Annonce?>(null) }
-    // Rayon en cours de réglage (curseur ou poignée), avant validation dans les filtres.
-    var rayonLocal by remember { mutableStateOf<Double?>(null) }
-    var centreLocal by remember { mutableStateOf<GeoPoint?>(null) }
-    LaunchedEffect(rayonKm) { rayonLocal = null }
-    LaunchedEffect(centreLat, centreLon) { centreLocal = null }
+    var apercu by remember { mutableStateOf<String?>(null) }         // libellé pendant un geste
+    var rayonCurseur by remember { mutableStateOf<Float?>(null) }    // curseur en cours de réglage
+    var panneauOuvert by remember { mutableStateOf(false) }
+    var enGeste by remember { mutableStateOf(false) }
 
-    val centre = centreLocal ?: if (centreLat != null && centreLon != null) GeoPoint(centreLat, centreLon) else null
-    val rayon = rayonLocal ?: rayonKm ?: Filtres.RAYON_DEFAUT_KM
-    val rayonDefini = centre != null
+    val f = etat.filtres
+    val centre = if (f.centreLat != null && f.centreLon != null) GeoPoint(f.centreLat, f.centreLon) else null
+    val rayon = rayonCurseur?.toDouble() ?: f.rayonKm ?: Filtres.RAYON_DEFAUT_KM
+    LaunchedEffect(f.rayonKm) { rayonCurseur = null }
 
     val carte = remember {
         configurerOsmdroid(contexte)
         MapView(contexte).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            isTilesScaledToDpi = true
             controller.setZoom(9.5)
             controller.setCenter(centre ?: CENTRE_PROVINCE)
         }
     }
-    val calques = remember { Calques(carte) }
+    val calqueCercle = remember {
+        CalqueCercle(
+            densite = densite,
+            onApercu = { lat, lon, km ->
+                val commune = Geometrie.communeLaPlusProche(lat, lon, etat.communes)
+                val n = vm.compterDansCercle(lat, lon, km)
+                val texte = "${commune?.nom ?: "?"} · $n annonce${if (n > 1) "s" else ""}"
+                apercu = texte
+                enGeste = true
+            },
+            onCentrePose = { lat, lon -> enGeste = false; apercu = null; vm.definirCentre(lat, lon) },
+            onRayonPose = { km -> enGeste = false; apercu = null; vm.definirRayon(km) },
+            onAnnulation = { enGeste = false; apercu = null },
+        )
+    }
+    val calqueAnnonces = remember {
+        CalqueAnnonces(
+            densite = densite,
+            onAnnonce = { selection = it },
+            onGroupe = { p -> carte.controller.animateTo(p, carte.zoomLevelDouble + 2.0, 300L) },
+        )
+    }
+    LaunchedEffect(Unit) {
+        carte.overlays.add(MapEventsOverlay(object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint): Boolean { selection = null; return true }
+            override fun longPressHelper(p: GeoPoint): Boolean = false   // géré par CalqueCercle
+        }))
+        carte.overlays.add(Polyline(carte).apply {
+            setPoints(CONTOUR_PROVINCE + CONTOUR_PROVINCE.first())
+            outlinePaint.color = 0x9900AA55.toInt()
+            outlinePaint.strokeWidth = 3f * densite
+            outlinePaint.pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f)
+        })
+        carte.overlays.add(calqueAnnonces)
+        carte.overlays.add(calqueCercle)   // au-dessus : ses gestes passent en premier
+    }
     DisposableEffect(Unit) {
         carte.onResume()
         onDispose { carte.onPause() }
     }
 
+    // Mise à jour des calques sans jamais les retirer (pas de saccade pendant un geste).
+    LaunchedEffect(etat.annonces, etat.annoncesHorsZone) {
+        calqueAnnonces.dansZone = etat.annonces
+        calqueAnnonces.horsZone = etat.annoncesHorsZone
+        calqueAnnonces.invalider()
+        carte.invalidate()
+    }
+    LaunchedEffect(centre, rayon, apercu) {
+        if (calqueCercle.mode == CalqueCercle.Mode.AUCUN) {
+            calqueCercle.centre = centre
+            calqueCercle.rayonKm = rayon
+        }
+        calqueCercle.libelle = apercu ?: ""
+        carte.invalidate()
+    }
+
+    val demandePosition = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) maPosition(contexte)?.let { carte.controller.animateTo(it, 12.0, 400L) }
+    }
+
+    fun retirer() {
+        selection = null
+        val avant = vm.retirerRayon()
+        portee.launch {
+            if (snackbar?.showSnackbar("Zone retirée", actionLabel = "Annuler") == SnackbarResult.ActionPerformed) {
+                vm.changerFiltres(avant)
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { carte },
-            modifier = Modifier.fillMaxSize(),
-            update = { vue ->
-                calques.installer(vue, object : MapEventsReceiver {
-                    override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-                        selection = null
-                        return true
-                    }
+        AndroidView(factory = { carte }, modifier = Modifier.fillMaxSize())
 
-                    override fun longPressHelper(p: GeoPoint): Boolean {
-                        onPointChoisi(p.latitude, p.longitude)
-                        return true
-                    }
-                })
-                calques.annonces(vue, annonces) { selection = it }
-                calques.cercle(
-                    vue, centre, if (rayonDefini) rayon else null,
-                    onCentreGlisse = { p -> centreLocal = p },
-                    onCentreDepose = { p -> onPointChoisi(p.latitude, p.longitude) },
-                    onRayonGlisse = { km -> rayonLocal = km },
-                    onRayonDepose = { km -> onRayonChange(km) },
+        // ---- Haut : puce de zone (toujours visible) + compteur ----
+        Column(modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            etat.libelleZone()?.let { zone ->
+                InputChip(
+                    selected = true, onClick = { retirer() }, label = { Text(zone) },
+                    trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Retirer la zone") },
                 )
-                vue.invalidate()
-            },
-        )
-
-        Card(modifier = Modifier.align(Alignment.TopCenter).padding(12.dp)) {
-            val sansPosition = annonces.count { it.latitude == null || it.longitude == null }
-            Text(
-                (if (rayonDefini) "${annonces.size} dans la zone" else "${annonces.size} annonce(s)") +
-                    (if (sansPosition > 0) " · $sansPosition sans position" else "") +
-                    (if (!rayonDefini) " · appui long = placer un rayon" else ""),
-                modifier = Modifier.padding(8.dp), style = MaterialTheme.typography.labelSmall,
-            )
+            }
+            Card {
+                Text(
+                    (if (centre != null) "${etat.annonces.size} dans la zone" else "${etat.annonces.size} annonces") +
+                        (if (etat.nbSansPosition > 0) " · ${etat.nbSansPosition} sans position" else "") +
+                        (if (centre == null) " · appui maintenu = poser un cercle" else ""),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+            if (enGeste) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Relâche pour poser le cercle", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary)
+                    IconButton(onClick = { calqueCercle.annuler(carte) }) {
+                        Icon(Icons.Default.Close, contentDescription = "Annuler")
+                    }
+                }
+            }
         }
 
+        // ---- Droite : Ma position, Toute la province ----
+        Column(modifier = Modifier.align(Alignment.CenterEnd).padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SmallFloatingActionButton(onClick = {
+                val ok = ContextCompat.checkSelfPermission(contexte, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED
+                if (ok) maPosition(contexte)?.let { carte.controller.animateTo(it, 12.0, 400L) }
+                    ?: portee.launch { snackbar?.showSnackbar("Position inconnue (active la localisation)") }
+                else demandePosition.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            }) { Icon(Icons.Default.MyLocation, contentDescription = "Ma position") }
+            SmallFloatingActionButton(onClick = { carte.zoomToBoundingBox(CADRE_PROVINCE, true, 32) }) {
+                Icon(Icons.Default.ZoomOutMap, contentDescription = "Toute la province")
+            }
+        }
+
+        // ---- Bas : annonce sélectionnée, puis panneau compact du rayon ----
         Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
             selection?.let { a ->
                 Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -165,46 +248,45 @@ fun CarteEcran(
                     }
                 }
             }
-            if (rayonDefini && centre != null) {
-                val couvertes = communes.filter {
-                    distanceKm(centre.latitude, centre.longitude, it.latitude, it.longitude) <= rayon
-                }.map { it.nom }.sorted()
-                Card(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text("Rayon : ${Format.km(rayon)}", style = MaterialTheme.typography.titleSmall)
-                            TextButton(onClick = { selection = null; onRetirerRayon() }) { Text("Retirer") }
+            if (centre != null) {
+                val couvertes = Geometrie.communesCouvertes(centre.latitude, centre.longitude, rayon, etat.communes)
+                Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text("Rayon ${Format.km(rayon)}", style = MaterialTheme.typography.titleSmall)
+                            Slider(
+                                value = rayon.toFloat(),
+                                onValueChange = { rayonCurseur = (Geometrie.arrondir(it.toDouble())).toFloat() },
+                                onValueChangeFinished = { rayonCurseur?.let { vm.definirRayon(it.toDouble()) } },
+                                valueRange = Filtres.RAYON_MIN_KM.toFloat()..Filtres.RAYON_MAX_KM.toFloat(),
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                            )
+                            Text("${couvertes.size} commune${if (couvertes.size > 1) "s" else ""}",
+                                style = MaterialTheme.typography.labelSmall)
+                            IconButton(onClick = { panneauOuvert = !panneauOuvert }) {
+                                Icon(if (panneauOuvert) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = "Détails")
+                            }
                         }
-                        Slider(
-                            value = rayon.toFloat(),
-                            onValueChange = { rayonLocal = (it * 2).roundToInt() / 2.0 },
-                            onValueChangeFinished = { rayonLocal?.let(onRayonChange) },
-                            valueRange = Filtres.RAYON_MIN_KM.toFloat()..Filtres.RAYON_MAX_KM.toFloat(),
-                        )
-                        Text(
-                            if (couvertes.isEmpty()) "Aucune commune de la province dans ce rayon"
-                            else "Communes couvertes (${couvertes.size}) : ${couvertes.joinToString(", ")}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(
-                            "Glisse le centre ou la poignée du cercle pour ajuster. Seule la province de " +
-                                "Luxembourg est prise en compte.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else if (centre == null) {
-                Card(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Rechercher autour d'un point ?", style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(end = 8.dp))
-                        OutlinedButton(onClick = {
-                            val c = carte.mapCenter
-                            onPointChoisi(c.latitude, c.longitude)
-                        }) { Text("Placer un rayon ici") }
+                        if (panneauOuvert) {
+                            Row(modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Geometrie.PALIERS_KM.forEach { km ->
+                                    FilterChip(selected = rayon == km, onClick = { vm.definirRayon(km) },
+                                        label = { Text(Format.km(km)) })
+                                }
+                            }
+                            Text(
+                                if (couvertes.isEmpty()) "Aucune commune de la province dans ce rayon"
+                                else couvertes.joinToString(", "),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                "Glisse le point central ou la poignée ; appui maintenu ailleurs pour reposer le cercle.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -212,101 +294,18 @@ fun CarteEcran(
     }
 }
 
-/**
- * Les calques de la carte, conservés entre deux recompositions pour ne pas
- * tout reconstruire à chaque mouvement du curseur.
- */
-private class Calques(vue: MapView) {
-    private var evenements: MapEventsOverlay? = null
-    private val contour = Polyline(vue).apply {
-        setPoints(CONTOUR_PROVINCE + CONTOUR_PROVINCE.first())
-        outlinePaint.color = 0x9900AA55.toInt()
-        outlinePaint.strokeWidth = 3f
-        outlinePaint.pathEffect = DashPathEffect(floatArrayOf(14f, 10f), 0f)
-        isEnabled = true
-    }
-    private val cercle = Polygon(vue).apply {
-        fillPaint.color = 0x2200AA55
-        outlinePaint.color = 0xFF00AA55.toInt()
-        outlinePaint.strokeWidth = 3f
-    }
-    private val centre = Marker(vue).apply {
-        title = "Centre du rayon (glisser pour déplacer)"
-        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        isDraggable = true
-    }
-    private val poignee = Marker(vue).apply {
-        title = "Poignée du rayon (glisser pour agrandir ou réduire)"
-        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-        isDraggable = true
-        alpha = 0.85f
-    }
-    private val dossierAnnonces = FolderOverlay()
-    private var annoncesAffichees: List<Annonce>? = null
-
-    fun installer(vue: MapView, recepteur: MapEventsReceiver) {
-        if (evenements == null) {
-            evenements = MapEventsOverlay(recepteur)
-            vue.overlays.clear()
-            vue.overlays.add(evenements)
-            vue.overlays.add(contour)
-            vue.overlays.add(dossierAnnonces)
-        }
-    }
-
-    fun annonces(vue: MapView, annonces: List<Annonce>, onSelection: (Annonce) -> Unit) {
-        if (annoncesAffichees === annonces) return
-        annoncesAffichees = annonces
-        dossierAnnonces.items.clear()
-        annonces.filter { it.latitude != null && it.longitude != null }.forEach { a ->
-            dossierAnnonces.add(Marker(vue).apply {
-                position = GeoPoint(a.latitude!!, a.longitude!!)
-                title = Format.prix(a.prix, a.transaction)
-                snippet = "${Format.type(a.type)} · ${a.lieu}"
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                setOnMarkerClickListener { _, _ -> onSelection(a); true }
-            })
-        }
-    }
-
-    fun cercle(
-        vue: MapView, centreGeo: GeoPoint?, rayonKm: Double?,
-        onCentreGlisse: (GeoPoint) -> Unit, onCentreDepose: (GeoPoint) -> Unit,
-        onRayonGlisse: (Double) -> Unit, onRayonDepose: (Double) -> Unit,
-    ) {
-        vue.overlays.remove(cercle); vue.overlays.remove(centre); vue.overlays.remove(poignee)
-        if (centreGeo == null || rayonKm == null) return
-        cercle.points = Polygon.pointsAsCircle(centreGeo, rayonKm * 1000)
-        centre.position = centreGeo
-        poignee.position = centreGeo.destinationPoint(rayonKm * 1000, 90.0)
-        centre.setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
-            override fun onMarkerDragStart(m: Marker) {}
-            override fun onMarkerDrag(m: Marker) {
-                cercle.points = Polygon.pointsAsCircle(m.position, rayonKm * 1000)
-                poignee.position = m.position.destinationPoint(rayonKm * 1000, 90.0)
-                onCentreGlisse(m.position)
-                vue.invalidate()
-            }
-            override fun onMarkerDragEnd(m: Marker) { onCentreDepose(m.position) }
-        })
-        poignee.setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
-            override fun onMarkerDragStart(m: Marker) {}
-            override fun onMarkerDrag(m: Marker) {
-                val km = (centreGeo.distanceToAsDouble(m.position) / 1000)
-                    .coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM)
-                cercle.points = Polygon.pointsAsCircle(centreGeo, km * 1000)
-                onRayonGlisse((km * 2).roundToInt() / 2.0)
-                vue.invalidate()
-            }
-            override fun onMarkerDragEnd(m: Marker) {
-                onRayonDepose((centreGeo.distanceToAsDouble(m.position) / 1000)
-                    .coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM))
-            }
-        })
-        // Le cercle sous les annonces, les poignées au-dessus de tout.
-        vue.overlays.add(1, cercle)
-        vue.overlays.add(centre)
-        vue.overlays.add(poignee)
+/** Dernière position connue (sans Play Services), ou null. */
+private fun maPosition(contexte: Context): GeoPoint? {
+    if (ContextCompat.checkSelfPermission(contexte, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED) return null
+    val lm = contexte.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    return try {
+        listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
+            .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
+            .maxByOrNull { it.time }
+            ?.let { GeoPoint(it.latitude, it.longitude) }
+    } catch (_: SecurityException) {
+        null
     }
 }
 
@@ -314,7 +313,7 @@ private fun configurerOsmdroid(contexte: Context) {
     val conf = Configuration.getInstance()
     conf.load(contexte, contexte.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
     // OpenStreetMap demande un User-Agent identifiant l'application.
-    conf.userAgentValue = "ImmoJ/1.1 (usage personnel)"
+    conf.userAgentValue = "ImmoJ/1.2 (usage personnel)"
     conf.osmdroidBasePath = contexte.cacheDir
     conf.osmdroidTileCache = File(contexte.cacheDir, "tuiles")
 }

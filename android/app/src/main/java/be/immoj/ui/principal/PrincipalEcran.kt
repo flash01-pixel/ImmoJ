@@ -1,5 +1,10 @@
 package be.immoj.ui.principal
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,6 +44,9 @@ import be.immoj.ui.liste.ListeContenu
 import be.immoj.ui.liste.ListeViewModel
 import be.immoj.ui.recherches.RecherchesEcran
 
+/** Snackbar de l'écran principal, partagé par la liste et la carte (« Zone retirée — Annuler »). */
+val LocalSnackbar = compositionLocalOf<SnackbarHostState?> { null }
+
 /** Écran principal : barre du haut, onglets Annonces / Carte / Recherches. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,8 +64,10 @@ fun PrincipalEcran(
     val contexte = LocalContext.current
     var onglet by rememberSaveable { mutableStateOf(ongletInitial) }
     var menuOuvert by rememberSaveable { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = { Text(if (etat.transaction == "location") "ImmoJ · Location" else "ImmoJ · Achat") },
@@ -107,24 +117,16 @@ fun PrincipalEcran(
         },
     ) { marges ->
         Box(modifier = Modifier.padding(marges).fillMaxSize()) {
+            CompositionLocalProvider(LocalSnackbar provides snackbar) {
             when (onglet) {
-                "carte" -> CarteEcran(
-                    annonces = etat.annonces,
-                    communes = etat.communes,
-                    centreLat = etat.filtres.centreLat,
-                    centreLon = etat.filtres.centreLon,
-                    rayonKm = etat.filtres.rayonKm,
-                    onPointChoisi = { lat, lon -> vm.definirCentre(lat, lon) },
-                    onRayonChange = { km -> vm.definirRayon(km) },
-                    onRetirerRayon = { vm.retirerRayon() },
-                    ouvrirDetail = ouvrirDetail,
-                )
+                "carte" -> CarteEcran(etat = etat, vm = vm, ouvrirDetail = ouvrirDetail)
                 "recherches" -> RecherchesEcran(app = app, vm = vm, appliquer = { r ->
                     r.transaction?.let { vm.changerTransaction(it) }
                     vm.changerFiltres(r.versFiltres())
                     onglet = "liste"
                 })
                 else -> ListeContenu(etat = etat, vm = vm, ouvrirDetail = ouvrirDetail)
+            }
             }
         }
     }

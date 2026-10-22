@@ -33,7 +33,16 @@ data class ListeEtat(
     val erreur: String? = null,
     val photosEnListe: Boolean = true,
     val dateDonnees: String? = null,                 // horodatage de la dernière collecte vue
+    /** Annonces qui passent tous les filtres sauf la zone (grisées sur la carte). */
+    val annoncesHorsZone: List<Annonce> = emptyList(),
 ) {
+    /** « 12 km autour de Libramont » (null sans cercle). */
+    fun libelleZone(): String? {
+        val f = filtres
+        if (!f.rayonDefini) return null
+        val commune = communes.minByOrNull { be.immoj.data.distanceKm(f.centreLat!!, f.centreLon!!, it.latitude, it.longitude) }
+        return "${be.immoj.util.Format.km(f.rayonKm!!)} autour de ${commune?.nom ?: "ce point"}"
+    }
     /** Totaux par transaction : « Location (397) · Achat (1 189) ». */
     val totaux: Map<String, Int> get() = Catalogue.totaux(index, filtres.afficherRefusees)
     val nbTotalTransaction: Int get() = totaux[transaction] ?: 0
@@ -74,7 +83,13 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
 
     private fun recalculer() {
         _etat.update { e ->
-            e.copy(annonces = Catalogue.trier(Catalogue.filtrer(e.index, e.transaction, e.filtres), e.tri))
+            val dans = Catalogue.trier(Catalogue.filtrer(e.index, e.transaction, e.filtres), e.tri)
+            val hors = if (e.filtres.rayonDefini || e.filtres.communes.isNotEmpty()) {
+                val sansZone = e.filtres.copy(centreLat = null, centreLon = null, rayonKm = null, communes = emptySet())
+                val ids = dans.map { it.id }.toSet()
+                Catalogue.filtrer(e.index, e.transaction, sansZone).filter { it.id !in ids }
+            } else emptyList()
+            e.copy(annonces = dans, annoncesHorsZone = hors)
         }
     }
 
@@ -135,9 +150,24 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         changerFiltres(f.copy(rayonKm = km.coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM)))
     }
 
-    /** Supprime le cercle de recherche (retour à toute la province / aux communes cochées). */
-    fun retirerRayon() {
-        changerFiltres(_etat.value.filtres.copy(centreLat = null, centreLon = null, rayonKm = null))
+    /**
+     * Supprime le cercle de recherche (retour à toute la province / aux communes
+     * cochées). Renvoie les filtres précédents pour « Annuler ».
+     */
+    fun retirerRayon(): Filtres {
+        val avant = _etat.value.filtres
+        changerFiltres(avant.copy(centreLat = null, centreLon = null, rayonKm = null))
+        return avant
+    }
+
+    /** Nombre d'annonces (filtres actuels, hors zone) dans un cercle donné : aperçu pendant le geste. */
+    fun compterDansCercle(lat: Double, lon: Double, rayonKm: Double): Int {
+        val e = _etat.value
+        val sansZone = e.filtres.copy(centreLat = null, centreLon = null, rayonKm = null, communes = emptySet())
+        return Catalogue.filtrer(e.index, e.transaction, sansZone).count { a ->
+            a.latitude != null && a.longitude != null &&
+                be.immoj.data.distanceKm(lat, lon, a.latitude, a.longitude) <= rayonKm
+        }
     }
 
     /** Définit le centre du rayon (depuis la carte) sans changer le reste. */

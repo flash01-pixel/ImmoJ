@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## 1.2.0-lot2 (22 octobre 2026) — Carte : poser et retirer le cercle facilement
+
+- Pose : appui maintenu n'importe où → vibration, viseur et aperçu du cercle 70 dp au-dessus du doigt ; la carte ne défile plus, le centre suit le doigt avec la commune la plus proche et le nombre d'annonces en direct ; relâcher = poser. Sortir de la carte ou ✕ annule. Un simple appui ou un appui sur un marqueur ne déplace jamais le cercle.
+- Déplacer : glisser directement le point central (zone de 48 dp, sans appui long). Rayon : poignée sur le bord (48 dp), puces 2 · 5 · 10 · 15 · 20 · 30 km, curseur ; libellé et compteur en direct, liste recalculée au relâchement seulement. Une seule constante pour défaut (10 km) et bornes (0,5–60).
+- Retirer : puce « 12 km autour de Libramont ✕ » en haut de la carte et en tête de liste ; un appui retire, « Zone retirée — Annuler ». « Retirer » dans les Filtres fait pareil.
+- Boutons « Ma position » (permission demandée au premier appui) et « Toute la province ».
+- Panneau du bas compact sur une ligne (rayon, curseur, « 12 communes »), dépliable.
+- Marqueurs regroupés avec leur nombre (appui = zoom), étiquettes de prix, annonces hors zone en grisé ; dessin direct sans objet par annonce.
+- Technique : un calque osmdroid dédié au geste (`CalqueCercle`), calques mis à jour sans être retirés, aucune requête pendant un geste ; tests JVM de la géométrie (décalage du viseur, rayon depuis la poignée, bornes, regroupement).
+
+
 ## 1.2.0-lot1 (22 octobre 2026) — Fiabilité et compteurs partout
 
 ### Appli

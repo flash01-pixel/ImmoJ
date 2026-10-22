@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Notifications locales (Android 13 et plus demandent l'accord de l'utilisateur). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Bouton « Ma position » sur la carte (demandé au premier appui seulement). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name=".ImmoJApp"

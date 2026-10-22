@@ -1,5 +1,13 @@
 package be.immoj.ui.liste
 
+import kotlinx.coroutines.launch
+import be.immoj.ui.principal.LocalSnackbar
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.Icons
 import be.immoj.util.Dates
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,6 +91,24 @@ fun ListeContenu(etat: ListeEtat, vm: ListeViewModel, ouvrirDetail: (String) -> 
                 "Données du ${Dates.dateHeure(etat.dateDonnees)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        etat.libelleZone()?.let { zone ->
+            val portee = rememberCoroutineScope()
+            val snackbar = LocalSnackbar.current
+            InputChip(
+                selected = true,
+                onClick = {
+                    val avant = vm.retirerRayon()
+                    portee.launch {
+                        if (snackbar?.showSnackbar("Zone retirée", actionLabel = "Annuler") == SnackbarResult.ActionPerformed) {
+                            vm.changerFiltres(avant)
+                        }
+                    }
+                },
+                label = { Text(zone) },
+                trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Retirer la zone") },
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
         if (etat.nbRefuseesMasquees > 0) {
