@@ -99,7 +99,7 @@ data class Filtres(
         /** Sources telles que le collecteur les nomme (voir docs/05 pour les agences). */
         val SOURCES = listOf("immovlan" to "Immovlan", "immoweb" to "Immoweb", "2ememain" to "2ememain",
             "notaire" to "Notaires / Biddit", "agences" to "Sites d'agences",
-            "immoweb_mail" to "Alertes e-mail")
+            "immoweb_mail" to "Alertes e-mail", "manuel" to "Ajoutées à la main")
         /** Tris proposés (code → libellé). */
         val TRIS = listOf("recent" to "Plus récentes", "prix" to "Prix croissant", "prix_desc" to "Prix décroissant",
             "prix_m2" to "Prix au m²", "surface" to "Surface", "distance" to "Distance au centre",

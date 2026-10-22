@@ -57,16 +57,24 @@ class DepotRouteur(
     private val preferences: Preferences,
     private val supabase: DepotSupabase,
     private val local: DepotLocal,
+    private val manuelles: Manuelles? = null,
 ) : Depot {
     private suspend fun actif(): Depot = if (preferences.lire().configure) supabase else local
 
+    /** Les annonces ajoutées à la main rejoignent l'index, quel que soit le mode. */
+    private suspend fun avecManuelles(liste: List<Annonce>): List<Annonce> =
+        (manuelles?.lister() ?: emptyList()) + liste
+
     override suspend fun rafraichir() = actif().rafraichir()
-    override suspend fun index(forcer: Boolean) = actif().index(forcer)
-    override suspend fun indexEnCache() = actif().indexEnCache()
-    override suspend fun annonce(id: String) = actif().annonce(id)
-    override suspend fun historiquePrix(id: String) = actif().historiquePrix(id)
+    override suspend fun index(forcer: Boolean) = avecManuelles(actif().index(forcer))
+    override suspend fun indexEnCache() = avecManuelles(actif().indexEnCache())
+    override suspend fun annonce(id: String) =
+        if (Manuelles.estManuelle(id)) manuelles?.annonce(id) else actif().annonce(id)
+    override suspend fun historiquePrix(id: String) =
+        if (Manuelles.estManuelle(id)) emptyList() else actif().historiquePrix(id)
     override suspend fun changerStatut(id: String, statut: StatutPerso, note: String?) =
-        actif().changerStatut(id, statut, note)
+        if (Manuelles.estManuelle(id)) manuelles?.changerStatut(id, statut, note) ?: Unit
+        else actif().changerStatut(id, statut, note)
     override suspend fun etatSources() = actif().etatSources()
     override suspend fun communes() = actif().communes()
     override suspend fun recherches() = actif().recherches()

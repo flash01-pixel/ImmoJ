@@ -39,6 +39,7 @@ object Format {
         "immoweb" -> "Immoweb"
         "immoweb_mail" -> "Immoweb (e-mail)"
         "notaire" -> "Notaires"
+        "manuel" -> "Ajoutée à la main"
         "alertes_mail" -> "Alertes e-mail"
         "agences:generique" -> "Sites d'agences (maison)"
         "agences:whise" -> "Agences Whise"

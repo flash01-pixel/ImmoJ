@@ -9,7 +9,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
 import be.immoj.ImmoJApp
+import be.immoj.ui.ajouter.AjouterEcran
 import be.immoj.ui.detail.DetailEcran
 import be.immoj.ui.liste.ListeViewModel
 import be.immoj.ui.parametres.ParametresEcran
@@ -22,13 +25,16 @@ object Routes {
     const val DETAIL = "detail/{id}"
     const val PARAMETRES = "parametres"
     const val SOURCES = "sources"
+    const val AJOUTER = "ajouter"
     fun principal(onglet: String = "liste") = "principal?onglet=$onglet"
     fun detail(id: String) = "detail/$id"
 }
 
 @Composable
-fun AppNavigation(app: ImmoJApp) {
+fun AppNavigation(app: ImmoJApp, partage: Triple<String?, Uri?, Long>? = null) {
     val nav = rememberNavController()
+    // Un partage reçu (texte, image, jeton unique) ouvre l'écran d'ajout.
+    LaunchedEffect(partage?.third) { if (partage != null) nav.navigate(Routes.AJOUTER) }
     val reglages by app.preferences.flux.collectAsState(initial = null)
     // Tant que les réglages ne sont pas lus, on n'affiche rien (une fraction de seconde).
     if (reglages == null) return
@@ -51,6 +57,17 @@ fun AppNavigation(app: ImmoJApp) {
                 ouvrirDetail = { id -> nav.navigate(Routes.detail(id)) },
                 ouvrirParametres = { nav.navigate(Routes.PARAMETRES) },
                 ouvrirSources = { nav.navigate(Routes.SOURCES) },
+                ouvrirAjout = { nav.navigate(Routes.AJOUTER) },
+            )
+        }
+        composable(Routes.AJOUTER) {
+            AjouterEcran(
+                app = app, textePartage = partage?.first, photoPartagee = partage?.second,
+                retour = { nav.popBackStack() },
+                ouvrirAnnonce = { id ->
+                    vm.charger()   // l'index inclut la nouvelle annonce manuelle
+                    nav.navigate(Routes.detail(id)) { popUpTo(Routes.PRINCIPAL) }
+                },
             )
         }
         composable(

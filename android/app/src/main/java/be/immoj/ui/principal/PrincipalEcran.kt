@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Map
@@ -64,6 +66,7 @@ fun PrincipalEcran(
     ouvrirDetail: (String) -> Unit,
     ouvrirParametres: () -> Unit,
     ouvrirSources: () -> Unit,
+    ouvrirAjout: () -> Unit = {},
 ) {
     val etat by vm.etat.collectAsState()
     val portee = rememberCoroutineScope()
@@ -112,6 +115,8 @@ fun PrincipalEcran(
                                     Toast.makeText(contexte, vm.collecterMaintenant(), Toast.LENGTH_LONG).show()
                                 }
                             })
+                        DropdownMenuItem(text = { Text("+ Ajouter une annonce") },
+                            onClick = { menuOuvert = false; ouvrirAjout() })
                         DropdownMenuItem(text = { Text("État des sources") },
                             onClick = { menuOuvert = false; ouvrirSources() })
                         DropdownMenuItem(text = { Text("Paramètres") },
@@ -119,6 +124,13 @@ fun PrincipalEcran(
                     }
                 },
             )
+        },
+        floatingActionButton = {
+            if (onglet == "liste") {
+                FloatingActionButton(onClick = ouvrirAjout) {
+                    Icon(Icons.Default.Add, contentDescription = "Ajouter une annonce")
+                }
+            }
         },
         bottomBar = {
             NavigationBar {

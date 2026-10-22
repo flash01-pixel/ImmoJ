@@ -5,6 +5,7 @@ import be.immoj.data.Depot
 import be.immoj.data.DepotLocal
 import be.immoj.data.DepotRouteur
 import be.immoj.data.DepotSupabase
+import be.immoj.data.Manuelles
 import be.immoj.data.Preferences
 import be.immoj.sync.Notifications
 import be.immoj.sync.SyncWorker
@@ -21,7 +22,8 @@ class ImmoJApp : Application() {
     val preferences: Preferences by lazy { Preferences(this) }
     val depotSupabase: DepotSupabase by lazy { DepotSupabase(preferences, filesDir) }
     val depotLocal: DepotLocal by lazy { DepotLocal(this) }
-    val depot: Depot by lazy { DepotRouteur(preferences, depotSupabase, depotLocal) }
+    val manuelles: Manuelles by lazy { Manuelles(this) }
+    val depot: Depot by lazy { DepotRouteur(preferences, depotSupabase, depotLocal, manuelles) }
 
     override fun onCreate() {
         super.onCreate()

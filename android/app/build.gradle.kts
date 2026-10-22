@@ -22,7 +22,7 @@ android {
         // versionCode = numéro d'exécution GitHub (propriété Gradle), 5 en local ;
         // versionName suit les lots de la 1.2.
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
-        versionName = "1.2.0-lot4"
+        versionName = "1.2.0-lot5"
 
         // Identité de la compilation, affichée dans Paramètres → À propos.
         buildConfigField("String", "COMMIT", "\"${propriete("commit").take(7)}\"")
