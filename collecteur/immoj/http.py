@@ -50,7 +50,9 @@ class ClientHttp:
             "Accept-Language": "fr-BE,fr;q=0.9,nl;q=0.5,en;q=0.3",
         })
         self._robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
-        self._derniere_requete = 0.0
+        #: dernière requête par hôte : la politesse se mesure site par site, pas
+        #: globalement (sinon 25 agences × 3 s d'attente = 10 min par passage)
+        self._derniere_requete: dict[str, float] = {}
         self.nb_requetes = 0
 
     # --- robots.txt -------------------------------------------------------
@@ -74,13 +76,14 @@ class ClientHttp:
         return rp is None or rp.can_fetch(config.USER_AGENT, url) or rp.can_fetch("*", url)
 
     # --- requête ----------------------------------------------------------
-    def _attendre(self) -> None:
-        """Impose un délai aléatoire depuis la requête précédente."""
-        ecoule = time.monotonic() - self._derniere_requete
+    def _attendre(self, url: str) -> None:
+        """Impose un délai aléatoire depuis la requête précédente vers le même hôte."""
+        hote = urlsplit(url).netloc
+        ecoule = time.monotonic() - self._derniere_requete.get(hote, 0.0)
         delai = random.uniform(config.DELAI_MIN_S, config.DELAI_MAX_S)
         if ecoule < delai:
             time.sleep(delai - ecoule)
-        self._derniere_requete = time.monotonic()
+        self._derniere_requete[hote] = time.monotonic()
 
     def get(self, url: str, **kwargs) -> requests.Response:
         """GET avec délai, tentatives et détection de blocage."""
@@ -95,10 +98,14 @@ class ClientHttp:
             raise Blocage(f"robots.txt interdit {url}")
         derniere_erreur: Exception | None = None
         for tentative in range(1, config.NB_TENTATIVES + 1):
-            self._attendre()
+            self._attendre(url)
             self.nb_requetes += 1
             try:
-                r = self.session.request(methode, url, timeout=config.TIMEOUT_S, **kwargs)
+                r = self.session.request(methode, url,
+                                         timeout=(config.CONNEXION_S, config.TIMEOUT_S), **kwargs)
+            except requests.ConnectionError as e:
+                # Hôte injoignable (DNS, IPv6 seul, refus) : inutile d'insister.
+                raise RuntimeError(f"injoignable : {url} ({str(e)[:120]})") from e
             except requests.RequestException as e:
                 derniere_erreur = e
                 log.warning("[%s] erreur réseau (%d/%d) sur %s : %s",

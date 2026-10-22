@@ -37,13 +37,13 @@ from .generique import _lieu, _surface
 
 log = logging.getLogger(__name__)
 
-DETAILS_MAX = 12      # fiches nouvelles lues par passage (≈ 1 minute à 2–5 s par requête)
+DETAILS_MAX = 6       # fiches nouvelles lues par passage et par agence
 PAR_PAGE = 100
 
 
 class WordPress(SourceAgences):
     logiciel = "wordpress"
-    frequence_heures = 3
+    frequence_heures = 4
     lire_fiches = False     # la fiche est déjà lue par collecter_agence (prix, photos, détails)
 
     def collecter_agence(self, agence: dict, transaction: str) -> list[Annonce]:
