@@ -30,8 +30,8 @@ class OmnicasaGatsby(SourceAgences):
     logiciel = "omnicasa_gatsby"
     lire_fiches = False     # page-data contient déjà toutes les photos et les détails
 
-    def __init__(self, pages_max: int | None = None) -> None:
-        super().__init__(pages_max)
+    def __init__(self, pages_max: int | None = None, profond: bool = False) -> None:
+        super().__init__(pages_max, profond)
         self._plans: dict[str, dict[str, str]] = {}
 
     def _plan_du_site(self, base: str) -> dict[str, str]:

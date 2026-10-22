@@ -53,8 +53,8 @@ class DeuxiemeMain(Source):
     libelle = "2ememain"
     respecter_robots = False   # API JSON du site lui-même (robots.txt vise le HTML)
 
-    def __init__(self, pages_max: int | None = None) -> None:
-        super().__init__(pages_max)
+    def __init__(self, pages_max: int | None = None, profond: bool = False) -> None:
+        super().__init__(pages_max, profond)
         self.geocodeur = Geocodeur()
 
     def url_api(self, offset: int = 0, postcode: str = "6700") -> str:

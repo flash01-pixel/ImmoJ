@@ -67,8 +67,8 @@ class Era(SourceAgences):
     # API officielle du site : pas de robots.txt pertinent pour ce chemin JSON.
     respecter_robots = False
 
-    def __init__(self, pages_max: int | None = None) -> None:
-        super().__init__(pages_max)
+    def __init__(self, pages_max: int | None = None, profond: bool = False) -> None:
+        super().__init__(pages_max, profond)
         self._ids: tuple[list[str], list[str]] | None = None
 
     def _identifiants(self, base: str) -> tuple[list[str], list[str]]:
