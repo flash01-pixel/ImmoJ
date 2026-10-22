@@ -62,14 +62,21 @@ class Immovlan(Source):
                 break  # plus de résultats (ou page identique) : on s'arrête
             annonces.extend(nouvelles)
             vues.update(a.id_externe for a in nouvelles)
-            if len(trouvees) < 20:
-                break  # dernière page
+            # Dernière page = moins de 20 CARTES (les projets de promoteurs, ignorés par
+            # le parser, comptent : une page de 20 cartes dont 4 projets n'est pas la fin).
+            if nb_cartes(reponse.text) < 20:
+                break
         return annonces
 
 
 # ---------------------------------------------------------------------------
 # Analyse du HTML (fonctions pures, testées sur des pages enregistrées)
 # ---------------------------------------------------------------------------
+
+def nb_cartes(html: str) -> int:
+    """Nombre de cartes de résultats sur la page (annonces et projets confondus)."""
+    return len(re.findall(r'<article[^>]+class="[^"]*\bv3-search-card\b', html))
+
 
 def total_resultats(html: str) -> int | None:
     """Ordre de grandeur du nombre d'annonces : « 412 résultats » si la page le dit,
@@ -80,7 +87,7 @@ def total_resultats(html: str) -> int | None:
         n = nombre(m.group(1))
         if n and n < 100_000:
             return n
-    pages = [int(p) for p in re.findall(r"[?&]page=(\d{1,3})\b", html)]
+    pages = [int(p) for p in re.findall(r"(?:[?&]|&amp;)page=(\d{1,3})\b", html)]
     return max(pages) * 20 if pages else None
 
 

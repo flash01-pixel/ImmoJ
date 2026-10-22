@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from immoj.sources.immovlan import Immovlan, _charges, analyser_liste
+from immoj.sources.immovlan import Immovlan, _charges, analyser_liste, nb_cartes, total_resultats
 
 
 def test_liste_location_contient_20_annonces(lire_fixture):
@@ -73,3 +73,14 @@ def test_extraction_charges():
     assert _charges("charges : 95€ par mois") == 95
     assert _charges("Provisions pour charges de 150 €") == 150
     assert _charges("Aucune information") is None
+
+
+def test_pagination_compte_les_cartes_pas_les_annonces(lire_fixture):
+    """Page d'achat : 20 cartes dont 4 projets ignorés → ce n'est PAS la dernière page."""
+    html = lire_fixture("immovlan/liste_achat.html")
+    assert nb_cartes(html) == 20 and len(analyser_liste(html, "achat")) == 16
+
+
+def test_total_estime_depuis_la_pagination(lire_fixture):
+    html = lire_fixture("immovlan/liste_location_lot4.html")
+    assert total_resultats(html) == 120     # dernière page 6 × 20
