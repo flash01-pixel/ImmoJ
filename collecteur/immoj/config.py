@@ -41,6 +41,9 @@ PAGES_MAX = 3
 PAGES_PROFOND = 80
 #: heure (Bruxelles) du passage profond quotidien quand le collecteur tourne sans --profond
 HEURE_PASSAGE_PROFOND = 7
+#: budget de temps d'un passage (secondes) : au-delà, les sources restantes attendent le
+#: prochain passage et la base est publiée quand même (le timeout GitHub, lui, perdrait tout)
+BUDGET_PASSAGE_S = 32 * 60
 #: une annonce importée par un passage profond n'est pas notifiée si elle est publiée
 #: depuis plus de ce nombre d'heures (elle n'est pas « nouvelle », juste pas encore lue)
 HEURES_NOTIF_PROFOND = 48

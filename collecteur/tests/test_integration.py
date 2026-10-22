@@ -197,3 +197,16 @@ def test_passage_profond_ne_notifie_pas_les_vieilles_annonces():
     resultat = ResultatCollecte("immoweb", True, [vieille, fraiche], profond=True)
     assert integrateur(st, nt).integrer(resultat) == 2
     assert nt.envoyees == ["Nouveau : 6600 Bastogne"], "une seule notification : la fraîche"
+
+
+def test_budget_de_temps_interrompt_proprement():
+    import time
+    st, nt = StockageMemoire(), NotificateurEspion()
+    st.reussites.add("immoweb")
+    it = integrateur(st, nt)
+    it.date_limite = time.monotonic() - 1          # budget déjà épuisé
+    resultat = ResultatCollecte("immoweb", True, [annonce(source="immoweb", ide="A1")],
+                                profond=True)
+    assert it.integrer(resultat) == 0 and it.incomplet
+    it.date_limite = None
+    assert it.integrer(resultat) == 1 and not it.incomplet

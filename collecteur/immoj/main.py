@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -62,6 +63,18 @@ class Integrateur:
         self.notificateur = notificateur
         self.recherches = recherches
         self.recherches_notif = [r for r in recherches if r.get("notifier", True)]
+        #: instant (time.monotonic) au-delà duquel on arrête d'intégrer ; None = sans limite
+        self.date_limite: float | None = None
+        #: vrai si le dernier passage a été interrompu par le budget de temps
+        self.incomplet = False
+
+    def _candidats(self, cache: dict, a: Annonce, nom_commune: str | None) -> list[Candidat]:
+        """Candidats au dédoublonnage, lus une fois par (transaction, commune) et par passage :
+        une requête Supabase par commune au lieu d'une par annonce."""
+        cle = (a.transaction, nom_commune, a.code_postal if not nom_commune else None)
+        if cle not in cache:
+            cache[cle] = self.stockage.candidats_doublon(a.transaction, nom_commune, a.code_postal)
+        return cache[cle]
 
     def _situer(self, a: Annonce) -> tuple[bool, str | None, float | None, float | None]:
         """(en province ?, commune officielle, latitude, longitude)."""
@@ -92,9 +105,16 @@ class Integrateur:
         vues_ids_externes: list[str] = []
         vues_annonce_ids: list[str] = []
         vus_ce_passage: set[str] = set()
+        cache_candidats: dict = {}
         nouvelles = 0
+        self.incomplet = False
 
         for a in resultat.annonces:
+            if self.date_limite is not None and time.monotonic() > self.date_limite:
+                log.warning("[%s] budget de temps épuisé : %d annonce(s) attendront le prochain "
+                            "passage", source, len(resultat.annonces) - len(vus_ce_passage))
+                self.incomplet = True
+                break
             # C4 : un identifiant répété dans le même passage (page de résultats
             # identique) ne doit jamais créer une annonce jumelle.
             if a.id_externe in vus_ce_passage:
@@ -127,8 +147,7 @@ class Integrateur:
                                 code_postal=a.code_postal, prix=a.prix, chambres=a.chambres,
                                 surface=a.surface, titre=a.titre, description=a.description,
                                 agence=a.agence, reference=a.reference)
-            candidats = [c for c in self.stockage.candidats_doublon(a.transaction, nom_commune,
-                                                                     a.code_postal)
+            candidats = [c for c in self._candidats(cache_candidats, a, nom_commune)
                          if c.id not in deja_sur_cette_source]
             doublon = trouver_doublon(candidat, candidats)
             if doublon:
@@ -262,6 +281,9 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
 
     noms = noms_sources or list(REGISTRE)
     code_sortie = 0
+    limite = time.monotonic() + config.BUDGET_PASSAGE_S
+    for c in cibles:
+        c["integrateur"].date_limite = limite
     # Les fiches (toutes les photos, détails) se partagent un budget de temps global.
     from .sources.base import Source
     Source.budget_fiches_s = config.BUDGET_FICHES_S
@@ -273,6 +295,10 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             continue
         if not REGISTRE[nom].est_configuree():
             log.info("[%s] non configurée (secrets absents) : ignorée", nom)
+            continue
+        if time.monotonic() > limite:
+            log.warning("[%s] budget de temps du passage épuisé : source reportée au prochain "
+                        "passage", nom)
             continue
         heure = datetime.now(ZoneInfo(config.FUSEAU)).hour
         if not forcer and not noms_sources and not REGISTRE[nom].doit_tourner(heure):
@@ -299,9 +325,11 @@ def executer(noms_sources: list[str] | None, pages: int | None, simulation: bool
             except Exception as e:  # noqa: BLE001
                 log.exception("[%s] erreur pendant l'intégration (%s)", nom, c["nom"])
                 ok, erreur = False, f"intégration : {type(e).__name__}: {e}"
+            # Un passage profond interrompu par le budget n'en est pas un (désactivation).
+            profond_complet = resultat.profond and not c["integrateur"].incomplet
             stockage.enregistrer_collecte(nom, debut, ok, len(resultat.annonces), nouvelles,
                                           erreur, resultat.bloque, resultat.duree_s,
-                                          profond=resultat.profond,
+                                          profond=profond_complet,
                                           nb_disponibles=resultat.nb_disponibles,
                                           nb_particuliers=resultat.nb_particuliers)
             if isinstance(stockage, StockageFichier):
