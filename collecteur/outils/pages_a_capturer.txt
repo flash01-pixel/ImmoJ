@@ -1,19 +1,13 @@
 # Pages à capturer par le workflow « Capturer des pages HTML ».
 # URL | source/fichier | {"En-tête": "valeur"} (optionnel) | POST champ=val&… (optionnel)
-# Lot 5, 2e tour : retrouver les vraies adresses de recherche (Rentola, athome, Trovit).
-https://rentola.be/fr | lot5/rentola_accueil.html
-https://rentola.be/sitemap.xml | lot5/rentola_sitemap.xml
-https://rentola.be/fr/a-louer/arlon | lot5/rentola_arlon.html
-https://rentola.be/fr/location/luxembourg | lot5/rentola_location_luxembourg.html
-https://www.athome.lu/fr/louer | lot5/athome_louer.html
-https://www.athome.lu/sitemap.xml | lot5/athome_sitemap.xml
-https://www.athome.lu/srp/?tr=rent&q=faee1a4a&loc=L9-belgique | lot5/athome_srp_belgique.html
-https://maison.trovit.be/ | lot5/trovit_accueil.html
-https://maison.trovit.be/robots.txt | lot5/trovit_robots.txt
-https://maison.trovit.be/index.php/cod.search_homes/type.2/what_d.luxembourg | lot5/trovit_search_luxembourg.html
-https://maison.trovit.be/location-luxembourg | lot5/trovit_location_luxembourg.html
-# 3e tour : Trovit Belgique vit sur immobilier.trovit.be (maison.trovit.be n'existe pas).
-https://immobilier.trovit.be/robots.txt | lot5/trovit_robots.txt
-https://immobilier.trovit.be/ | lot5/trovit_accueil.html
-https://immobilier.trovit.be/location-luxembourg-province | lot5/trovit_location_luxembourg.html
-https://immobilier.trovit.be/index.php/cod.search_homes/type.2/what_d.luxembourg%20province | lot5/trovit_search_luxembourg.html
+# Lot 5, 4e tour : athome.lu (identifiant de la Belgique / d'Arlon), Zimmo et Logic-immo (gain des alertes e-mail ?).
+https://www.athome.lu/srp/?tr=rent&loc=C1-belgique | lot5/athome_srp_c1.html
+https://www.athome.lu/srp/?tr=rent&loc=C2-belgique | lot5/athome_srp_c2.html
+https://www.athome.lu/srp/?tr=rent&loc=L9-arlon | lot5/athome_srp_arlon.html
+https://www.athome.lu/srp/?tr=rent&loc=L2-arlon | lot5/athome_srp_arlon_l2.html
+https://www.athome.lu/location/belgique | lot5/athome_location_belgique.html
+https://www.athome.lu/en/rent/belgium | lot5/athome_rent_belgium.html
+https://www.zimmo.be/robots.txt | lot5/zimmo_robots.txt
+https://www.zimmo.be/fr/province-de-luxembourg/a-louer/ | lot5/zimmo_louer_luxembourg.html
+https://www.logic-immo.be/robots.txt | lot5/logicimmo_robots.txt
+https://www.logic-immo.be/fr/location/luxembourg-province | lot5/logicimmo_louer_luxembourg.html
