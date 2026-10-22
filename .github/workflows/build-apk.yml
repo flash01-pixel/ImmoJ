@@ -103,6 +103,11 @@ jobs:
           # Le jeton passe par un en-tête HTTP (et non dans l'URL) : un caractère
           # inattendu dans le secret ne casse pas l'adresse.
           TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
+          # Diagnostic sans révéler le secret : forme du jeton et accès au dépôt cible.
+          echo "Jeton : ${#TOKEN} caractères, commence par ${TOKEN:0:11}…"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$DEPOT")
+          echo "Accès à $DEPOT avec ce jeton : HTTP $CODE (200 = OK, 401 = jeton invalide, 404 = dépôt absent ou non autorisé)"
           AUTH="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" \
             push -q -f "https://github.com/${DEPOT}" "HEAD:$BRANCHE"
