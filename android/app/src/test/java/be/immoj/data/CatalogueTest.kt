@@ -90,7 +90,7 @@ class CatalogueTest {
 
     @Test
     fun suggestionsQuandAucunResultat() {
-        val f = Filtres(jardin = true, prixMax = 1000)
+        val f = Filtres(jardin = true, prixMax = 1100)   // +15 % = 1 265 € : la maison à 1 200 € passe
         assertEquals(0, Catalogue.filtrer(index, "location", f, maintenant).size)
         val s = Catalogue.suggestions(index, "location", f, maintenant)
         assertTrue(s.any { it.libelle == "Retirer Jardin" && it.gain == 2 })
