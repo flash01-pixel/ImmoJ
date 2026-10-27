@@ -16,3 +16,5 @@ android/.idea/
 # Divers
 .DS_Store
 livrables/
+gradle-8.9/
+gradle-8.9-bin.zip
