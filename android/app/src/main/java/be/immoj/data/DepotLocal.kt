@@ -116,7 +116,7 @@ class DepotLocal(private val contexte: Context) : Depot {
 
             val texte: String = try {
                 withContext(Dispatchers.IO) {
-                    val reponse = client.newCall(Request.Builder().url(url).build()).execute()
+                    val reponse = client.newCall(Request.Builder().url(url).build()).await()
                     if (!reponse.isSuccessful) throw IllegalStateException(
                         "Téléchargement des annonces refusé (HTTP ${reponse.code}). " +
                             "Le dépôt GitHub est-il public et la collecte a-t-elle déjà tourné ?")

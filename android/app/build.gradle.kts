@@ -71,4 +71,5 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.osmdroid)
     implementation(libs.androidx.work.runtime)
+    testImplementation("junit:junit:4.13.2")
 }
