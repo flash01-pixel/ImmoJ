@@ -1,5 +1,19 @@
 # Journal des modifications
 
+## 1.2.0 (5 novembre 2026) — Version stable et signée
+
+Première version stable de la 1.2 : réunit les lots 1 à 5 (fiabilité et compteurs partout, carte
+et cercle de recherche, modes d'affichage et filtres, fiche d'annonce complète, annonceur et
+couverture du collecteur, annonces de particuliers, « Partager vers ImmoJ » et fiches ajoutées à la
+main) ainsi que le nouveau logo et les requêtes réseau non bloquantes de `main`.
+
+### Publication
+- APK « release » signé avec une vraie clé de production, gardée dans les secrets GitHub (jamais
+  dans le dépôt public). Rotation de clé depuis l'ancienne clé de développement : sur Android 9+,
+  la 1.2.0 s'installe par-dessus un APK de test 1.2.0-lotN sans désinstaller.
+- Publiée dans le dépôt privé `immoj-apk` : branche `apk` et Release `v1.2.0` (notes reprises de
+  ce journal). Chaque version stable future (versionName sans « - ») fera de même.
+
 ## 1.2.0-lot5 — Les annonces de particuliers, d'où qu'elles viennent
 
 ### Collecteur

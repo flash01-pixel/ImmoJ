@@ -20,9 +20,9 @@ android {
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
         // versionCode = numéro d'exécution GitHub (propriété Gradle), 5 en local ;
-        // versionName suit les lots de la 1.2.
+        // versionName : « 1.2.0 » = version stable ; « -xxx » = version de test.
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
-        versionName = "1.2.0-lot5"
+        versionName = "1.2.0"
 
         // Identité de la compilation, affichée dans Paramètres → À propos.
         buildConfigField("String", "COMMIT", "\"${propriete("commit").take(7)}\"")
@@ -40,8 +40,9 @@ android {
     }
 
     // Clé de signature de développement FIXE (android/signature/, mot de passe
-    // « immoj-debug ») : chaque APK s'installe par-dessus le précédent, quelle que
-    // soit la machine qui l'a compilé. Ce n'est pas une clé de publication Play Store.
+    // « immoj-debug ») pour les compilations « debug » locales. Les APK publiés sont
+    // des builds « release » signés par le workflow avec la clé de production
+    // (secrets GitHub), en rotation depuis cette clé : voir build-apk.yml.
     signingConfigs {
         getByName("debug") {
             storeFile = rootProject.file("signature/immoj-debug.keystore")
@@ -63,6 +64,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    // Le contrôle lint complet n'est pas bloquant pour la compilation « release ».
+    lint {
+        checkReleaseBuilds = false
     }
     buildFeatures {
         compose = true

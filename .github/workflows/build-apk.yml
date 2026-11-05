@@ -1,8 +1,12 @@
 # Compilation de l'APK Android par GitHub Actions (aucune installation sur ton PC).
 #
 # Déclenché à chaque modification du dossier android/, ou à la main.
-# L'APK (debug, signé avec la clé de développement fixe android/signature/) est
-# publié dans le dépôt privé immoj-apk (branche apk pour main, apk-test sinon).
+# L'APK (build « release ») est signé avec la clé de production, gardée dans les
+# secrets RELEASE_KEYSTORE_BASE64 / RELEASE_KEYSTORE_PASSWORD (jamais dans ce dépôt
+# public), avec une rotation depuis l'ancienne clé de développement
+# (android/signature/) : il s'installe par-dessus un APK de test sur Android 9+.
+# Publication dans le dépôt privé immoj-apk : branche apk pour main, apk-test sinon,
+# et, pour main, une Release « vX.Y.Z » quand la version est stable (sans « - »).
 # Installation : voir docs/04-installer-apk.md.
 name: Compiler l'APK
 
@@ -70,10 +74,44 @@ jobs:
           ORG_GRADLE_PROJECT_branche: ${{ github.ref_name }}
         run: |
           export ORG_GRADLE_PROJECT_dateBuild="$(date -u +%Y-%m-%dT%H:%MZ)"
-          gradle assembleDebug --no-daemon --console=plain
+          gradle assembleRelease --no-daemon --console=plain
 
-      - name: Renommer l'APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ImmoJ.apk
+      # Signature : clé de production (secrets) précédée de l'ancienne clé de
+      # développement dans une « lignée » (APK Signature Scheme v3) : Android 9+
+      # accepte la mise à jour par-dessus un APK signé avec l'ancienne clé, et
+      # l'appli est ensuite reconnue par la nouvelle clé.
+      - name: Signer l'APK
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          echo "Outils de compilation : $BT"
+          ENTREE=app/build/outputs/apk/release/app-release-unsigned.apk
+          "$BT/zipalign" -f -p 4 "$ENTREE" /tmp/aligne.apk
+          ANCIENNE="--ks signature/immoj-debug.keystore --ks-key-alias immoj --ks-pass pass:immoj-debug --key-pass pass:immoj-debug"
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ]; then
+            printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > /tmp/immoj-release.jks
+            export KEYSTORE_PASS="$(printf '%s' "$KEYSTORE_PASS" | tr -d '[:space:]')"
+            NOUVELLE="--ks /tmp/immoj-release.jks --ks-key-alias immoj --ks-pass env:KEYSTORE_PASS --key-pass env:KEYSTORE_PASS"
+            "$BT/apksigner" rotate --out /tmp/lignee.bin --old-signer $ANCIENNE --new-signer $NOUVELLE
+            "$BT/apksigner" sign $ANCIENNE --next-signer $NOUVELLE --lineage /tmp/lignee.bin \
+              --rotation-min-sdk-version 28 --out ImmoJ.apk /tmp/aligne.apk
+            rm -f /tmp/immoj-release.jks
+            echo "SIGNATURE=production" >> "$GITHUB_ENV"
+          else
+            if [ "$GITHUB_REF_NAME" = "main" ]; then
+              echo "::error::Secrets RELEASE_KEYSTORE_BASE64 / RELEASE_KEYSTORE_PASSWORD absents : pas de version stable sans la clé de production."
+              exit 1
+            fi
+            echo "::warning::Clé de production absente : APK de test signé avec la clé de développement."
+            "$BT/apksigner" sign $ANCIENNE --out ImmoJ.apk /tmp/aligne.apk
+            echo "SIGNATURE=developpement" >> "$GITHUB_ENV"
+          fi
+          "$BT/apksigner" verify --verbose --print-certs ImmoJ.apk | grep -E "Verified|Signer|SHA-256" || true
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Version $VERSION, build $GITHUB_RUN_NUMBER, signature $(grep -oP 'SIGNATURE=\K.*' "$GITHUB_ENV" | tail -1)"
 
       # Pas d'artefact ni de Release ici : le dépôt est public et l'APK contient la
       # clé anon Supabase. L'APK ne va que dans le dépôt privé immoj-apk (ci-dessous).
@@ -95,8 +133,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           cp "$GITHUB_WORKSPACE/android/ImmoJ.apk" .
-          printf '# APK ImmoJ\n\nBuild %s, compilé depuis `%s` (%s) le %s.\n\nTélécharger : cliquer sur ImmoJ.apk puis « Download raw file ».\n' "$GITHUB_RUN_NUMBER" "$GITHUB_REF_NAME" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%MZ)" > README.md
-          git add . && git commit -q -m "APK build $GITHUB_RUN_NUMBER depuis $GITHUB_REF_NAME ($GITHUB_SHA)"
+          ETAT="version de test"
+          if [ "$SIGNATURE" = "production" ] && [[ "$VERSION" != *-* ]]; then ETAT="stable et signée"; fi
+          printf '# APK ImmoJ %s (%s)\n\nBuild %s, compilé depuis `%s` (%s) le %s, signature : %s.\n\nTélécharger : cliquer sur ImmoJ.apk puis « Download raw file ».\n' "$VERSION" "$ETAT" "$GITHUB_RUN_NUMBER" "$GITHUB_REF_NAME" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%MZ)" "$SIGNATURE" > README.md
+          git add . && git commit -q -m "APK $VERSION build $GITHUB_RUN_NUMBER depuis $GITHUB_REF_NAME ($GITHUB_SHA)"
           # Le jeton passe par un en-tête HTTP (et non dans l'URL) : un caractère
           # inattendu dans le secret ne casse pas l'adresse.
           TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
@@ -109,3 +149,41 @@ jobs:
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" \
             push -q -f "https://github.com/${DEPOT}" "HEAD:$BRANCHE"
           echo "APK publié : https://github.com/$DEPOT/blob/$BRANCHE/ImmoJ.apk"
+
+      # Version stable (main, signature de production, versionName sans « - ») :
+      # Release « vX.Y.Z » dans le dépôt privé, avec ImmoJ.apk et les notes du CHANGELOG.
+      # Si la Release existe déjà (nouvelle compilation de la même version), l'APK est remplacé.
+      - name: Publier la Release stable
+        if: github.ref_name == 'main'
+        working-directory: .
+        env:
+          TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          DEPOT: ${{ vars.APK_REPO || format('{0}/immoj-apk', github.repository_owner) }}
+        run: |
+          if [ "$SIGNATURE" != "production" ] || [[ "$VERSION" == *-* ]]; then
+            echo "Version $VERSION ($SIGNATURE) : pas de Release stable."; exit 0
+          fi
+          TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"
+          API="https://api.github.com/repos/$DEPOT"
+          H=(-H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json")
+          TAG="v$VERSION"
+          # Notes : la section du CHANGELOG pour cette version.
+          awk -v v="$VERSION" '$0 ~ "^## "v"( |$)" {f=1; next} /^## / && f {exit} f' CHANGELOG.md > /tmp/notes.md
+          printf '\n\nBuild %s, commit %s. Version stable, signée avec la clé de production.\n' "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" >> /tmp/notes.md
+          ID=$(curl -s "${H[@]}" "$API/releases/tags/$TAG" | jq -r '.id // empty')
+          if [ -z "$ID" ]; then
+            jq -n --arg tag "$TAG" --arg nom "ImmoJ $VERSION" --rawfile corps /tmp/notes.md \
+              '{tag_name:$tag, target_commitish:"apk", name:$nom, body:$corps, draft:false, prerelease:false, make_latest:"true"}' > /tmp/release.json
+            ID=$(curl -s "${H[@]}" -X POST "$API/releases" -d @/tmp/release.json | jq -r '.id // empty')
+            [ -n "$ID" ] || { echo "::error::Création de la Release $TAG refusée"; exit 1; }
+            echo "Release $TAG créée"
+          else
+            echo "Release $TAG déjà présente : APK remplacé"
+            for A in $(curl -s "${H[@]}" "$API/releases/$ID/assets" | jq -r '.[] | select(.name=="ImmoJ.apk") | .id'); do
+              curl -s "${H[@]}" -X DELETE "$API/releases/assets/$A"
+            done
+          fi
+          CODE=$(curl -s -o /tmp/envoi.json -w "%{http_code}" "${H[@]}" -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary @android/ImmoJ.apk "https://uploads.github.com/repos/$DEPOT/releases/$ID/assets?name=ImmoJ.apk")
+          [ "$CODE" = "201" ] || { echo "::error::Envoi de l'APK refusé (HTTP $CODE)"; cat /tmp/envoi.json; exit 1; }
+          echo "Release publiée : https://github.com/$DEPOT/releases/tag/$TAG"

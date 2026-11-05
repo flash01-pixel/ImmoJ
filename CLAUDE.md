@@ -7,7 +7,7 @@ Lis `README.md`, `PLAN.md`, `docs/` et `CHANGELOG.md` avant de toucher au code.
 - Travailler sur une branche (`immoj-1.2`…), petits commits explicites en français, push après chaque commit.
 - **Jamais de merge sur `main` sans accord écrit.** Les PR se fusionnent via l'outil GitHub après accord.
 - Chaque lot : tests verts (pytest + ruff ; tests JVM Kotlin), APK compilé par GitHub sans erreur,
-  versionName `1.2.0-lotN`, entrée dans `CHANGELOG.md`, puis message court : changements, lien de l'APK,
+  versionName `X.Y.Z-lotN` (stable : `X.Y.Z`), entrée dans `CHANGELOG.md`, puis message court : changements, lien de l'APK,
   checklist « Comment vérifier sur ton téléphone » (5–10 points). Depuis le lot 4, le propriétaire a
   demandé d'enchaîner les lots sans attendre son OK et de ne le solliciter qu'en cas de nécessité ;
   le merge sur `main` reste soumis à son accord écrit.
@@ -49,4 +49,8 @@ Lis `README.md`, `PLAN.md`, `docs/` et `CHANGELOG.md` avant de toucher au code.
 - Dates Postgres « +00:00 » : toujours passer par `util/Dates.kt` (jamais `Instant.parse`).
 - Quota GitHub Actions : dépôt privé = 2 000 min/mois ; un passage de collecte dure 2–5 min.
 - Les tests JVM Kotlin sont dans `android/app/src/test` ; ils bloquent l'APK s'ils échouent.
-- Clé de signature de développement : `android/signature/immoj-debug.keystore` (mot de passe `immoj-debug`).
+- Clé de signature de développement : `android/signature/immoj-debug.keystore` (mot de passe `immoj-debug`),
+  pour les builds locaux et comme ancienne clé de la rotation. Les APK publiés sont des builds
+  `release` signés dans `build-apk.yml` avec la clé de production (secrets `RELEASE_KEYSTORE_BASE64`,
+  `RELEASE_KEYSTORE_PASSWORD`) — ne jamais mettre cette clé dans le dépôt.
+- Version stable = versionName sans « - » sur `main` → Release `vX.Y.Z` dans `immoj-apk`.
