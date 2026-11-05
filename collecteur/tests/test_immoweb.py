@@ -65,3 +65,15 @@ def test_url_api():
 
 def test_json_vide():
     assert analyser_json({}, "location") == []
+
+
+def test_kots_de_la_province(lire_json):
+    """Lot 5 : la recherche « kot » (capture du 22/10) donne 9 kots, dont 6 de particuliers."""
+    annonces = analyser_json(lire_json("lot5/immoweb_kots_luxembourg.json"), "location")
+    assert len(annonces) == 9
+    assert {a.type for a in annonces} == {"kot"}
+    assert sum(a.annonceur == "particulier" for a in annonces) == 6
+    assert all(a.agence is None for a in annonces if a.annonceur == "particulier")
+    src = Immoweb.__new__(Immoweb)
+    url = src.url_api("location", 1, "kot/a-louer/luxembourg/province")
+    assert "/kot/a-louer/luxembourg/province?" in url

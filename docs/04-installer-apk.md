@@ -8,7 +8,7 @@ rien à installer sur ton PC.
 Le plus simple, **directement depuis le téléphone** :
 
 1. Dans le navigateur du téléphone, connecté à ton compte GitHub, ouvre
-   https://github.com/flash01-pixel/ImmoJ/blob/apk/ImmoJ.apk
+   https://github.com/flash01-pixel/immoj-apk/blob/apk/ImmoJ.apk
    (c'est la branche `apk`, mise à jour à chaque compilation).
 2. Appuie sur le bouton de téléchargement (icône flèche vers le bas, ou
    « Download raw file » / « Raw »). Le fichier `ImmoJ.apk` se télécharge.
@@ -42,3 +42,29 @@ Au premier lancement, l'écran **Paramètres** s'affiche :
 
 Pour mettre à jour l'appli : télécharge le nouvel APK et installe-le par-dessus
 (les réglages sont conservés).
+
+
+## Mises à jour (depuis la 1.2)
+
+- **Version stable** : https://github.com/flash01-pixel/immoj-apk/releases/latest (fichier
+  `ImmoJ.apk` de la Release), ou la branche `apk`. Elle est signée avec la clé de production.
+- **Passage à la 1.2.0 stable** : si tu as une version de test 1.2.0-lotN (branche `apk-test`), la
+  1.2.0 s'installe par-dessus sur Android 9 et plus (rotation de clé), réglages et fiches ajoutées
+  à la main conservés. Si Android refuse (« appli incompatible » / « conflit de signature ») — c'est
+  le cas depuis la 1.1.0 ou le build 41 de `main` —, désinstalle ImmoJ une fois puis installe la
+  1.2.0. En mode Supabase, tes statuts, notes et recherches sont dans la base : rien n'est perdu ;
+  les fiches ajoutées à la main, elles, sont sur le téléphone.
+- Ensuite, chaque APK (stable ou de test) est signé avec la même clé de production : il s'installe
+  par-dessus le précédent, en gardant tes réglages.
+- Numéro de version : Paramètres → À propos affiche version, build, commit, branche et date de
+  compilation. Compare le build avec celui de la page GitHub de l'APK.
+- L'APK vit dans le dépôt privé `immoj-apk` (le code, lui, est public). Deux branches : `apk` = version de
+  `main` ; `apk-test` = version en cours de test d'une branche de travail (https://github.com/flash01-pixel/immoj-apk/blob/apk-test/ImmoJ.apk).
+
+## Clé de signature (pour le propriétaire)
+
+Deux secrets du dépôt `immoj` (Settings → Secrets and variables → Actions) :
+`RELEASE_KEYSTORE_BASE64` (le fichier `immoj-release.jks` encodé en base64) et
+`RELEASE_KEYSTORE_PASSWORD`. Sans eux, `main` refuse de publier une version stable et les
+branches de test retombent sur la clé de développement. Garde une copie du fichier et du mot de
+passe en lieu sûr : sans cette clé, aucune mise à jour ne pourra plus s'installer par-dessus.

@@ -1,5 +1,6 @@
 package be.immoj.ui.sources
 
+import be.immoj.data.Annonce
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,9 +42,13 @@ import be.immoj.util.Format
 /** État des sources : dernière collecte, dernière réussite, nombre d'annonces actives. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SourcesEcran(app: ImmoJApp, retour: () -> Unit) {
+fun SourcesEcran(app: ImmoJApp, retour: () -> Unit, index: List<Annonce> = emptyList()) {
     var sources by remember { mutableStateOf<List<EtatSource>?>(null) }
     var erreur by remember { mutableStateOf<String?>(null) }
+    val actives = index.filter { it.actif }
+    val parSource = remember(index) {
+        actives.flatMap { a -> a.sources.map { it to a } }.groupBy({ it.first }, { it.second })
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -81,14 +86,26 @@ fun SourcesEcran(app: ImmoJApp, retour: () -> Unit) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(liste, key = { it.source }) { s -> CarteSource(s) }
+                item {
+                    val loc = actives.count { it.transaction == "location" }
+                    val part = actives.count { it.particulier }
+                    Text(
+                        "${Format.nombre(actives.size)} annonces actives : ${Format.nombre(loc)} locations, " +
+                            "${Format.nombre(actives.size - loc)} achats · ${Format.nombre(part)} de particuliers",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+                items(liste, key = { it.source }) { s ->
+                    CarteSource(s, parSource[s.source]?.size ?: s.nbActives,
+                        parSource[s.source]?.count { it.particulier } ?: 0)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CarteSource(s: EtatSource) {
+private fun CarteSource(s: EtatSource, nbActives: Int, nbParticuliers: Int) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -99,10 +116,22 @@ private fun CarteSource(s: EtatSource) {
                 }
                 Text(Format.source(s.source), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
-            Text("Annonces actives : ${s.nbActives}")
-            Text("Dernière collecte : ${Format.depuis(s.derniereCollecte)} " +
-                "(${s.nbTrouvees} vues, ${s.nbNouvelles} nouvelles)")
-            Text("Dernière réussite : ${Format.depuis(s.derniereReussite)}")
+            Text("Annonces actives : $nbActives" + (if (nbParticuliers > 0) " · $nbParticuliers de particuliers" else ""))
+            // Rapport de couverture du dernier passage : lues / disponibles sur le site.
+            val couverture = buildString {
+                append("Dernier passage${if (s.profond) " (profond)" else ""} : ${s.nbTrouvees} lues")
+                s.nbDisponibles?.let { dispo ->
+                    append(" / ${Format.nombre(dispo)} disponibles")
+                    if (dispo > 0) append(" (${(100 * s.nbTrouvees / dispo).coerceAtMost(100)} %)")
+                }
+                if (s.nbParticuliers > 0) append(" · ${s.nbParticuliers} de particuliers")
+                append(" · ${s.nbNouvelles} nouvelles")
+            }
+            Text(couverture, style = MaterialTheme.typography.bodySmall)
+            Text("Dernière collecte : ${Format.depuis(s.derniereCollecte)} · dernière réussite : " +
+                Format.depuis(s.derniereReussite), style = MaterialTheme.typography.bodySmall)
+            Text("Dernier passage profond : ${Format.depuis(s.derniereProfonde)}",
+                style = MaterialTheme.typography.bodySmall)
             if (!s.derniereOk) {
                 Text(
                     (if (s.bloque) "Bloquée par le site. " else "Erreur : ") + (s.erreur ?: ""),

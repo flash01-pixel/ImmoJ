@@ -36,6 +36,32 @@ def fusionner_photos(existantes: list[str], nouvelles: list[str]) -> list[str]:
     return list(existantes) + [p for p in nouvelles if p not in vues and not vues.add(p)]
 
 
+def a_ete_revue_en_profondeur(derniere_vue: str, publications: list[dict],
+                               profondes: dict[str, str]) -> bool:
+    """Vrai si chaque source du bien a fait un passage profond réussi depuis `derniere_vue`
+    (ou si le bien n'a plus aucune publication)."""
+    if not publications:
+        return True
+    return all(profondes.get(p["source"], "") > derniere_vue for p in publications)
+
+
+def complements_connus(e: dict, a: Annonce) -> dict:
+    """Ce qu'une publication supplémentaire apporte à une fiche existante : date de
+    publication la plus ancienne (C7), type enfin connu (C6), annonceur (lot 4)."""
+    maj: dict = {}
+    if a.date_publication:
+        d = a.date_publication.isoformat()
+        if not e.get("date_publication") or d < e["date_publication"]:
+            maj["date_publication"] = d
+    if a.type != "autre" and e.get("type") == "autre":
+        maj["type"] = a.type
+    if a.annonceur != "inconnu" and e.get("annonceur", "inconnu") == "inconnu":
+        maj["annonceur"] = a.annonceur
+        if a.annonceur == "particulier":
+            maj["agence"] = None
+    return maj
+
+
 class Stockage:
     def __init__(self, secrets: Secrets) -> None:
         self.base = f"{secrets.supabase_url}/rest/v1"
@@ -72,6 +98,16 @@ class Stockage:
         if r.status_code >= 400:
             raise RuntimeError(f"Supabase {table} : HTTP {r.status_code} {r.text[:300]}")
 
+    def _lire_tout(self, table: str, **params: str) -> list[dict]:
+        """Lecture paginée (PostgREST limite une réponse à 1 000 lignes)."""
+        lignes: list[dict] = []
+        page = 1000
+        while True:
+            lot = self._lire(table, limit=str(page), offset=str(len(lignes)), **params)
+            lignes.extend(lot)
+            if len(lot) < page:
+                return lignes
+
     # --- recherches sauvegardées -----------------------------------------
     def lire_recherches(self) -> list[dict]:
         return self._lire("recherches_sauvegardees", actif="eq.true", select="*")
@@ -79,9 +115,16 @@ class Stockage:
     # --- annonces et sources ---------------------------------------------
     def sources_connues(self, source: str) -> dict[str, dict]:
         """Toutes les publications déjà vues pour une source : id_externe → ligne."""
-        lignes = self._lire("annonce_sources", source=f"eq.{source}",
-                            select="id,id_externe,annonce_id,prix_affiche,url")
+        lignes = self._lire_tout(
+            "annonce_sources", source=f"eq.{source}",
+            select="id,id_externe,annonce_id,prix_affiche,url,"
+                   "annonces(type,date_publication,annonceur,precision_position)")
+        for ligne in lignes:
+            ligne["annonce"] = ligne.pop("annonces", None)
         return {ligne["id_externe"]: ligne for ligne in lignes}
+
+    def modifier_annonce(self, annonce_id: str, maj: dict) -> None:
+        self._modifier("annonces", maj, id=f"eq.{annonce_id}")
 
     def candidats_doublon(self, transaction: str, commune: str | None,
                           code_postal: str | None) -> list[Candidat]:
@@ -96,13 +139,16 @@ class Stockage:
         lignes = self._lire(
             "annonces", transaction=f"eq.{transaction}", actif="eq.true",
             **{"or": "(" + ",".join(conditions) + ")"},
-            select="id,transaction,commune,code_postal,prix,chambres,surface,titre,description",
+            select="id,transaction,commune,code_postal,prix,chambres,surface,titre,description,"
+                   "agence,details",
         )
         return [
             Candidat(id=ligne["id"], transaction=ligne["transaction"], commune=ligne["commune"],
                      code_postal=ligne["code_postal"], prix=ligne["prix"],
                      chambres=ligne["chambres"], surface=ligne["surface"],
-                     titre=ligne["titre"] or "", description=ligne["description"] or "")
+                     titre=ligne["titre"] or "", description=ligne["description"] or "",
+                     agence=ligne.get("agence"),
+                     reference=(ligne.get("details") or {}).get("Référence"))
             for ligne in lignes
         ]
 
@@ -117,7 +163,9 @@ class Stockage:
             "jardin": a.jardin, "terrasse": a.terrasse, "animaux": a.animaux, "meuble": a.meuble,
             "date_publication": a.date_publication.isoformat() if a.date_publication else None,
             "photos": a.photos, "description": a.description, "details": a.details,
-            "agence": a.agence, "telephone": a.telephone,
+            "agence": a.agence, "telephone": a.telephone, "annonceur": a.annonceur,
+            "precision_position": ("exacte" if a.latitude is not None
+                                   else "commune" if latitude is not None else None),
             "premiere_detection": maintenant(), "derniere_vue": maintenant(), "actif": True,
         }
         cree = self._inserer("annonces", ligne)[0]
@@ -131,6 +179,7 @@ class Stockage:
             "annonce_id": annonce_id, "source": a.source, "id_externe": a.id_externe,
             "url": a.url, "titre": a.titre, "prix_affiche": a.prix,
             "agence": a.agence, "telephone": a.telephone,
+            "date_publication": a.date_publication.isoformat() if a.date_publication else None,
             "premiere_vue": maintenant(), "derniere_vue": maintenant(),
         }, conflit="source,id_externe")
 
@@ -138,7 +187,7 @@ class Stockage:
         """Quand un doublon apporte des infos manquantes (photos, PEB...), on complète."""
         existante = self._lire("annonces", id=f"eq.{annonce_id}",
                                select="photos,peb,surface,chambres,telephone,agence,description,"
-                                      "details")
+                                      "details,type,date_publication,annonceur")
         if not existante:
             return
         e = existante[0]
@@ -154,6 +203,7 @@ class Stockage:
                 maj[champ] = getattr(a, champ)
         if len(a.description) > len(e.get("description") or "") + 100:
             maj["description"] = a.description
+        maj.update(complements_connus(e, a))
         if maj:
             self._modifier("annonces", maj, id=f"eq.{annonce_id}")
 
@@ -181,14 +231,76 @@ class Stockage:
             self._modifier("annonces", {"derniere_vue": maintenant(), "actif": True},
                            id=f"in.({lot})")
 
+    def dernieres_profondes(self) -> dict[str, str]:
+        """source → fin du dernier passage profond réussi."""
+        lignes = self._lire("collectes", ok="eq.true", profond="eq.true", select="source,fin",
+                            order="fin.desc", limit="500")
+        dernieres: dict[str, str] = {}
+        for ligne in lignes:
+            dernieres.setdefault(ligne["source"], ligne["fin"])
+        return dernieres
+
     def desactiver_anciennes(self, jours: int) -> int:
         limite = (datetime.now(UTC) - timedelta(days=jours)).isoformat()
-        anciennes = self._lire("annonces", actif="eq.true", derniere_vue=f"lt.{limite}",
-                               select="id")
-        if anciennes:
-            ids = ",".join(ligne["id"] for ligne in anciennes)
-            self._modifier("annonces", {"actif": False}, id=f"in.({ids})")
-        return len(anciennes)
+        anciennes = self._lire_tout("annonces", actif="eq.true", derniere_vue=f"lt.{limite}",
+                                    select="id,derniere_vue")
+        if not anciennes:
+            return 0
+        profondes = self.dernieres_profondes()
+        publications: dict[str, list[dict]] = {}
+        ids = [ligne["id"] for ligne in anciennes]
+        for i in range(0, len(ids), 100):
+            lot = ",".join(ids[i:i + 100])
+            for ligne in self._lire_tout("annonce_sources", annonce_id=f"in.({lot})",
+                                         select="annonce_id,source"):
+                publications.setdefault(ligne["annonce_id"], []).append(ligne)
+        a_desactiver = [ligne["id"] for ligne in anciennes
+                        if a_ete_revue_en_profondeur(ligne["derniere_vue"],
+                                                     publications.get(ligne["id"], []), profondes)]
+        self.desactiver(a_desactiver)
+        return len(a_desactiver)
+
+    def desactiver(self, ids: list[str]) -> None:
+        for i in range(0, len(ids), 100):
+            lot = ",".join(ids[i:i + 100])
+            self._modifier("annonces", {"actif": False}, id=f"in.({lot})")
+
+    def annonces_actives_brutes(self) -> list[dict]:
+        lignes = self._lire_tout(
+            "annonces", actif="eq.true",
+            select="id,transaction,commune,code_postal,prix,chambres,surface,titre,description,"
+                   "agence,annonceur,type,premiere_detection,date_publication,latitude,longitude,"
+                   "precision_position,details,annonce_sources(source,agence,url)")
+        for ligne in lignes:
+            ligne["sources"] = ligne.pop("annonce_sources", None) or []
+        return lignes
+
+    def fusionner_annonces(self, cible_id: str, doublon_id: str) -> None:
+        """Le doublon disparaît : ses publications, photos, détails et historique
+        de prix passent à la cible."""
+        lignes = self._lire("annonces", id=f"in.({cible_id},{doublon_id})",
+                            select="id,photos,details,peb,surface,chambres,telephone,agence,"
+                                   "date_publication,charges,annonceur,description")
+        par_id = {ligne["id"]: ligne for ligne in lignes}
+        cible, doublon = par_id.get(cible_id), par_id.get(doublon_id)
+        if not cible or not doublon:
+            return
+        self._modifier("annonce_sources", {"annonce_id": cible_id}, annonce_id=f"eq.{doublon_id}")
+        self._modifier("historique_prix", {"annonce_id": cible_id}, annonce_id=f"eq.{doublon_id}")
+        maj: dict[str, Any] = {
+            "photos": fusionner_photos(cible.get("photos") or [], doublon.get("photos") or []),
+            "details": {**(doublon.get("details") or {}), **(cible.get("details") or {})},
+        }
+        for champ in ("peb", "surface", "chambres", "telephone", "agence", "date_publication",
+                      "charges"):
+            if cible.get(champ) in (None, "") and doublon.get(champ) not in (None, ""):
+                maj[champ] = doublon[champ]
+        if cible.get("annonceur", "inconnu") == "inconnu":
+            maj["annonceur"] = doublon.get("annonceur") or "inconnu"
+        if len(doublon.get("description") or "") > len(cible.get("description") or "") + 100:
+            maj["description"] = doublon["description"]
+        self._modifier("annonces", maj, id=f"eq.{cible_id}")
+        self._modifier("annonces", {"actif": False}, id=f"eq.{doublon_id}")
 
     def desactiver_hors_province(self) -> int:
         """Désactive les biens dont le code postal connu n'est pas en province (6600–6999)."""
@@ -225,12 +337,15 @@ class Stockage:
         return n
 
     def enregistrer_collecte(self, source: str, debut: str, ok: bool, nb_trouvees: int,
-                             nb_nouvelles: int, erreur: str, bloque: bool, duree_s: float) -> None:
+                             nb_nouvelles: int, erreur: str, bloque: bool, duree_s: float,
+                             profond: bool = False, nb_disponibles: int | None = None,
+                             nb_particuliers: int = 0) -> None:
         self._inserer("collectes", {
             "source": source, "debut": debut, "fin": maintenant(), "ok": ok,
             "nb_trouvees": nb_trouvees, "nb_nouvelles": nb_nouvelles,
             "erreur": erreur[:1000] if erreur else None, "bloque": bloque,
-            "duree_s": round(duree_s, 1),
+            "duree_s": round(duree_s, 1), "profond": profond,
+            "nb_disponibles": nb_disponibles, "nb_particuliers": nb_particuliers,
         })
 
 

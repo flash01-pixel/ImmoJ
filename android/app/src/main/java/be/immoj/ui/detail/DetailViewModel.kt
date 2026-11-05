@@ -21,7 +21,10 @@ data class DetailEtat(
     val message: String? = null,   // confirmation ou erreur d'enregistrement du statut
 )
 
-class DetailViewModel(private val depot: Depot, private val id: String) : ViewModel() {
+class DetailViewModel(
+    private val depot: Depot, private val id: String,
+    private val onStatutChange: (String, StatutPerso, String?) -> Unit = { _, _, _ -> },
+) : ViewModel() {
     private val _etat = MutableStateFlow(DetailEtat())
     val etat: StateFlow<DetailEtat> = _etat.asStateFlow()
 
@@ -31,8 +34,14 @@ class DetailViewModel(private val depot: Depot, private val id: String) : ViewMo
         viewModelScope.launch {
             _etat.update { it.copy(chargement = true, erreur = null) }
             try {
-                val a = depot.annonce(id)
+                val chargee = depot.annonce(id)
                 val h = runCatching { depot.historiquePrix(id) }.getOrDefault(emptyList())
+                // Ouvrir une annonce « Nouveau » la marque « Vu » (la pastille de l'onglet suit).
+                val a = if (chargee != null && chargee.statut == StatutPerso.NOUVEAU.code &&
+                    runCatching { depot.changerStatut(id, StatutPerso.VU, chargee.note) }.isSuccess) {
+                    onStatutChange(id, StatutPerso.VU, chargee.note)
+                    chargee.copy(statut = StatutPerso.VU.code, badgeNouveau = false)
+                } else chargee
                 _etat.update { it.copy(annonce = a, historique = h, chargement = false,
                     erreur = if (a == null) "Annonce introuvable." else null) }
             } catch (e: Exception) {
@@ -45,6 +54,7 @@ class DetailViewModel(private val depot: Depot, private val id: String) : ViewMo
         viewModelScope.launch {
             try {
                 depot.changerStatut(id, statut, note)
+                onStatutChange(id, statut, note)
                 _etat.update { it.copy(message = "Statut enregistré : ${statut.libelle}",
                     annonce = it.annonce?.copy(statut = statut.code, note = note)) }
             } catch (e: Exception) {

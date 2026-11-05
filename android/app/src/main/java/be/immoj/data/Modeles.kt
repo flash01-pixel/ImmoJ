@@ -34,12 +34,18 @@ data class Annonce(
     @SerialName("date_publication") val datePublication: String? = null,
     @SerialName("premiere_detection") val premiereDetection: String? = null,
     @SerialName("derniere_vue") val derniereVue: String? = null,
+    /** Vignette de liste (première photo) ; `photos` complet n'est chargé que pour la fiche. */
+    val photo: String? = null,
     val photos: List<String> = emptyList(),
     val description: String? = null,
     /** Informations complémentaires (libellé → valeur), variables selon la source. */
     val details: Map<String, JsonElement> = emptyMap(),
     val agence: String? = null,
     val telephone: String? = null,
+    /** particulier / agence / notaire / inconnu (lot 4 ; « inconnu » pour les bases anciennes). */
+    val annonceur: String = "inconnu",
+    /** « exacte » (GPS de la source) ou « commune » (centre de la commune), null si sans position. */
+    @SerialName("precision_position") val precisionPosition: String? = null,
     val actif: Boolean = true,
     val statut: String = "nouveau",
     val note: String? = null,
@@ -51,6 +57,48 @@ data class Annonce(
     /** « 6700 Arlon » ou la localité affichée par la source. */
     val lieu: String
         get() = listOfNotNull(codePostal, localite ?: commune).joinToString(" ")
+
+    /** Première photo, quelle que soit la façon dont l'annonce a été chargée. */
+    val vignette: String? get() = photo ?: photos.firstOrNull()
+
+    /** Particulier ? D'après le champ `annonceur` du collecteur (secours : « PRIVATE »). */
+    val particulier: Boolean get() = typeAnnonceur == "particulier"
+
+    /** « particulier », « notaire » ou « agence » : champ du collecteur, sinon règle de secours
+     *  pour les données écrites avant le lot 4. */
+    val typeAnnonceur: String
+        get() = when {
+            annonceur in setOf("particulier", "agence", "notaire") -> annonceur
+            agence == "PRIVATE" -> "particulier"
+            sources.any { it == "notaire" } -> "notaire"
+            agence != null || sources.any { it.startsWith("agences:") } -> "agence"
+            else -> "inconnu"
+        }
+
+    /** Position au centre de la commune (et non à l'adresse du bien) ? */
+    val positionApproximative: Boolean get() = precisionPosition == "commune"
+
+    /** Libellé de l'annonceur : « Particulier », « Notaire », ou le nom de l'agence. */
+    val annonceurLibelle: String
+        get() = when (typeAnnonceur) {
+            "particulier" -> "Particulier"
+            "notaire" -> "Notaire" + (agence?.takeIf { it != "PRIVATE" && it != "Notaire" }?.let { " · $it" } ?: "")
+            "inconnu" -> agence?.takeIf { it != "PRIVATE" } ?: "Annonceur inconnu"
+            else -> agence?.takeIf { it != "PRIVATE" } ?: "Agence"
+        }
+
+    /** Garage ou parking mentionné dans les détails de la fiche. */
+    val aGarage: Boolean
+        get() = details.keys.any { it.startsWith("Garage") || it.startsWith("Parking") } &&
+            detailsLisibles.any { (k, v) -> (k.startsWith("Garage") || k.startsWith("Parking")) && v != "non" && v != "0" }
+
+    /** Date de disponibilité (« 2026-12-01 ») si la fiche la donne. */
+    val disponibleLe: String?
+        get() = detailsLisibles.firstOrNull { (k, _) -> k == "Disponibilité" || k == "Libre le" }?.second
+            ?.let { Regex("\\d{4}-\\d{2}-\\d{2}").find(it)?.value }
+
+    /** Prix au m² (ou loyer mensuel au m²), null sans surface. */
+    val prixM2: Double? get() = if (prix != null && surface != null && surface > 0) prix.toDouble() / surface else null
 
     /** Détails lisibles : « Salles de bain » → « 2 », « Garage » → « oui ». */
     val detailsLisibles: List<Pair<String, String>>
@@ -90,6 +138,11 @@ data class EtatSource(
     @SerialName("nb_nouvelles") val nbNouvelles: Int = 0,
     @SerialName("derniere_reussite") val derniereReussite: String? = null,
     @SerialName("nb_actives") val nbActives: Int = 0,
+    /** Lot 4 : rapport de couverture du dernier passage. */
+    val profond: Boolean = false,
+    @SerialName("nb_disponibles") val nbDisponibles: Int? = null,
+    @SerialName("nb_particuliers") val nbParticuliers: Int = 0,
+    @SerialName("derniere_profonde") val derniereProfonde: String? = null,
 )
 
 /** Statuts personnels possibles, avec leur libellé en français. */

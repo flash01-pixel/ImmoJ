@@ -1,43 +1,40 @@
 package be.immoj.ui.navigation
 
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
 import be.immoj.ImmoJApp
+import be.immoj.ui.ajouter.AjouterEcran
 import be.immoj.ui.detail.DetailEcran
-import be.immoj.ui.filtres.FiltresEcran
 import be.immoj.ui.liste.ListeViewModel
-import be.immoj.ui.liste.messageErreur
 import be.immoj.ui.parametres.ParametresEcran
 import be.immoj.ui.principal.PrincipalEcran
 import be.immoj.ui.sources.SourcesEcran
-import kotlinx.coroutines.launch
 
 /** Les écrans de l'appli et leurs routes. */
 object Routes {
     const val PRINCIPAL = "principal?onglet={onglet}"
     const val DETAIL = "detail/{id}"
-    const val FILTRES = "filtres"
     const val PARAMETRES = "parametres"
     const val SOURCES = "sources"
+    const val AJOUTER = "ajouter"
     fun principal(onglet: String = "liste") = "principal?onglet=$onglet"
     fun detail(id: String) = "detail/$id"
 }
 
 @Composable
-fun AppNavigation(app: ImmoJApp) {
+fun AppNavigation(app: ImmoJApp, partage: Triple<String?, Uri?, Long>? = null) {
     val nav = rememberNavController()
-    val contexte = LocalContext.current
-    val portee = rememberCoroutineScope()
+    // Un partage reçu (texte, image, jeton unique) ouvre l'écran d'ajout.
+    LaunchedEffect(partage?.third) { if (partage != null) nav.navigate(Routes.AJOUTER) }
     val reglages by app.preferences.flux.collectAsState(initial = null)
     // Tant que les réglages ne sont pas lus, on n'affiche rien (une fraction de seconde).
     if (reglages == null) return
@@ -58,9 +55,19 @@ fun AppNavigation(app: ImmoJApp) {
                 vm = vm,
                 ongletInitial = entree.arguments?.getString("onglet") ?: "liste",
                 ouvrirDetail = { id -> nav.navigate(Routes.detail(id)) },
-                ouvrirFiltres = { nav.navigate(Routes.FILTRES) },
                 ouvrirParametres = { nav.navigate(Routes.PARAMETRES) },
                 ouvrirSources = { nav.navigate(Routes.SOURCES) },
+                ouvrirAjout = { nav.navigate(Routes.AJOUTER) },
+            )
+        }
+        composable(Routes.AJOUTER) {
+            AjouterEcran(
+                app = app, textePartage = partage?.first, photoPartagee = partage?.second,
+                retour = { nav.popBackStack() },
+                ouvrirAnnonce = { id ->
+                    vm.charger()   // l'index inclut la nouvelle annonce manuelle
+                    nav.navigate(Routes.detail(id)) { popUpTo(Routes.PRINCIPAL) }
+                },
             )
         }
         composable(
@@ -68,30 +75,14 @@ fun AppNavigation(app: ImmoJApp) {
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
         ) { entree ->
             val id = entree.arguments?.getString("id") ?: return@composable
-            DetailEcran(app = app, id = id, retour = { nav.popBackStack() })
-        }
-        composable(Routes.FILTRES) {
             val etat by vm.etat.collectAsState()
-            FiltresEcran(
-                initial = etat.filtres,
-                communes = etat.communes,
-                transaction = etat.transaction,
-                appliquer = { vm.changerFiltres(it) },
-                enregistrerRecherche = { recherche ->
-                    portee.launch {
-                        val message = try {
-                            app.depot.creerRecherche(recherche)
-                            "Recherche « ${recherche.nom} » enregistrée"
-                        } catch (e: Exception) {
-                            messageErreur(e)
-                        }
-                        Toast.makeText(contexte, message, Toast.LENGTH_LONG).show()
-                    }
-                },
-                ouvrirCarte = {
-                    nav.navigate(Routes.principal("carte")) { popUpTo(0) }
-                },
-                retour = { nav.popBackStack() },
+            DetailEcran(
+                app = app, id = id, retour = { nav.popBackStack() },
+                onStatutChange = { idA, s, n -> vm.appliquerStatut(idA, s, n) },
+                voisins = etat.annonces.map { it.id },
+                index = etat.index,
+                centreLat = etat.filtres.centreLat, centreLon = etat.filtres.centreLon,
+                ouvrirAnnonce = { autre -> nav.navigate(Routes.detail(autre)) },
             )
         }
         composable(Routes.PARAMETRES) {
@@ -104,7 +95,8 @@ fun AppNavigation(app: ImmoJApp) {
             )
         }
         composable(Routes.SOURCES) {
-            SourcesEcran(app = app, retour = { nav.popBackStack() })
+            val etat by vm.etat.collectAsState()
+            SourcesEcran(app = app, retour = { nav.popBackStack() }, index = etat.index)
         }
     }
 }

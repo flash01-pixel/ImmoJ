@@ -49,3 +49,13 @@ def test_plafond_notifications(monkeypatch):
     n.clore()
     assert len(envois) == MAX_PAR_PASSAGE + 1
     assert "5 autre(s)" in envois[-1]["message"]
+
+
+def test_toutes_les_sources_acceptent_le_mode_profond():
+    """Chaque source du registre s'instancie en passage profond (régression du 22/10)."""
+    from immoj.sources import REGISTRE
+
+    for classe in REGISTRE.values():
+        src = classe(pages_max=None, profond=True)
+        assert src.profond is True
+        assert src.pages_a_lire() >= 1

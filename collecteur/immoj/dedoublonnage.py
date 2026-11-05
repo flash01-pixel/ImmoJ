@@ -7,7 +7,15 @@ tiennent :
 - prix proches (± TOLERANCE_PRIX) ;
 - même nombre de chambres, ou l'un des deux inconnu ;
 - surfaces proches (± TOLERANCE_SURFACE), ou l'une inconnue ;
-- titre OU début de description suffisamment similaires (rapidfuzz).
+- ET l'un de ces indices :
+  * même référence d'annonce (quand les deux la donnent) ;
+  * correspondance structurée FORTE : prix identique, mêmes chambres (connues des
+    deux côtés) et surfaces connues à ± TOLERANCE_SURFACE_FORTE — même si les
+    titres diffèrent (« Appartement à louer » chez Immovlan, « Superbe appartement
+    neuf » chez l'agence) ;
+  * prix identique, mêmes chambres et même agence (noms normalisés), surface
+    inconnue d'un côté ;
+  * sinon titre OU début de description suffisamment similaires (rapidfuzz).
 
 Les seuils sont dans config.py. En cas de doute (peu d'informations des deux
 côtés), on exige une similarité de texte plus forte pour éviter de fusionner
@@ -22,6 +30,7 @@ from rapidfuzz import fuzz
 
 from . import config
 from .geocodage import normaliser
+from .modele import meme_agence
 
 
 @dataclass
@@ -37,6 +46,8 @@ class Candidat:
     surface: int | None
     titre: str
     description: str
+    agence: str | None = None
+    reference: str | None = None
 
 
 def _proche(a: int | None, b: int | None, tolerance: float) -> bool | None:
@@ -57,10 +68,30 @@ def _similarite(a: str, b: str) -> float:
     return fuzz.token_sort_ratio(a, b)
 
 
+def _meme_reference(a: str | None, b: str | None) -> bool:
+    na, nb = normaliser(a), normaliser(b)
+    return bool(na) and len(na) >= 4 and na == nb
+
+
+def correspondance_forte(nouvelle: Candidat, existante: Candidat) -> bool:
+    """Prix identique, mêmes chambres (connues) et surfaces connues à ±5 % ; ou prix
+    identique, mêmes chambres et même agence quand une surface manque."""
+    if nouvelle.prix is None or nouvelle.prix != existante.prix:
+        return False
+    if nouvelle.chambres is None or nouvelle.chambres != existante.chambres:
+        return False
+    surfaces = _proche(nouvelle.surface, existante.surface, config.TOLERANCE_SURFACE_FORTE)
+    if surfaces is True:
+        return True
+    return surfaces is None and meme_agence(nouvelle.agence, existante.agence)
+
+
 def score(nouvelle: Candidat, existante: Candidat) -> float:
-    """Retourne 0 si incompatibles, sinon une similarité de texte (0-100)."""
+    """Retourne 0 si incompatibles, sinon une similarité (0-100)."""
     if nouvelle.transaction != existante.transaction:
         return 0.0
+    if _meme_reference(nouvelle.reference, existante.reference):
+        return 100.0
     meme_lieu = (
         (nouvelle.commune and existante.commune
          and normaliser(nouvelle.commune) == normaliser(existante.commune))
@@ -75,6 +106,8 @@ def score(nouvelle: Candidat, existante: Candidat) -> float:
         return 0.0
     if _proche(nouvelle.surface, existante.surface, config.TOLERANCE_SURFACE) is False:
         return 0.0
+    if correspondance_forte(nouvelle, existante):
+        return 100.0
 
     sim_titre = _similarite(nouvelle.titre, existante.titre)
     sim_desc = _similarite(nouvelle.description[:300], existante.description[:300])

@@ -10,51 +10,110 @@
 # position GPS : on place alors l'annonce au centre de sa commune.
 communes:
   # --- Arrondissement d'Arlon ---
-  - {nom: Arlon,        codes: [6700, 6704, 6706], lat: 49.683, lon: 5.817, localites: [Bonnert, Heinsch, Toernich, Guirsch, Autelbas, Stockem, Weyler, Udange, Sterpenich, Frassem, Viville]}
-  - {nom: Attert,       codes: [6717], lat: 49.750, lon: 5.783, localites: [Nobressart, Nothomb, Thiaumont, Tontelange, Post, Metzert, Lischert]}
+  - {nom: Arlon,        codes: [6700, 6704, 6706], lat: 49.683, lon: 5.817, localites: [Bonnert, Heinsch, Toernich, Guirsch, Autelbas, Stockem, Weyler, Udange, Sterpenich, Frassem, Viville, Clairefontaine, Fouches, Sampont, Schoppach, Waltzing, Barnich, Sesselich, Freylange]}
+  - {nom: Attert,       codes: [6717], lat: 49.750, lon: 5.783, localites: [Nobressart, Nothomb, Thiaumont, Tontelange, Post, Metzert, Lischert, Grendel, Heinstert, Lottert, Parette, Schadeck, Schockville, Tattert, Luxeroth, Attert]}
   - {nom: Aubange,      codes: [6790, 6791, 6792], lat: 49.567, lon: 5.800, localites: [Athus, Halanzy, Rachecourt, Aix-sur-Cloie, Battincourt]}
   - {nom: Martelange,   codes: [6630], lat: 49.833, lon: 5.733, localites: [Grumelange, Radelange]}
   - {nom: Messancy,     codes: [6780, 6781, 6782], lat: 49.600, lon: 5.817, localites: [Hondelange, Wolkrange, Sélange, Habergy, Buvange, Differt, Longeau, Turpange, Bébange, Guerlange]}
   # --- Arrondissement de Bastogne ---
-  - {nom: Bastogne,     codes: [6600], lat: 50.000, lon: 5.717, localites: [Longvilly, Noville, Villers-la-Bonne-Eau, Wardin, Mageret, Bourcy, Marvie, Lutrebois]}
-  - {nom: Bertogne,     codes: [6686, 6687, 6688], lat: 50.083, lon: 5.667, localites: [Flamierge, Longchamps, Givry, Salle]}
-  - {nom: Fauvillers,   codes: [6637], lat: 49.850, lon: 5.667, localites: [Hollange, Tintange, Warnach, Bodange, Strainchamps, Wisembach]}
-  - {nom: Gouvy,        codes: [6670, 6671, 6672, 6673, 6674], lat: 50.183, lon: 5.933, localites: [Bovigny, Beho, Cherain, Montleban, Limerlé, Ourthe, Steinbach]}
-  - {nom: Houffalize,   codes: [6660, 6661, 6662, 6663, 6666], lat: 50.133, lon: 5.783, localites: [Mont, Nadrin, Tailles, Tavigny, Mabompré, Wibrin, Dinez, Achouffe, Wilogne, Buret]}
-  - {nom: Sainte-Ode,   codes: [6680, 6681], lat: 50.017, lon: 5.517, localites: [Amberloup, Lavacherie, Tillet, Houmont, Rechrival]}
-  - {nom: Vaux-sur-Sûre, codes: [6640, 6642], lat: 49.917, lon: 5.583, localites: [Hompré, Morhet, Nives, Sibret, Juseret, Cobreville, Remichampagne]}
-  - {nom: Vielsalm,     codes: [6690, 6692, 6698], lat: 50.283, lon: 5.917, localites: [Bihain, Petit-Thier, Grand-Halleux, Salmchâteau, Rencheux, Ville-du-Bois, Regné, Hébronval]}
+  - {nom: Bastogne,     codes: [6600], lat: 50.000, lon: 5.717, localites: [Longvilly, Noville, Villers-la-Bonne-Eau, Wardin, Mageret, Bourcy, Marvie, Lutrebois, Benonchamps, Bizory, Foy, Hemroulle, Isle-la-Hesse, Lutremange, Mande-Saint-Étienne, Neffe, Rachamps, Savy, Senonchamps, Arloncourt, Michamps, Moinet, Hardigny, Luzery, Cobru, Harzy]}
+  - {nom: Bertogne,     codes: [6686, 6687, 6688], lat: 50.083, lon: 5.667, localites: [Flamierge, Longchamps, Givry, Salle, Compogne, Roumont, Mande-Sainte-Marie, Tronle, Withimont, Wigny, Champs, Rouette]}
+  - {nom: Fauvillers,   codes: [6637], lat: 49.850, lon: 5.667, localites: [Hollange, Tintange, Warnach, Bodange, Strainchamps, Wisembach, Honville, Sainlez, Menufontaine, Burnon]}
+  - {nom: Gouvy,        codes: [6670, 6671, 6672, 6673, 6674], lat: 50.183, lon: 5.933, localites: [Bovigny, Beho, Cherain, Montleban, Limerlé, Ourthe, Steinbach, Cierreux, Courtil, Halconreux, Rogery, Sterpigny, Baclain, Wathermal, Brisy, Rettigny, Deiffelt, Honvelez, Langlire, Lomré]}
+  - {nom: Houffalize,   codes: [6660, 6661, 6662, 6663, 6666], lat: 50.133, lon: 5.783, localites: [Mont, Nadrin, Tailles, Tavigny, Mabompré, Wibrin, Dinez, Achouffe, Wilogne, Buret, Bonnerue, Boeur, Cetturu, Cowan, Engreux, Fontenaille, Ollomont, Sommerain, Vellereux, Vissoule, Wandebourcy, Taverneux, Alhoumont, Bernistap, Filly]}
+  - {nom: Sainte-Ode,   codes: [6680, 6681], lat: 50.017, lon: 5.517, localites: [Amberloup, Lavacherie, Tillet, Houmont, Rechrival, Beauplateau, Gérimont, Herbaimont, Magerotte, Sprimont, Acul, Hubermont]}
+  - {nom: Vaux-sur-Sûre, codes: [6640, 6642], lat: 49.917, lon: 5.583, localites: [Hompré, Morhet, Nives, Sibret, Juseret, Cobreville, Remichampagne, Vaux-lez-Rosières, Rosières, Rosière, Bercheux, Chaumont, Chenogne, Clochimont, Grandru, Jodenville, Lescheret, Livarchamps, Remoiville, Salvacourt, Sûre, Villeroux, Assenois, Poisson-Moulin, Rosière-la-Petite]}
+  - {nom: Vielsalm,     codes: [6690, 6692, 6698], lat: 50.283, lon: 5.917, localites: [Bihain, Petit-Thier, Grand-Halleux, Salmchâteau, Rencheux, Ville-du-Bois, Regné, Hébronval, Goronne, Neuville, Provedroux, Burtonville, Commanster, Ottré, Joubiéval, Cahay, Farnières, Poteau]}
   # --- Arrondissement de Marche-en-Famenne ---
-  - {nom: Durbuy,       codes: [6940, 6941], lat: 50.350, lon: 5.450, localites: [Barvaux, Barvaux-sur-Ourthe, Bomal, Bomal-sur-Ourthe, Septon, Wéris, Grandhan, Bende, Heyd, Izier, Tohogne, Villers-Sainte-Gertrude, Borlon]}
-  - {nom: Érezée,       codes: [6997], lat: 50.283, lon: 5.550, localites: [Erezée, Amonines, Mormont, Soy, Fisenne, Briscol, Blier]}
-  - {nom: Hotton,       codes: [6990], lat: 50.267, lon: 5.450, localites: [Fronville, Hampteau, Marenne, Melreux, Bourdon, Ny]}
-  - {nom: La Roche-en-Ardenne, codes: [6980, 6982, 6983, 6984, 6986], lat: 50.183, lon: 5.583, localites: [La Roche, Beausaint, Samrée, Ortho, Hives, Halleux, Cielle, Warempage, Maboge]}
-  - {nom: Manhay,       codes: [6960], lat: 50.300, lon: 5.683, localites: [Dochamps, Grandmenil, Harre, Malempré, Odeigne, Vaux-Chavanne, Deux-Rys]}
-  - {nom: Marche-en-Famenne, codes: [6900], lat: 50.233, lon: 5.333, localites: [Marche, Aye, Hargimont, Humain, "On", Roy, Waha, Marloie, Lignières, Verdenne, Champlon-Famenne]}
-  - {nom: Nassogne,     codes: [6950, 6951, 6952, 6953], lat: 50.133, lon: 5.350, localites: [Harsin, Bande, Grune, Forrières, Lesterny, Masbourg, Ambly, Charneux]}
-  - {nom: Rendeux,      codes: [6987], lat: 50.233, lon: 5.500, localites: [Beffe, Hodister, Marcourt, Chéoux, Marcouray]}
-  - {nom: Tenneville,   codes: [6970, 6971, 6972], lat: 50.100, lon: 5.533, localites: [Champlon, Erneuville, Laneuville-au-Bois, Cens, Wyompont]}
+  - {nom: Durbuy,       codes: [6940, 6941], lat: 50.350, lon: 5.450, localites: [Barvaux, Barvaux-sur-Ourthe, Bomal, Bomal-sur-Ourthe, Septon, Wéris, Grandhan, Bende, Heyd, Izier, Tohogne, Villers-Sainte-Gertrude, Borlon, Aisne, Juzaine, Warre, Oppagne, Ozo, Morville, Petite-Somme, Palenge, Petit-Han, Herbet, Rome, Enneille]}
+  - {nom: Érezée,       codes: [6997], lat: 50.283, lon: 5.550, localites: [Erezée, Amonines, Mormont, Soy, Fisenne, Briscol, Blier, Clerheid, Fanzel, Hoursinne, Melines, Wy, Biron]}
+  - {nom: Hotton,       codes: [6990], lat: 50.267, lon: 5.450, localites: [Fronville, Hampteau, Marenne, Melreux, Bourdon, Ny, Werpin, Menil-Favay, Monteuville, Deulin, Hotton]}
+  - {nom: La Roche-en-Ardenne, codes: [6980, 6982, 6983, 6984, 6986], lat: 50.183, lon: 5.583, localites: [La Roche, Beausaint, Samrée, Ortho, Hives, Halleux, Cielle, Warempage, Maboge, Vecmont, Mierchamps, Roupage, Nisramont, Jupille, Bérismenil, Buisson, Thimont]}
+  - {nom: Manhay,       codes: [6960], lat: 50.300, lon: 5.683, localites: [Dochamps, Grandmenil, Harre, Malempré, Odeigne, Vaux-Chavanne, Deux-Rys, Lamormenil, Freyneux, Oster, Chêne-al'Pierre, Grandménil, Fays]}
+  - {nom: Marche-en-Famenne, codes: [6900], lat: 50.233, lon: 5.333, localites: [Marche, Aye, Hargimont, Humain, "On", Roy, Waha, Marloie, Lignières, Verdenne, Champlon-Famenne, Hollogne, Grimbiémont]}
+  - {nom: Nassogne,     codes: [6950, 6951, 6952, 6953], lat: 50.133, lon: 5.350, localites: [Harsin, Bande, Grune, Forrières, Lesterny, Masbourg, Ambly, Charneux, Chavanne, Nassogne]}
+  - {nom: Rendeux,      codes: [6987], lat: 50.233, lon: 5.500, localites: [Beffe, Hodister, Marcourt, Chéoux, Marcouray, Nohaimont, Ronzon, Trinal, Waharday, Magoster, Devantave, Bardonwez, Rendeux]}
+  - {nom: Tenneville,   codes: [6970, 6971, 6972], lat: 50.100, lon: 5.533, localites: [Champlon, Erneuville, Laneuville-au-Bois, Cens, Wyompont, Baconfoy, Prelle, Ortheuville, Mochamps, Journal, Wembay, Berguème, Tenneville]}
   # --- Arrondissement de Neufchâteau ---
-  - {nom: Bertrix,      codes: [6880], lat: 49.850, lon: 5.250, localites: [Auby-sur-Semois, Cugnon, Jehonville, Orgeo, Mortehan, Biourge]}
-  - {nom: Bouillon,     codes: [6830, 6831, 6832, 6833, 6834, 6836], lat: 49.800, lon: 5.067, localites: [Les Hayons, Poupehan, Rochehaut, Noirefontaine, Sensenruth, Ucimont, Vivy, Bellevaux, Dohan, Corbion, Frahan, Curfoz]}
+  - {nom: Bertrix,      codes: [6880], lat: 49.850, lon: 5.250, localites: [Auby-sur-Semois, Cugnon, Jehonville, Orgeo, Mortehan, Biourge, Blanche-Oreille, Burhaimont, Glaumont, Nevraumont, Renaumont, Rossart, Saupont, Acremont]}
+  - {nom: Bouillon,     codes: [6830, 6831, 6832, 6833, 6834, 6836], lat: 49.800, lon: 5.067, localites: [Les Hayons, Poupehan, Rochehaut, Noirefontaine, Sensenruth, Ucimont, Vivy, Bellevaux, Dohan, Corbion, Frahan, Curfoz, Botassart, Mogimont, Laviot, Cornimont]}
   - {nom: Daverdisse,   codes: [6929], lat: 50.017, lon: 5.117, localites: [Gembes, Haut-Fays, Porcheresse]}
-  - {nom: Herbeumont,   codes: [6887], lat: 49.783, lon: 5.233, localites: [Saint-Médard, Straimont, Gribomont, Martilly]}
-  - {nom: Léglise,      codes: [6860], lat: 49.800, lon: 5.533, localites: [Leglise, Assenois, Ebly, Mellier, Witry, Anlier, Louftémont, Thibessart, Les Fossés]}
-  - {nom: Libin,        codes: [6890], lat: 49.983, lon: 5.250, localites: [Anloy, Ochamps, Redu, Smuid, Transinne, Villance, Glaireuse]}
-  - {nom: Libramont-Chevigny, codes: [6800], lat: 49.917, lon: 5.383, localites: [Libramont, Chevigny, Bras, Freux, Moircy, Recogne, Remagne, Saint-Pierre, Sainte-Marie-Chevigny, Bougnimont, Flohimont, Neuvillers, Ourt, Séviscourt]}
-  - {nom: Neufchâteau,  codes: [6840], lat: 49.850, lon: 5.433, localites: [Neufchateau, Grandvoir, Grapfontaine, Hamipré, Longlier, Tournay, Namoussart, Petitvoir, Warmifontaine, Tronquoy]}
-  - {nom: Paliseul,     codes: [6850, 6851, 6852, 6853], lat: 49.900, lon: 5.133, localites: [Carlsbourg, Offagne, Nollevaux, Maissin, Opont, Framont, Fays-les-Veneurs, Merny, Plainevaux]}
+  - {nom: Herbeumont,   codes: [6887], lat: 49.783, lon: 5.233, localites: [Saint-Médard, Straimont, Gribomont, Martilly, Menugoutte, Linglé]}
+  - {nom: Léglise,      codes: [6860], lat: 49.800, lon: 5.533, localites: [Leglise, Assenois, Ebly, Mellier, Witry, Anlier, Louftémont, Thibessart, Les Fossés, Behême, Vlessart, Volaiville, Traimont, Wittimont, Habaru, Bernimont, Nivelet]}
+  - {nom: Libin,        codes: [6890], lat: 49.983, lon: 5.250, localites: [Anloy, Ochamps, Redu, Smuid, Transinne, Villance, Glaireuse, Lesse, Sèchery]}
+  - {nom: Libramont-Chevigny, codes: [6800], lat: 49.917, lon: 5.383, localites: [Libramont, Chevigny, Bras, Freux, Moircy, Recogne, Remagne, Saint-Pierre, Sainte-Marie-Chevigny, Bougnimont, Flohimont, Neuvillers, Ourt, Séviscourt, Laneuville, Lamouline, Presseux, Rondu, Sberchamps, Wideumont, Jenneville, Nimbermont, Bonnerue]}
+  - {nom: Neufchâteau,  codes: [6840], lat: 49.850, lon: 5.433, localites: [Neufchateau, Grandvoir, Grapfontaine, Hamipré, Longlier, Tournay, Namoussart, Petitvoir, Warmifontaine, Tronquoy, Cousteumont, Fineuse, Harfontaine, Lahérie, Malome, Marbay, Massul, Molinfaing, Montplainchamps, Nolinfaing, Offaing, Respelt, Semel, Verlaine]}
+  - {nom: Paliseul,     codes: [6850, 6851, 6852, 6853], lat: 49.900, lon: 5.133, localites: [Carlsbourg, Offagne, Nollevaux, Maissin, Opont, Framont, Fays-les-Veneurs, Merny, Plainevaux, Beth, Our, Launoy, Almache]}
   - {nom: Saint-Hubert, codes: [6870], lat: 50.033, lon: 5.383, localites: [Arville, Awenne, Hatrival, Mirwart, Vesqueville, Lorcy, Poix-Saint-Hubert]}
   - {nom: Tellin,       codes: [6927], lat: 50.083, lon: 5.217, localites: [Bure, Grupont, Resteigne]}
   - {nom: Wellin,       codes: [6920, 6921, 6922, 6924], lat: 50.083, lon: 5.117, localites: [Sohier, Chanly, Halma, Lomprez, Fays-Famenne, Froidlieu, Barzin]}
   # --- Arrondissement de Virton ---
-  - {nom: Chiny,        codes: [6810, 6811, 6812, 6813], lat: 49.733, lon: 5.333, localites: [Izel, Jamoigne, Les Bulles, Suxy, Termes, Pin, Prouvy, Romponcelle, Valansart]}
-  - {nom: Étalle,       codes: [6740, 6741, 6742, 6743], lat: 49.667, lon: 5.600, localites: [Etalle, Sainte-Marie-sur-Semois, Villers-sur-Semois, Vance, Chantemelle, Buzenol, Fratin, Mortinsart]}
+  - {nom: Chiny,        codes: [6810, 6811, 6812, 6813], lat: 49.733, lon: 5.333, localites: [Izel, Jamoigne, Les Bulles, Suxy, Termes, Pin, Prouvy, Romponcelle, Valansart, Moyen, Frenois]}
+  - {nom: Étalle,       codes: [6740, 6741, 6742, 6743], lat: 49.667, lon: 5.600, localites: [Etalle, Sainte-Marie-sur-Semois, Villers-sur-Semois, Vance, Chantemelle, Buzenol, Fratin, Mortinsart, Huombois, Sivry]}
   - {nom: Florenville,  codes: [6820, 6821, 6823, 6824], lat: 49.700, lon: 5.300, localites: [Fontenoille, Muno, Sainte-Cécile, Lacuisine, Villers-devant-Orval, Chassepierre, Lambermont, Martué, Watrinsart]}
-  - {nom: Habay,        codes: [6720, 6721, 6723, 6724], lat: 49.717, lon: 5.633, localites: [Habay-la-Neuve, Hachy, Anlier, Habay-la-Vieille, Houdemont, Rulles, Marbehan, Orsinfaing, Nantimont]}
+  - {nom: Habay,        codes: [6720, 6721, 6723, 6724], lat: 49.717, lon: 5.633, localites: [Habay-la-Neuve, Hachy, Anlier, Habay-la-Vieille, Houdemont, Rulles, Marbehan, Orsinfaing, Nantimont, Harinsart, Bologne]}
   - {nom: Meix-devant-Virton, codes: [6769], lat: 49.600, lon: 5.483, localites: [Meix, Gérouville, Robelmont, Sommethonne, Villers-la-Loue, Houdrigny, Berchiwé]}
   - {nom: Musson,       codes: [6750], lat: 49.550, lon: 5.700, localites: [Mussy-la-Ville, Signeulx, Baranzy, Willancourt, Gennevaux]}
   - {nom: Rouvroy,      codes: [6767], lat: 49.533, lon: 5.483, localites: [Dampicourt, Harnoncourt, Lamorteau, Torgny, Couvreux, Montquintin]}
   - {nom: Saint-Léger,  codes: [6747], lat: 49.617, lon: 5.650, localites: [Saint-Leger, Châtillon, Meix-le-Tige]}
   - {nom: Tintigny,     codes: [6730], lat: 49.683, lon: 5.517, localites: [Bellefontaine, Rossignol, Saint-Vincent, Ansart, Breuvanne, Han, Lahage, Poncelle]}
-  - {nom: Virton,       codes: [6760, 6761, 6762], lat: 49.567, lon: 5.533, localites: [Ethe, Ruette, Bleid, Latour, Saint-Mard, Chenois, Grandcourt, Gomery, Belmont, Vieux-Virton]}
+  - {nom: Virton,       codes: [6760, 6761, 6762], lat: 49.567, lon: 5.533, localites: [Ethe, Ruette, Bleid, Latour, Saint-Mard, Chenois, Grandcourt, Gomery, Belmont, Vieux-Virton, Saint-Remy]}
+
+# Communes voisines (Namur, Liège, Grand-Duché) qui apparaissent dans les libellés des
+# portails : si le nom cité en tête est l'une d'elles, l'annonce est hors province.
+hors_province: [Somme-Leuze, Rochefort, Beauraing, Gedinne, Bièvre, Vresse-sur-Semois, Vresse, Dinant,
+  Ciney, Havelange, Hamoir, Ferrières, Stoumont, Trois-Ponts, Lierneux, Sankt Vith, Saint-Vith,
+  Burg-Reuland, Hastière, Houyet, Clavier, Ouffet, Anhée, Yvoir, Onhaye, Nandrin, Aywaille, Sprimont,
+  Luxembourg, Esch-sur-Alzette, Differdange, Pétange, Steinfort, Redange, Wiltz, Clervaux, Troisvierges,
+  Jemelle, Han-sur-Lesse, Lavaux-Sainte-Anne, Wanlin, Pondrôme, Baillonville, Noiseux, Hogne, Sinsin,
+  Agimont, Hastiere-Lavaux, Vresse-sur-Semois, Sugny, Pussemange, Bohan, Membre, Alle, Maffe, Heure]
+
+# Contour simplifié de la province (lat, lon), dans le sens horaire depuis le nord.
+# Sert quand une annonce donne des coordonnées : un point à l'intérieur (ou à moins
+# de 1 km du bord) est en province de Luxembourg. Précision : quelques kilomètres.
+contour:
+  - [50.41, 5.95]
+  - [50.36, 5.98]
+  - [50.25, 6.02]
+  - [50.17, 6.00]
+  - [50.12, 5.92]
+  - [50.05, 5.87]
+  - [49.95, 5.80]
+  - [49.88, 5.76]
+  - [49.81, 5.76]
+  - [49.74, 5.90]
+  - [49.69, 5.95]
+  - [49.63, 5.90]
+  - [49.58, 5.88]
+  - [49.54, 5.80]
+  - [49.53, 5.68]
+  - [49.53, 5.56]
+  - [49.49, 5.47]
+  - [49.55, 5.42]
+  - [49.60, 5.40]
+  - [49.62, 5.34]
+  - [49.68, 5.24]
+  - [49.70, 5.15]
+  - [49.75, 5.05]
+  - [49.78, 4.96]
+  - [49.82, 4.95]
+  - [49.86, 4.99]
+  - [49.87, 5.03]
+  - [49.92, 5.08]
+  - [49.98, 5.08]
+  - [50.03, 5.04]
+  - [50.10, 5.06]
+  - [50.13, 5.15]
+  - [50.11, 5.22]
+  - [50.14, 5.27]
+  - [50.19, 5.25]
+  - [50.26, 5.29]
+  - [50.30, 5.37]
+  - [50.33, 5.41]
+  - [50.39, 5.41]
+  - [50.41, 5.52]
+  - [50.37, 5.60]
+  - [50.36, 5.66]
+  - [50.35, 5.74]
+  - [50.33, 5.80]
+  - [50.36, 5.88]

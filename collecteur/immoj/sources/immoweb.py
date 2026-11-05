@@ -18,8 +18,7 @@ import re
 from datetime import datetime
 from urllib.parse import urlencode
 
-from .. import config
-from ..modele import Annonce, deviner_type
+from ..modele import Annonce, deviner_annonceur, deviner_type
 from .base import Source
 
 BASE = "https://www.immoweb.be"
@@ -28,6 +27,11 @@ BASE = "https://www.immoweb.be"
 CHEMINS = {
     "location": ("maison-et-appartement/a-louer/luxembourg/province", "a-louer"),
     "achat": ("maison-et-appartement/a-vendre/luxembourg/province", "a-vendre"),
+}
+# Recherches supplémentaires par transaction : les kots ne sont pas dans
+# « maison-et-appartement » (lot 5 : 9 kots dans la province, 6 de particuliers).
+CHEMINS_SUPPLEMENTAIRES = {
+    "location": ["kot/a-louer/luxembourg/province"],
 }
 
 # Types Immoweb → nos types
@@ -45,8 +49,8 @@ class Immoweb(Source):
     frequence_heures = 3   # ne tourne qu'une exécution sur trois
     pages_defaut = 2
 
-    def url_api(self, transaction: str, page: int) -> str:
-        chemin, _ = CHEMINS[transaction]
+    def url_api(self, transaction: str, page: int, chemin: str | None = None) -> str:
+        chemin = chemin or CHEMINS[transaction][0]
         params = {"countries": "BE", "page": str(page), "orderBy": "newest"}
         return f"{BASE}/fr/search-results/{chemin}?{urlencode(params)}"
 
@@ -64,18 +68,27 @@ class Immoweb(Source):
     def collecter(self, transaction: str) -> list[Annonce]:
         annonces: list[Annonce] = []
         vues: set[str] = set()
-        pages_max = self.pages_max or min(config.PAGES_MAX, self.pages_defaut)
+        chemins = [CHEMINS[transaction][0], *CHEMINS_SUPPLEMENTAIRES.get(transaction, [])]
+        for chemin in chemins:
+            annonces.extend(self._collecter_chemin(transaction, chemin, vues))
+        return annonces
+
+    def _collecter_chemin(self, transaction: str, chemin: str, vues: set[str]) -> list[Annonce]:
+        annonces: list[Annonce] = []
+        pages_max = self.pages_a_lire(self.pages_defaut)
         for page in range(1, pages_max + 1):
-            reponse = self.client.get(self.url_api(transaction, page),
+            reponse = self.client.get(self.url_api(transaction, page, chemin),
                                       headers={"Accept": "application/json"})
             donnees = reponse.json()
             trouvees = analyser_json(donnees, transaction)
+            total = donnees.get("totalItems") or 0
+            if total and page == 1:
+                self.disponibles[transaction] = self.disponibles.get(transaction, 0) + int(total)
             nouvelles = [a for a in trouvees if a.id_externe not in vues]
             if not nouvelles:
                 break
             annonces.extend(nouvelles)
             vues.update(a.id_externe for a in nouvelles)
-            total = donnees.get("totalItems") or 0
             if page * 30 >= total:
                 break
         return annonces
@@ -125,6 +138,8 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
     sous_type = (prop.get("subtype") or "").upper()
     if sous_type in SOUS_TYPES_STUDIO:
         type_bien = "studio"
+    elif sous_type == "KOT":          # les kots sont des « APARTMENT » de sous-type KOT
+        type_bien = "kot"
     else:
         type_bien = TYPES.get(type_iw) or deviner_type(prop.get("title"))
 
@@ -188,6 +203,8 @@ def _analyser_resultat(r: dict, transaction: str) -> Annonce | None:
         photos=photos,
         description=str(argumentaire or ""),
         agence=r.get("customerName") or None,
+        annonceur=deviner_annonceur(Immoweb.nom, r.get("customerName") or None),
+        reference=str(identifiant),
         details=details_immoweb(prop, trans),
     )
 

@@ -1,0 +1,148 @@
+# Journal des modifications
+
+## 1.2.0 (5 novembre 2026) — Version stable et signée
+
+Première version stable de la 1.2 : réunit les lots 1 à 5 (fiabilité et compteurs partout, carte
+et cercle de recherche, modes d'affichage et filtres, fiche d'annonce complète, annonceur et
+couverture du collecteur, annonces de particuliers, « Partager vers ImmoJ » et fiches ajoutées à la
+main) ainsi que le nouveau logo et les requêtes réseau non bloquantes de `main`.
+
+### Publication
+- APK « release » signé avec une vraie clé de production, gardée dans les secrets GitHub (jamais
+  dans le dépôt public). Rotation de clé depuis l'ancienne clé de développement : sur Android 9+,
+  la 1.2.0 s'installe par-dessus un APK de test 1.2.0-lotN sans désinstaller.
+- Publiée dans le dépôt privé `immoj-apk` : branche `apk` et Release `v1.2.0` (notes reprises de
+  ce journal). Chaque version stable future (versionName sans « - ») fera de même.
+
+## 1.2.0-lot5 — Les annonces de particuliers, d'où qu'elles viennent
+
+### Collecteur
+- Immoweb : la rubrique « kot » est lue en plus de « maison et appartement » (9 kots dans la
+  province le 22/10, dont 6 de particuliers, tous absents jusque-là).
+- Évaluation de PAP, Trovit, Rentola, athome.lu, immotop.lu, Vivastreet, sites de kots, Zimmo et
+  Logic-immo (captures dans `collecteur/tests/fixtures/html/lot5/`) : tableau de décision dans
+  `docs/08-particuliers-ailleurs.md`. Aucune autre source n'est accessible sans connexion ni
+  contournement (Cloudflare, DataDome, domaines morts) ; Trovit et Rentola ne sont que des
+  agrégateurs. Les alertes e-mail Zimmo/Logic-immo restent optionnelles (guide 07).
+
+### Appli
+- « Partager vers ImmoJ » depuis n'importe quelle appli (Facebook, Messenger, navigateur…) : texte
+  et/ou image → écran « Ajouter une annonce » pré-rempli (lien, prix, titre).
+- Bouton « + » dans la liste et entrée de menu « + Ajouter une annonce ».
+- Les fiches manuelles (source « Ajoutée à la main ») vivent sur le téléphone dans la même liste :
+  statuts, favoris, carte, compteurs, filtre par source et par annonceur.
+
+## 1.2.0-lot4 — Collecteur : particuliers, couverture, qualité
+
+### Collecteur
+- Champ `annonceur` (particulier / agence / notaire / inconnu) de bout en bout : modèle, base JSON,
+  export, Supabase (`supabase/migrations/2026-10-22-001-…sql`, vue `v_annonces_liste`), appli.
+  Règles : Immoweb « PRIVATE » → particulier ; 2ememain → particulier sauf indice pro (nom d'agence
+  connue, « immo », « srl », « notre agence »…) ; sites d'agences → agence ; notaires → notaire ;
+  Immovlan → particulier sans logo d'agence. Plus jamais « PRIVATE » ni un prénom comme agence.
+- Rapport de couverture à chaque passage (journal et écran État des sources) : annonces lues /
+  disponibles sur le site, nombre de particuliers, passage profond ou léger.
+- Passage profond quotidien (7 h Bruxelles) : toutes les pages des portails (jusqu'à 80), puis
+  réparation de la base ; passage profond automatique au premier passage d'une source ;
+  passages horaires légers (3 pages). Désactivation après 7 jours seulement pour les annonces
+  absentes d'un passage profond réussi. Pas de notification pour une annonce déterrée par un
+  passage profond si elle est publiée depuis plus de 48 h. Coût ≈ 300 min/mois (dépôt public :
+  gratuit).
+- 2ememain : le filtre par catégorie de l'API est ignoré par le serveur (capture du 22/10) ;
+  5 centres (Arlon, Bastogne, Libramont, Marche, Vielsalm) à 30 km, toutes les pages en profond.
+- Géocodage (C3) : commune citée en tête (« Hotton + Partie De Soy » → Hotton, « Somme-Leuze + … »
+  → hors province), puis correspondance la plus longue ; 180 localités ajoutées (Vaux-lez-Rosières,
+  Sibret, Longchamps…) ; contour simplifié de la province pour les annonces avec coordonnées
+  (commune la plus proche déduite). Tests sur les 4 cas de C3 et « Bastogne + Partie De Longchamps
+  Et Sibret ».
+- C4 : identifiants dédoublonnés dans un passage, `connues` mis à jour au fil de l'eau, pagination
+  arrêtée quand une page n'apporte rien ; 64 orphelines existantes désactivées (test de
+  non-régression).
+- C5 : correspondance structurée forte (même commune, prix identique, mêmes chambres, surfaces
+  connues à ±5 %) ou même référence ; prix identique + chambres + même agence (noms normalisés)
+  quand une surface manque. 55 doublons existants fusionnés (sources, photos, détails, historique
+  des prix rattachés à la plus ancienne). Tests sur les cas réels de C5.
+- C6 : `deviner_type` sur titre, sous-type et URL ; nouveaux types chambre/colocation, immeuble,
+  commerce/bureau, garage/parking. Sur les données réelles : 152 « autre » → 10 (0,6 %).
+- C7 : date de publication conservée par source (`annonce_sources.date_publication`) et la plus
+  ancienne reportée sur la fiche. C8 : localité lue dans le titre ou la fiche, jamais la commune de
+  l'agence par défaut ; précision de la position (exacte / centre de commune) stockée et affichée.
+  C9 : index par `annonce_id`, un seul export par passage.
+- Fiches lues en priorité pour les locations et les particuliers.
+- Nouvelles options : `--profond`, `--leger`, `--reparer` (et cases à cocher dans le workflow).
+
+### Appli
+- Badge et rubrique « Annonceur » d'après le champ du collecteur (règle de secours pour les
+  anciennes données) ; filtres et compteurs par annonceur.
+- Nouveaux types dans les filtres et les libellés.
+- Fiche : « Position approximative (centre de la commune) » ou « Position donnée par l'annonce ».
+- État des sources : « Dernier passage (profond) : N lues / M disponibles (x %) · P de
+  particuliers · nouvelles », dernier passage profond, noms de sources lisibles.
+
+## 1.2.0-lot3b — Fiche d'annonce
+
+### Appli
+- Barre d'actions fixe en bas de la fiche : Appeler · Ouvrir · Itinéraire · Partager · ★ Favori.
+- Badge « Particulier » à côté du prix ; rubrique « Annonceur » (particulier, notaire ou nom de l'agence).
+- Prix au m² (ou loyer au m² par mois) et ligne « Loyer + charges = total ».
+- Mini-carte OpenStreetMap centrée sur le bien ; un appui lance l'itinéraire.
+- « Publiée il y a X j · détectée il y a Y h » et distance au centre de la zone de recherche.
+- « Annonces similaires » : même type, prix à ±25 %, chambres à ±1, les plus proches d'abord (test JVM).
+- Glisser vers la gauche ou la droite passe à l'annonce suivante ou précédente de la liste courante ;
+  le titre indique la position (« 3/27 »).
+- Date de disponibilité affichée dans les caractéristiques quand la fiche la donne.
+
+## 1.2.0-lot3a — Modes d'affichage et ergonomie (liste)
+
+### Appli
+- Quatre modes d'affichage de la liste : Cartes, Détaillé (grande photo), Compact (une ligne), Grille (2 colonnes).
+  Icône dans la barre du haut ; mode par défaut dans Paramètres › Apparence.
+- Ligne de filtres rapides au-dessus de la liste : Prix max (préréglages), Chambres, Type, Zone, Particuliers,
+  Jardin, Animaux, Nouveautés 24 h ; chaque puce active porte un ✕ ; bouton « Tout effacer ».
+- Recherche texte (loupe) sur titre, description, commune, localité, code postal et annonceur.
+- Tri : plus récentes, prix croissant/décroissant, prix au m², surface, distance au centre de la zone, chambres.
+- Gestes : glisser une annonce vers la gauche = « Pas pour moi » (annulable), vers la droite = favori ★ (annulable).
+- Point « non lu » devant les annonces jamais ouvertes ; séparateur « Nouveau depuis ta dernière visite ».
+- Les filtres s'ouvrent en feuille du bas, sections repliables (Zone, Prix, Type et annonceur, Taille, Options,
+  PEB, Détectées depuis, Sources, Mes statuts), curseurs à deux poignées pour le prix et la surface avec champs
+  et préréglages, communes groupées par arrondissement avec recherche et compteurs.
+- Nouveaux critères : annonceur (particulier / agence / notaire), chambres max, surface max, garage, terrasse,
+  loyer charges comprises max, disponible avant, avec photos, masquer les annonces déjà vues, prix baissé.
+- La position de défilement de la liste est conservée au retour d'une fiche et entre les onglets.
+
+## 1.2.0-lot2 (22 octobre 2026) — Carte : poser et retirer le cercle facilement
+
+- Pose : appui maintenu n'importe où → vibration, viseur et aperçu du cercle 70 dp au-dessus du doigt ; la carte ne défile plus, le centre suit le doigt avec la commune la plus proche et le nombre d'annonces en direct ; relâcher = poser. Sortir de la carte ou ✕ annule. Un simple appui ou un appui sur un marqueur ne déplace jamais le cercle.
+- Déplacer : glisser directement le point central (zone de 48 dp, sans appui long). Rayon : poignée sur le bord (48 dp), puces 2 · 5 · 10 · 15 · 20 · 30 km, curseur ; libellé et compteur en direct, liste recalculée au relâchement seulement. Une seule constante pour défaut (10 km) et bornes (0,5–60).
+- Retirer : puce « 12 km autour de Libramont ✕ » en haut de la carte et en tête de liste ; un appui retire, « Zone retirée — Annuler ». « Retirer » dans les Filtres fait pareil.
+- Boutons « Ma position » (permission demandée au premier appui) et « Toute la province ».
+- Panneau du bas compact sur une ligne (rayon, curseur, « 12 communes »), dépliable.
+- Marqueurs regroupés avec leur nombre (appui = zoom), étiquettes de prix, annonces hors zone en grisé ; dessin direct sans objet par annonce.
+- Technique : un calque osmdroid dédié au geste (`CalqueCercle`), calques mis à jour sans être retirés, aucune requête pendant un geste ; tests JVM de la géométrie (décalage du viseur, rayon depuis la poignée, bornes, regroupement).
+
+
+## 1.2.0-lot1 (22 octobre 2026) — Fiabilité et compteurs partout
+
+### Appli
+- Toutes les annonces actives sont chargées (index léger paginé, plus aucune limite silencieuse de 300) ; filtrage, tri et comptages en mémoire, identiques en mode Supabase et en mode sans compte.
+- Compteurs : « Location (397) · Achat (1 189) », « 37 annonces · 5 nouvelles » ou « 37 sur 397 », « Données du 22/10 à 02:34 », pastille de nouveautés sur l'onglet Annonces, « 37 dans la zone · 4 sans position » sur la carte, « N annonces · M nouvelles depuis ta dernière visite » sur chaque recherche sauvegardée, total / par source / particuliers dans l'État des sources.
+- Filtres appliqués immédiatement (rien de perdu au retour), bouton « Voir N annonces », nombre à côté de chaque option (type, commune, source, PEB, période, jardin…), suggestions avec leur gain quand il n'y a aucun résultat, « Réinitialiser » avec Annuler.
+- Filtre « Sites d'agences » corrigé (tous les logiciels), « Notaires / Biddit » ajouté, Zimmo / Logic-immo remplacés par « Alertes e-mail ».
+- Dates : un seul utilitaire (`Dates`) qui lit « +00:00 » sur toutes les versions d'Android ; « il y a 3 h », période « Détectées depuis » et badges fonctionnent partout.
+- Fiche → liste : statut répercuté tout de suite ; ouvrir une annonce « Nouveau » la marque « Vu » ; annonces « Refusé » masquées par défaut (interrupteur dans les filtres, rappel dans la liste).
+- Chargements annulables : le dernier changement demandé est toujours celui affiché ; aucun téléchargement sur un simple changement de filtre.
+- Rayon : une seule constante (défaut 10 km, bornes 0,5–60 km).
+- Paramètres → À propos : version, build, commit, branche, date de compilation.
+
+### APK
+- Clé de signature de développement fixe (`android/signature/immoj-debug.keystore`) : chaque APK s'installe par-dessus le précédent. Une désinstallation unique est nécessaire pour passer de la 1.1.0 à la première 1.2.0.
+- versionCode = numéro d'exécution GitHub ; `main` publie sur la branche `apk`, les branches de travail sur `apk-test` ; tests unitaires JVM exécutés avant la compilation.
+
+### Collecteur
+- Export et vue Supabase : champ `photo` (vignette) ; migration de la vue incluse dans `schema.sql`.
+
+## 1.1.0 (22 octobre 2026)
+- Carte : cercle de recherche manipulable ; fiche : toutes les photos et détails ; paramètres enrichis ; actualisation réelle ; 23 agences collectées.
+
+## 1.0.0 (21 octobre 2026)
+- Première version complète : portails, agences, notaires, Supabase, mode sans compte, notifications.

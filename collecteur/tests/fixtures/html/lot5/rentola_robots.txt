@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: *contact=true 
+Disallow: /ads-map/ 
+Disallow: /api/events 
+
+Sitemap: https://rentola.be/server-sitemap-index.xml

@@ -3,61 +3,148 @@ package be.immoj.ui.liste
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import be.immoj.data.Annonce
+import be.immoj.data.Catalogue
 import be.immoj.data.Commune
 import be.immoj.data.Depot
 import be.immoj.data.Filtres
 import be.immoj.data.GitHubActions
 import be.immoj.data.Preferences
+import be.immoj.data.StatutPerso
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** État de l'écran liste. */
+/**
+ * État partagé par la liste, la carte, les filtres et les recherches.
+ * L'index (toutes les annonces actives) est chargé une fois ; filtrage, tri et
+ * compteurs se font en mémoire, instantanément, sans réseau.
+ */
 data class ListeEtat(
     val transaction: String = "location",
     val tri: String = "recent",
     val filtres: Filtres = Filtres(),
-    val annonces: List<Annonce> = emptyList(),
+    val index: List<Annonce> = emptyList(),          // toutes les annonces actives
+    val annonces: List<Annonce> = emptyList(),       // celles de la transaction, filtrées, triées
     val communes: List<Commune> = emptyList(),
     val chargement: Boolean = false,
     val erreur: String? = null,
     val photosEnListe: Boolean = true,
-)
+    val dateDonnees: String? = null,                 // horodatage de la dernière collecte vue
+    /** Annonces qui passent tous les filtres sauf la zone (grisées sur la carte). */
+    val annoncesHorsZone: List<Annonce> = emptyList(),
+    val modeListe: String = "cartes",
+    /** Début de la visite précédente : les annonces détectées après sont « nouvelles depuis ta dernière visite ». */
+    val derniereVisite: String? = null,
+) {
+    /** Vrai si l'annonce est apparue depuis la visite précédente. */
+    fun nouvelleDepuisVisite(a: Annonce): Boolean =
+        derniereVisite != null && be.immoj.util.Dates.apres(a.premiereDetection, derniereVisite)
+    /** « 12 km autour de Libramont » (null sans cercle). */
+    fun libelleZone(): String? {
+        val f = filtres
+        if (!f.rayonDefini) return null
+        val commune = communes.minByOrNull { be.immoj.data.distanceKm(f.centreLat!!, f.centreLon!!, it.latitude, it.longitude) }
+        return "${be.immoj.util.Format.km(f.rayonKm!!)} autour de ${commune?.nom ?: "ce point"}"
+    }
+    /** Totaux par transaction : « Location (397) · Achat (1 189) ». */
+    val totaux: Map<String, Int> get() = Catalogue.totaux(index, filtres.afficherRefusees)
+    val nbTotalTransaction: Int get() = totaux[transaction] ?: 0
+    val nbNouvelles: Int get() = Catalogue.nouvelles(annonces)
+    val nbSansPosition: Int get() = Catalogue.sansPosition(annonces)
+    /** Nouveautés non vues, toutes transactions (pastille de l'onglet Annonces). */
+    val nbNonVues: Int get() = Catalogue.nouvelles(index.filter { it.transaction == transaction })
+    val nbRefuseesMasquees: Int
+        get() = if (filtres.afficherRefusees) 0
+        else index.count { it.actif && it.transaction == transaction && it.statut == StatutPerso.REFUSE.code }
+}
 
 class ListeViewModel(private val depot: Depot, private val preferences: Preferences) : ViewModel() {
     private val _etat = MutableStateFlow(ListeEtat())
     val etat: StateFlow<ListeEtat> = _etat.asStateFlow()
+    private var travail: Job? = null
 
     init {
         viewModelScope.launch {
             val r = preferences.lire()
             _etat.update { it.copy(transaction = r.transaction, tri = r.tri, filtres = r.filtres) }
-            charger()
+            // Démarrage instantané depuis le cache, puis vraie mise à jour.
+            val cache = runCatching { depot.indexEnCache() }.getOrDefault(emptyList())
+            if (cache.isNotEmpty()) remplacerIndex(cache)
+            charger(forcer = cache.isEmpty())
             runCatching { depot.communes() }.onSuccess { c -> _etat.update { it.copy(communes = c) } }
         }
-        // Les réglages d'affichage suivent les paramètres en direct.
         viewModelScope.launch {
-            preferences.flux.collect { r -> _etat.update { it.copy(photosEnListe = r.photosEnListe) } }
+            val precedente = preferences.ouvrirVisiteListe()
+            _etat.update { it.copy(derniereVisite = precedente) }
+        }
+        viewModelScope.launch {
+            preferences.flux.collect { r ->
+                _etat.update { it.copy(photosEnListe = r.photosEnListe, modeListe = r.modeListe) }
+            }
+        }
+    }
+
+    fun changerMode(mode: String) {
+        viewModelScope.launch { preferences.enregistrerReglage("modeListe", mode) }
+    }
+
+    /** Recherche libre (titre, description, commune, annonceur), appliquée en mémoire. */
+    fun chercher(texte: String) = changerFiltres(_etat.value.filtres.copy(texte = texte))
+
+    /**
+     * Geste sur une carte : « Pas pour moi » (refusé) ou favori ★ (intéressé).
+     * Enregistre le statut et renvoie l'ancien pour « Annuler ».
+     */
+    fun marquer(a: Annonce, statut: StatutPerso): StatutPerso {
+        val ancien = StatutPerso.depuisCode(a.statut)
+        appliquerStatut(a.id, statut, a.note)
+        viewModelScope.launch { runCatching { depot.changerStatut(a.id, statut, a.note) } }
+        return ancien
+    }
+
+    fun retablir(a: Annonce, statut: StatutPerso) {
+        appliquerStatut(a.id, statut, a.note)
+        viewModelScope.launch { runCatching { depot.changerStatut(a.id, statut, a.note) } }
+    }
+
+    /** Remplace l'index et recalcule la liste affichée (sans réseau). */
+    private fun remplacerIndex(index: List<Annonce>) {
+        _etat.update { it.copy(index = index, dateDonnees = Catalogue.dateDonnees(index)) }
+        recalculer()
+    }
+
+    private fun recalculer() {
+        _etat.update { e ->
+            val dans = Catalogue.trier(Catalogue.filtrer(e.index, e.transaction, e.filtres), e.tri,
+                e.filtres.centreLat, e.filtres.centreLon)
+            val hors = if (e.filtres.rayonDefini || e.filtres.communes.isNotEmpty()) {
+                val sansZone = e.filtres.copy(centreLat = null, centreLon = null, rayonKm = null, communes = emptySet())
+                val ids = dans.map { it.id }.toSet()
+                Catalogue.filtrer(e.index, e.transaction, sansZone).filter { it.id !in ids }
+            } else emptyList()
+            e.copy(annonces = dans, annoncesHorsZone = hors)
         }
     }
 
     /**
-     * Recharge la liste. Avec `forcer`, l'appli retélécharge vraiment les données
-     * (mode sans compte : nouveau fichier ; Supabase : nouvelle requête) au lieu
-     * de réutiliser le cache de quelques minutes.
+     * Recharge l'index. Avec `forcer`, retéléchargement réel (sinon le cache de
+     * quelques minutes suffit). Un chargement en cours est annulé : le dernier
+     * demandé est toujours celui qui gagne.
      */
     fun charger(forcer: Boolean = false) {
-        viewModelScope.launch {
+        travail?.cancel()
+        travail = viewModelScope.launch {
             _etat.update { it.copy(chargement = true, erreur = null) }
             try {
-                val e = _etat.value
-                if (forcer) depot.rafraichir()
-                val liste = depot.listerAnnonces(e.transaction, e.tri, e.filtres)
-                _etat.update { it.copy(annonces = liste, chargement = false) }
+                remplacerIndex(depot.index(forcer))
+                _etat.update { it.copy(chargement = false) }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _etat.update { it.copy(chargement = false, erreur = messageErreur(e)) }
+                _etat.update { it.copy(chargement = false, erreur = if (it.index.isEmpty()) messageErreur(e) else null) }
             }
         }
     }
@@ -82,39 +169,70 @@ class ListeViewModel(private val depot: Depot, private val preferences: Preferen
         if (transaction == _etat.value.transaction) return
         _etat.update { it.copy(transaction = transaction) }
         viewModelScope.launch { preferences.enregistrerTransaction(transaction) }
-        charger()
+        recalculer()
     }
 
+    /** Les filtres s'appliquent immédiatement, en mémoire : rien à « valider ». */
     fun changerFiltres(filtres: Filtres) {
         _etat.update { it.copy(filtres = filtres) }
         viewModelScope.launch { preferences.enregistrerFiltres(filtres) }
-        charger()
+        recalculer()
     }
 
     /** Change le rayon (km) autour du centre déjà choisi (curseur ou poignée sur la carte). */
     fun definirRayon(km: Double) {
         val f = _etat.value.filtres
         if (f.centreLat == null) return
-        changerFiltres(f.copy(rayonKm = km.coerceIn(0.5, 60.0)))
+        changerFiltres(f.copy(rayonKm = km.coerceIn(Filtres.RAYON_MIN_KM, Filtres.RAYON_MAX_KM)))
     }
 
-    /** Supprime le cercle de recherche (retour à toute la province / aux communes cochées). */
-    fun retirerRayon() {
-        changerFiltres(_etat.value.filtres.copy(centreLat = null, centreLon = null, rayonKm = null))
+    /**
+     * Supprime le cercle de recherche (retour à toute la province / aux communes
+     * cochées). Renvoie les filtres précédents pour « Annuler ».
+     */
+    fun retirerRayon(): Filtres {
+        val avant = _etat.value.filtres
+        changerFiltres(avant.copy(centreLat = null, centreLon = null, rayonKm = null))
+        return avant
+    }
+
+    /** Nombre d'annonces (filtres actuels, hors zone) dans un cercle donné : aperçu pendant le geste. */
+    fun compterDansCercle(lat: Double, lon: Double, rayonKm: Double): Int {
+        val e = _etat.value
+        val sansZone = e.filtres.copy(centreLat = null, centreLon = null, rayonKm = null, communes = emptySet())
+        return Catalogue.filtrer(e.index, e.transaction, sansZone).count { a ->
+            a.latitude != null && a.longitude != null &&
+                be.immoj.data.distanceKm(lat, lon, a.latitude, a.longitude) <= rayonKm
+        }
     }
 
     /** Définit le centre du rayon (depuis la carte) sans changer le reste. */
     fun definirCentre(lat: Double, lon: Double) {
         val f = _etat.value.filtres
-        changerFiltres(f.copy(centreLat = lat, centreLon = lon, rayonKm = f.rayonKm ?: 15.0))
+        changerFiltres(f.copy(centreLat = lat, centreLon = lon, rayonKm = f.rayonKm ?: Filtres.RAYON_DEFAUT_KM))
     }
 
     fun changerTri(tri: String) {
         if (tri == _etat.value.tri) return
         _etat.update { it.copy(tri = tri) }
         viewModelScope.launch { preferences.enregistrerTri(tri) }
-        charger()
+        recalculer()
     }
+
+    /** Un statut a changé (depuis la fiche ou un geste) : la liste le reflète tout de suite. */
+    fun appliquerStatut(id: String, statut: StatutPerso, note: String?) {
+        _etat.update { e ->
+            e.copy(index = e.index.map { a ->
+                if (a.id == id) a.copy(statut = statut.code, note = note,
+                    badgeNouveau = a.badgeNouveau && statut == StatutPerso.NOUVEAU) else a
+            })
+        }
+        recalculer()
+    }
+
+    /** Nombre d'annonces qu'auraient des filtres donnés (aperçu dans l'écran Filtres). */
+    fun compter(filtres: Filtres): Int =
+        Catalogue.filtrer(_etat.value.index, _etat.value.transaction, filtres).size
 }
 
 /** Transforme une exception technique en phrase lisible. */

@@ -19,8 +19,15 @@ android {
         applicationId = "be.immoj"
         minSdk = 26          // Android 8.0 et plus
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.1.0"
+        // versionCode = numéro d'exécution GitHub (propriété Gradle), 5 en local ;
+        // versionName : « 1.2.0 » = version stable ; « -xxx » = version de test.
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
+        versionName = "1.2.0"
+
+        // Identité de la compilation, affichée dans Paramètres → À propos.
+        buildConfigField("String", "COMMIT", "\"${propriete("commit").take(7)}\"")
+        buildConfigField("String", "BRANCHE", "\"${propriete("branche")}\"")
+        buildConfigField("String", "DATE_BUILD", "\"${propriete("dateBuild")}\"")
 
         buildConfigField("String", "SUPABASE_URL", "\"${propriete("supabaseUrl")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${propriete("supabaseAnonKey")}\"")
@@ -30,6 +37,19 @@ android {
             "https://raw.githubusercontent.com/flash01-pixel/ImmoJ/donnees/annonces.json"
         }
         buildConfigField("String", "DONNEES_URL", "\"$donneesUrl\"")
+    }
+
+    // Clé de signature de développement FIXE (android/signature/, mot de passe
+    // « immoj-debug ») pour les compilations « debug » locales. Les APK publiés sont
+    // des builds « release » signés par le workflow avec la clé de production
+    // (secrets GitHub), en rotation depuis cette clé : voir build-apk.yml.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("signature/immoj-debug.keystore")
+            storePassword = "immoj-debug"
+            keyAlias = "immoj"
+            keyPassword = "immoj-debug"
+        }
     }
 
     buildTypes {
@@ -44,6 +64,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    // Le contrôle lint complet n'est pas bloquant pour la compilation « release ».
+    lint {
+        checkReleaseBuilds = false
     }
     buildFeatures {
         compose = true
@@ -71,5 +95,6 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.osmdroid)
     implementation(libs.androidx.work.runtime)
-    testImplementation("junit:junit:4.13.2")
+    // Tests unitaires JVM (logique pure : filtres, comptages, dates, géométrie).
+    testImplementation(libs.junit)
 }

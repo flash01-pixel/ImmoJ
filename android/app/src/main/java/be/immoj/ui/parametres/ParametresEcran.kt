@@ -1,5 +1,6 @@
 package be.immoj.ui.parametres
 
+import be.immoj.util.Dates
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -102,6 +103,9 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
                 reglages.theme,
             ) { regler("theme", it) }
             Interrupteur("Photos dans la liste", reglages.photosEnListe) { regler("photosEnListe", it) }
+            Text("Mode d'affichage de la liste", style = MaterialTheme.typography.labelLarge)
+            Choix(listOf("cartes" to "Cartes", "detaille" to "Détaillé", "compact" to "Compact", "grille" to "Grille"),
+                reglages.modeListe) { regler("modeListe", it) }
 
             HorizontalDivider()
             // ----- Alertes ----------------------------------------------------
@@ -238,8 +242,14 @@ fun ParametresEcran(app: ImmoJApp, retour: () -> Unit) {
             HorizontalDivider()
             Titre("À propos")
             Text(
-                "ImmoJ ${BuildConfig.VERSION_NAME} · annonces immobilières de la province de Luxembourg, " +
-                    "collectées toutes les heures (portails + sites d'agences), dédoublonnées, filtrées et notifiées.",
+                "ImmoJ ${BuildConfig.VERSION_NAME} · build ${BuildConfig.VERSION_CODE} · commit " +
+                    "${BuildConfig.COMMIT.ifBlank { "local" }} · branche ${BuildConfig.BRANCHE.ifBlank { "locale" }} · " +
+                    "compilé le ${Dates.dateHeure(BuildConfig.DATE_BUILD).takeIf { it != "—" } ?: "?"}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                "Annonces immobilières de la province de Luxembourg, collectées toutes les heures " +
+                    "(portails + sites d'agences), dédoublonnées, filtrées et notifiées.",
                 style = MaterialTheme.typography.bodySmall,
             )
             message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
