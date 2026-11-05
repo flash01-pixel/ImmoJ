@@ -31,7 +31,7 @@ object GitHubActions {
             .header("Accept", "application/vnd.github+json")
             .post(corps)
             .build()
-        client.newCall(requete).execute().use { r ->
+        client.newCall(requete).await().use { r ->
             if (r.code != 204) {
                 val raison = when (r.code) {
                     401 -> "jeton refusé"
